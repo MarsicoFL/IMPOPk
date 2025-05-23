@@ -11,7 +11,6 @@ Using available vcfs from HPRCv2 and public data. It can be upgraded with networ
 
 Search for IBD segments shared between HPRC haplotypes and individuals in public datasets like 1000 Genomes, HGDP or SGDP, and also can be extended to AllofUs. Helps estimate population frequency, geographic spread, or uniqueness of reference haplotypes.
 
----
 
 ### **Measuring effective contribution of each haplotype**
 > *How much variation does this sample really add?*
@@ -20,7 +19,7 @@ Use IBD to assess how genealogically redundant each haplotype is relative to the
 
 ---
 
-## Medium term application
+## Medium-term application
 
 Once the resource is started to be used, providing IBD as metadata can help to different tasks.
 
@@ -29,7 +28,6 @@ Once the resource is started to be used, providing IBD as metadata can help to d
 
 Given an SV identified in an HPRC assembly, find individuals who share IBD at the relevant locus. Shared inheritance supports the variant's authenticity and relevance. Lack of IBD support may suggest a recent mutation or call uncertainty.
 
----
 
 ### **Support for structural imputation via IBD**
 > *Can we fill in a missing region?*
@@ -38,7 +36,7 @@ If two assemblies share IBD over a complex region, one can inform the other for 
 
 ---
 
-## Development project
+## Development (medium long-term) project
 
 Pangenome application can be used as a framework to re-evaluate IBD inference.
 
