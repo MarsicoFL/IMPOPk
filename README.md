@@ -9,7 +9,7 @@ Using available vcfs from HPRCv2 and public data. It can be upgraded with networ
 ### **Tracing HPRC haplotypes in public cohorts**
 > *Where else does this haplotype appear?*
 
-Search for IBD segments shared between HPRC haplotypes and individuals in public datasets like 1000 Genomes, HGDP or SGDP, and also can be extended to AllofUs. Helps estimate population frequency, geographic spread, or uniqueness of reference haplotypes.
+Search for IBD segments shared between HPRC haplotypes and individuals in public datasets like 1000 Genomes, HGDP or SGDP, and also can be extended to AllofUs. It can help to estimate population frequency, geographic spread, or uniqueness of reference haplotypes.
 
 
 ### **Measuring effective contribution of each haplotype**
@@ -26,13 +26,13 @@ Once the resource is started to be used, providing IBD as metadata can help to d
 ### **Validating structural variants via IBD sharing**
 > *Who else carries this variant?*
 
-Given an SV identified in an HPRC assembly, find individuals who share IBD at the relevant locus. Shared inheritance supports the variant's authenticity and relevance. Lack of IBD support may suggest a recent mutation or call uncertainty.
+Given an SV or other variant of interest identified in an HPRC sample, find individuals who share IBD at the relevant locus. Shared inheritance supports the variant's authenticity and relevance. Lack of IBD support may suggest a recent mutation or call uncertainty.
 
 
 ### **Support for structural imputation via IBD**
 > *Can we fill in a missing region?*
 
-If two assemblies share IBD over a complex region, one can inform the other for structural resolution. Facilitates inferred SV calling or gap filling in low-coverage or ambiguous regions.
+If two assemblies share IBD over a complex region, one can inform the other for structural resolution. Facilitates inferred SV calling or gap filling in ambiguous regions.
 
 ---
 
