@@ -1,6 +1,5 @@
 # Identity-By-Descent Analysis in HPRCv2
 
----
 
 ## Short term (almost instant) application
 
