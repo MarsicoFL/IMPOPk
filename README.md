@@ -43,6 +43,6 @@ If two assemblies share IBD over a complex region, one can inform the other for 
 Pangenome application can be used as a framework to re-evaluate IBD inference.
 
 ### **Exploring IBD estimation from the pangenome graph**
-> *What does shared descent mean in a graph context?*
+> *What does identity by descent mean in a graph context?*
 
 Propose defining IBD as common trajectories through the pangenome graph, rather than intervals on a linear reference. Enables novel metrics of haplotype conservation, cohesion, or uniqueness across graph paths (for example, now IBD is considered one-to-one, without incorporating duplcations).
