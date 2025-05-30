@@ -2,7 +2,7 @@
 
 ## Goals
 
-Using available vcfs from HPRCv2 and public data. It can be upgraded with network analysis.
+Using available vcfs from HPRCv2 and public data.
 
 ### **Tracing HPRC haplotypes in public cohorts**
 > *Where else does this haplotype appear?*
