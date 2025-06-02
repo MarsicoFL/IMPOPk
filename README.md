@@ -1,9 +1,8 @@
 # Identity-By-Descent Analysis in HPRCv2
 
+## Goals
 
-## Short term (almost instant) application
-
-Using available vcfs from HPRCv2 and public data. It can be upgraded with network analysis.
+Using available vcfs from HPRCv2 and public data.
 
 ### **Tracing HPRC haplotypes in public cohorts**
 > *Where else does this haplotype appear?*
@@ -17,8 +16,6 @@ Search for IBD segments shared between HPRC haplotypes and individuals in public
 Use IBD to assess how genealogically redundant each haplotype is relative to the panel. It can be used for estimating unique haplotypic content. Can be integrated with diversity summaries from PCA/FST. Also, it can provide a framework for selecting new samples (which haplotype information is not covered) from different projects, such as All of Us.
 
 ---
-
-## Medium-term application
 
 Once the resource is started to be used, providing IBD as metadata can help to different tasks.
 
@@ -35,7 +32,7 @@ If two assemblies share IBD over a complex region, one can inform the other for 
 
 ---
 
-## Development (medium long-term) project
+## Development project
 
 Pangenome application can be used as a framework to re-evaluate IBD inference.
 
