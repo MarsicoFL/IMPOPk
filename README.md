@@ -1,7 +1,5 @@
 # Identity-By-Descent Analysis in HPRCv2
 
-## Goals
-
 Using available vcfs from HPRCv2 and public data.
 
 ### **Tracing HPRC haplotypes in public cohorts**
@@ -24,19 +22,13 @@ Once the resource is started to be used, providing IBD as metadata can help to d
 
 Given an SV or other variant of interest identified in an HPRC sample, find individuals who share IBD at the relevant locus. Shared inheritance supports the variant's authenticity and relevance. Lack of IBD support may suggest a recent mutation or call uncertainty.
 
-
-### **Support for structural imputation via IBD**
-> *Can we fill in a missing region?*
-
-If two assemblies share IBD over a complex region, one can inform the other for structural resolution. Facilitates inferred SV calling or gap filling in ambiguous regions.
-
 ---
 
-## Development project
+## Dev
 
 Pangenome application can be used as a framework to re-evaluate IBD inference.
 
 ### **Exploring IBD estimation from the pangenome graph**
 > *What does identity by descent mean in a graph context?*
 
-Propose defining IBD as common trajectories through the pangenome graph, rather than intervals on a linear reference. Enables novel metrics of haplotype conservation, cohesion, or uniqueness across graph paths (for example, now IBD is considered one-to-one, without incorporating duplcations).
+Propose defining IBD as common trajectories through the pangenome graph, rather than intervals on a linear reference. 
