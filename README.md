@@ -1,6 +1,6 @@
 # Identity-By-Descent Analysis in HPRCv2
 
-Using available vcfs from HPRCv2 and public data.
+Using available vcfs from HPRCv2 and public data: \url{https://data.humanpangenome.org/raw-sequencing-data}
 
 ### **Tracing HPRC haplotypes in public cohorts**
 > *Where else does this haplotype appear?*
