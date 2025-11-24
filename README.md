@@ -15,15 +15,6 @@ Use IBD to assess how genealogically redundant each haplotype is relative to the
 
 ---
 
-Once the resource is started to be used, providing IBD as metadata can help to different tasks.
-
-### **Validating structural variants via IBD sharing**
-> *Who else carries this variant?*
-
-Given an SV or other variant of interest identified in an HPRC sample, find individuals who share IBD at the relevant locus. Shared inheritance supports the variant's authenticity and relevance. Lack of IBD support may suggest a recent mutation or call uncertainty.
-
----
-
 ## Dev
 
 Pangenome application can be used as a framework to re-evaluate IBD inference.
@@ -32,4 +23,4 @@ Pangenome application can be used as a framework to re-evaluate IBD inference.
 ### **Exploring IBS and IBD estimation from the pangenome graph**
 
 Propose defining IBD as common trajectories through the pangenome graph, rather than intervals on a linear reference. 
-We will do it in regions where vcf based IBD inference shows an enrichment (see: https://www.biorxiv.org/content/10.1101/2025.05.03.652048v1.abstract).
+We are using impg as a scaffold for IBS and IBD detection. This is part of impop.
