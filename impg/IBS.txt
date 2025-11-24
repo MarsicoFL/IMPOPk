@@ -1,0 +1,13 @@
+impg similarity  --sequence-files ../data/human/HPRC_r2_assemblies_0.6.1.agc   -p ../data/human/hprc465vschm13.aln.paf.gz   -r CHM13#0#chr20:1-20000  --subset-sequence-list ibs_example.txt --force-large-region > ibs.sim
+
+We will use impg function as scaffold for detecting IBS (identity-by-state) segments. We define an IBS as a chunck for which the similarity value is 1 (the cutoff must be a parameter).
+
+Then, the function will take as an input:
+  -agc data.
+  -paf data.
+  -chr number
+  -chunk size.
+  -similarity cutoff, 1 as default.
+  -sequences name
+
+What the ibs function needs to do is iterate the impg in chunks across the whole chromosome, and clean the ouput, only preserving the similarity = 1 of the pairwise sequence analyzed. Then it has to combine chunks which are consecutive and have identity = 1.
