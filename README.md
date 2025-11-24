@@ -1,4 +1,4 @@
-# Identity-By-Descent Analysis in HPRCv2
+# Identity-By-State and Identity-By-Descent Analysis in HPRCv2
 
 Using available vcfs from HPRCv2 and public data: https://data.humanpangenome.org/raw-sequencing-data
 
