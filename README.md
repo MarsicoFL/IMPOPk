@@ -29,7 +29,7 @@ Given an SV or other variant of interest identified in an HPRC sample, find indi
 Pangenome application can be used as a framework to re-evaluate IBD inference.
 
 
-### **Exploring IBD estimation from the pangenome graph**
+### **Exploring IBS and IBD estimation from the pangenome graph**
 
 Propose defining IBD as common trajectories through the pangenome graph, rather than intervals on a linear reference. 
 We will do it in regions where vcf based IBD inference shows an enrichment (see: https://www.biorxiv.org/content/10.1101/2025.05.03.652048v1.abstract).
