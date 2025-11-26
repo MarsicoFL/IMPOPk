@@ -1,188 +1,182 @@
 #!/bin/bash
 
-# IBS Detection Script using impg similarity
-# Detects Identity-By-State segments by iterating impg across chromosome chunks
-
-set -e
-set -o pipefail
-
 # Default values
-SIMILARITY_CUTOFF=1.0
-CHUNK_SIZE=100000
-OUTPUT_FILE=""
-
-usage() {
-    cat << EOF
-Usage: $0 -a <agc> -p <paf> -c <chr> -s <sequences> [options]
-
-Required:
-    -a FILE    AGC sequence file
-    -p FILE    PAF alignment file
-    -c STRING  Chromosome (e.g., chr20)
-    -s FILE    Sequences file (one name per line)
-
-Optional:
-    -k INT     Chunk size (default: 100000)
-    -t FLOAT   Identity cutoff (default: 1.0)
-    -o FILE    Output file (default: stdout)
-    -h         Show help
-
-Example:
-    $0 -a data.agc -p data.paf.gz -c chr20 -s sequences.txt -o output.txt
-EOF
-    exit 1
-}
+SEQUENCE_FILES=""
+ALIGNMENT=""
+CUTOFF=0.95
+METRIC="cosine.similarity"
+REFERENCE="CHM13"
+REGION=""
+SIZE=10000
+SUBSET_LIST=""
+COLLAPSE="F"
+OUTPUT="output.ibs"
 
 # Parse arguments
-while getopts "a:p:c:s:k:t:o:h" opt; do
-    case $opt in
-        a) AGC_FILE="$OPTARG" ;;
-        p) PAF_FILE="$OPTARG" ;;
-        c) CHROM="$OPTARG" ;;
-        s) SEQ_FILE="$OPTARG" ;;
-        k) CHUNK_SIZE="$OPTARG" ;;
-        t) SIMILARITY_CUTOFF="$OPTARG" ;;
-        o) OUTPUT_FILE="$OPTARG" ;;
-        h) usage ;;
-        *) usage ;;
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --sequence-files)
+            SEQUENCE_FILES="$2"
+            shift 2
+            ;;
+        -a)
+            ALIGNMENT="$2"
+            shift 2
+            ;;
+        -c)
+            CUTOFF="$2"
+            shift 2
+            ;;
+        -m)
+            METRIC="$2"
+            shift 2
+            ;;
+        -r)
+            REFERENCE="$2"
+            shift 2
+            ;;
+        -region)
+            REGION="$2"
+            shift 2
+            ;;
+        -size)
+            SIZE="$2"
+            shift 2
+            ;;
+        --subset-sequence-list)
+            SUBSET_LIST="$2"
+            shift 2
+            ;;
+        --collapse)
+            COLLAPSE="$2"
+            shift 2
+            ;;
+        --output)
+            OUTPUT="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
     esac
 done
 
-# Check required arguments
-if [[ -z "$AGC_FILE" ]] || [[ -z "$PAF_FILE" ]] || [[ -z "$CHROM" ]] || [[ -z "$SEQ_FILE" ]]; then
-    echo "Error: Missing required arguments" >&2
-    usage
+# Validate required parameters
+if [[ -z "$SEQUENCE_FILES" || -z "$ALIGNMENT" || -z "$REGION" || -z "$SUBSET_LIST" ]]; then
+    echo "Error: Missing required parameters"
+    echo "Usage: ibs --sequence-files <file> -a <alignment> -region <chr> -size <size> --subset-sequence-list <list> [options]"
+    exit 1
 fi
 
-# Validate files
-for f in "$AGC_FILE" "$PAF_FILE" "$SEQ_FILE"; do
-    if [[ ! -f "$f" ]]; then
-        echo "Error: File not found: $f" >&2
+# Map metric names to column names
+case $METRIC in
+    jaccard)
+        METRIC_COL="jaccard.similarity"
+        ;;
+    cosine|cosin)
+        METRIC_COL="cosine.similarity"
+        ;;
+    dice)
+        METRIC_COL="dice.similarity"
+        ;;
+    identity)
+        METRIC_COL="estimated.identity"
+        ;;
+    *)
+        echo "Unknown metric: $METRIC"
         exit 1
-    fi
-done
+        ;;
+esac
 
-# Check tools
-if ! command -v impg &> /dev/null; then
-    echo "Error: impg not found" >&2
-    exit 1
-fi
+# Get chromosome length (this would need to be adapted to your data)
+# For now, using a placeholder - you'd need to get actual chr length
+# Example for chr1: ~248M bp
+case $REGION in
+    chr1) CHR_LENGTH=248956422 ;;
+    chr2) CHR_LENGTH=242193529 ;;
+    chr20) CHR_LENGTH=64444167 ;;
+    # Add more chromosomes as needed
+    *) 
+        echo "Warning: Unknown chromosome length for $REGION, using 250M"
+        CHR_LENGTH=250000000
+        ;;
+esac
 
-if ! command -v agc &> /dev/null; then
-    echo "Error: agc not found" >&2
-    exit 1
-fi
+# Create temporary file for raw results
+TEMP_RAW=$(mktemp)
 
-# Get chromosome length
-echo "Getting chromosome length..." >&2
-CHROM_LENGTH=$(agc listset "$AGC_FILE" | grep "CHM13#0#$CHROM:" | sed 's/.*:\([0-9]*\)-\([0-9]*\)/\2/')
+# Write header
+echo -e "chrom\tstart\tend\tgroup.a\tgroup.b" > "$OUTPUT"
 
-if [[ -z "$CHROM_LENGTH" ]]; then
-    echo "Error: Could not find CHM13#0#$CHROM" >&2
-    exit 1
-fi
-
-echo "Chromosome: CHM13#0#$CHROM (length: $CHROM_LENGTH bp)" >&2
-echo "Chunk size: $CHUNK_SIZE bp, Cutoff: $SIMILARITY_CUTOFF" >&2
-echo "" >&2
-
-# Create temporary directory
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
-
-# Step 1: Run impg similarity for each chunk
-echo "Running impg similarity..." >&2
-
-CHUNK_START=1
-CHUNK_NUM=0
-
-while [[ $CHUNK_START -le $CHROM_LENGTH ]]; do
-    CHUNK_END=$((CHUNK_START + CHUNK_SIZE - 1))
-    if [[ $CHUNK_END -gt $CHROM_LENGTH ]]; then
-        CHUNK_END=$CHROM_LENGTH
-    fi
+# Iterate over chromosome in windows
+START=1
+while [[ $START -lt $CHR_LENGTH ]]; do
+    END=$((START + SIZE))
     
-    REGION="CHM13#0#$CHROM:$CHUNK_START-$CHUNK_END"
+    # Run impg similarity for this window
+    COORD="${REFERENCE}#0#${REGION}:${START}-${END}"
     
     impg similarity \
-        --sequence-files "$AGC_FILE" \
-        -p "$PAF_FILE" \
-        -r "$REGION" \
-        --subset-sequence-list "$SEQ_FILE" \
-        --force-large-region \
-        > "$TMPDIR/chunk_${CHUNK_NUM}.txt" 2>/dev/null || true
+        --sequence-files "$SEQUENCE_FILES" \
+        -a "$ALIGNMENT" \
+        -r "$COORD" \
+        --subset-sequence-list "$SUBSET_LIST" \
+        --force-large-region 2>/dev/null | \
+    awk -v cutoff="$CUTOFF" -v metric="$METRIC_COL" '
+    BEGIN {FS=OFS="\t"}
+    NR==1 {
+        # Find the column index for the metric
+        for(i=1; i<=NF; i++) {
+            if($i == metric) metric_idx = i
+        }
+        next
+    }
+    NR>1 {
+        if($metric_idx >= cutoff) {
+            print $1, $2, $3, $4, $5
+        }
+    }
+    ' >> "$TEMP_RAW"
     
-    CHUNK_START=$((CHUNK_END + 1))
-    CHUNK_NUM=$((CHUNK_NUM + 1))
+    START=$((START + SIZE))
 done
 
-echo "Processed $CHUNK_NUM chunks" >&2
-
-# Step 2: Filter and sort
-echo "Filtering IBS segments..." >&2
-
-cat "$TMPDIR"/chunk_*.txt 2>/dev/null | \
-    awk -v cutoff="$SIMILARITY_CUTOFF" '
-    BEGIN {OFS="\t"}
-    /^chrom/ {next}
-    NF > 0 {
-        if ($12 >= cutoff && $4 != $5) {
-            if ($4 < $5) {
-                print $1, $2, $3, $4, $5
-            } else {
-                print $1, $2, $3, $5, $4
+# Apply collapse if requested
+if [[ "$COLLAPSE" == "T" || "$COLLAPSE" == "TRUE" || "$COLLAPSE" == "true" ]]; then
+    # Collapse consecutive segments with same haplotype pairs
+    awk 'BEGIN {FS=OFS="\t"}
+    NR==1 {print; next}
+    {
+        key = $4 OFS $5
+        if(key == prev_key && $2 == prev_end) {
+            # Extend current segment
+            prev_end = $3
+        } else {
+            # Print previous segment if exists
+            if(NR > 2) {
+                print prev_chr, prev_start, prev_end, prev_grp_a, prev_grp_b
             }
+            # Start new segment
+            prev_chr = $1
+            prev_start = $2
+            prev_end = $3
+            prev_grp_a = $4
+            prev_grp_b = $5
+            prev_key = key
         }
     }
-    ' | sort -k4,4 -k5,5 -k1,1 -k2,2n > "$TMPDIR/filtered.txt"
-
-echo "Found $(wc -l < "$TMPDIR/filtered.txt") segments" >&2
-
-# Step 3: Merge consecutive segments
-echo "Merging consecutive segments..." >&2
-
-awk '
-BEGIN {
-    OFS="\t"
-    print "chrom", "start", "end", "seq1", "seq2", "length"
-}
-{
-    chrom = $1
-    start = $2
-    end = $3
-    seq1 = $4
-    seq2 = $5
-    pair_key = seq1 SUBSEP seq2
-    
-    if (pair_key == prev_pair && chrom == prev_chrom && start == prev_end + 1) {
-        prev_end = end
-    } else {
-        if (NR > 1) {
-            print prev_chrom, prev_start, prev_end, prev_seq1, prev_seq2, prev_end - prev_start + 1
+    END {
+        if(NR > 1) {
+            print prev_chr, prev_start, prev_end, prev_grp_a, prev_grp_b
         }
-        prev_chrom = chrom
-        prev_start = start
-        prev_end = end
-        prev_seq1 = seq1
-        prev_seq2 = seq2
-        prev_pair = pair_key
-    }
-}
-END {
-    if (NR > 0) {
-        print prev_chrom, prev_start, prev_end, prev_seq1, prev_seq2, prev_end - prev_start + 1
-    }
-}
-' "$TMPDIR/filtered.txt" > "$TMPDIR/merged.txt"
-
-# Output
-if [[ -n "$OUTPUT_FILE" ]]; then
-    cp "$TMPDIR/merged.txt" "$OUTPUT_FILE"
-    echo "Output: $OUTPUT_FILE" >&2
+    }' "$TEMP_RAW" >> "$OUTPUT"
 else
-    cat "$TMPDIR/merged.txt"
+    # Just concatenate results
+    cat "$TEMP_RAW" >> "$OUTPUT"
 fi
 
-# Summary
-NUM_MERGED=$(tail -n +2 "$TMPDIR/merged.txt" | wc -l)
-echo "Final: $NUM_MERGED IBS segments" >&2
+# Cleanup
+rm "$TEMP_RAW"
+
+echo "IBS analysis complete. Results written to $OUTPUT"
