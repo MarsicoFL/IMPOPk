@@ -6,7 +6,7 @@ impg similarity  --sequence-files ../data/human/HPRC_r2_assemblies_0.6.1.agc   -
 
 
 
-We will use impg function as scaffold for detecting IBS (identity-by-state) segments. We define an IBS as a chunck for which the similarity value is 1 (the cutoff must be a parameter).
+We use impg function as scaffold for detecting IBS (identity-by-state) segments. We define an IBS as a chunck for which the similarity value is 1 (the cutoff must be a parameter).
 
 Then, the function will take as an input:
   -agc data.
