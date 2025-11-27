@@ -8,15 +8,13 @@ set -euo pipefail
 #   2. Run `impg similarity` in each window.
 #   3. For each window, immediately:
 #        - filter rows by estimated.identity >= cutoff
+#        - drop self-self and ref-involving comparisons
 #        - reduce to: chrom, start, end, group.a, group.b
 #        - append to output (streaming)
 #   4. Optionally collapse contiguous segments at the end.
 #
-# Notes:
-#   - IBS is defined via the `estimated.identity` column in the
-#     impg similarity output.
-#   - Streaming to the *final* output file happens when --colapse F.
-#     If --colapse T, we accumulate in a temp file, then sort+collapse.
+# IBS is defined using the `estimated.identity` column
+# from `impg similarity` output.
 
 usage() {
   cat <<EOF
@@ -174,7 +172,7 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
     -r "$REF_REGION" \
     --subset-sequence-list "$SUBSET_LIST" \
     --force-large-region | \
-  awk -v cutoff="$CUTOFF" -v add_header="$add_header" '
+  awk -v cutoff="$CUTOFF" -v add_header="$add_header" -v ref="$REF_NAME" '
     BEGIN { FS=OFS="\t" }
     NR==1 {
       # Identify columns on the header
@@ -190,15 +188,24 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
         print "ERROR: missing required columns in similarity output" > "/dev/stderr"
         exit 1
       }
-      if (add_header == "1") {
+      if (add_header == 1) {
         print "chrom","start","end","group.a","group.b"
       }
       next
     }
     {
-      if ($est+0 >= cutoff) {
-        print $c_chrom, $c_start, $c_end, $c_ga, $c_gb
-      }
+      # Apply identity threshold
+      if ($est+0 < cutoff) next
+
+      # Skip self-self comparisons
+      if ($c_ga == $c_gb) next
+
+      # Skip any comparison involving the reference (e.g. CHM13#0#...)
+      if (index($c_ga, ref "#") == 1) next
+      if (index($c_gb, ref "#") == 1) next
+
+      # Keep only "real" haplotype-haplotype comparisons
+      print $c_chrom, $c_start, $c_end, $c_ga, $c_gb
     }
   ' >> "$STREAM_TARGET"
 
@@ -208,7 +215,6 @@ done
 
 # 2) Collapse contiguous segments if requested
 if [[ "$COLLAPSE" == "T" || "$COLLAPSE" == "t" ]]; then
-  # We have all IBS rows in TMP_IBS_COLS; sort+collapse into final OUTPUT.
   {
     read header
     echo "$header"
