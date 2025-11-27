@@ -5,7 +5,7 @@ Using available vcfs from HPRCv2 and public data: https://data.humanpangenome.or
 ### **Tracing HPRC haplotypes in public cohorts**
 > *Where else does this haplotype appear?*
 
-Search for IBD segments shared between HPRC haplotypes and individuals in public datasets like 1000 Genomes, HGDP or SGDP, and also can be extended to AllofUs. It can help to estimate population frequency, geographic spread, or uniqueness of reference haplotypes.
+Search for IBD segments shared between HPRC haplotypes and individuals in genomic datasets. It can help to estimate population frequency, geographic spread, or uniqueness of reference haplotypes.
 
 
 ### **Measuring effective contribution of each haplotype**
