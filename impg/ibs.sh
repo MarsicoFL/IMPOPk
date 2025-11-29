@@ -9,9 +9,9 @@ set -euo pipefail
 #   3. For each window, immediately:
 #        - filter rows by estimated.identity >= cutoff
 #        - drop self-self and ref-involving comparisons
-#        - reduce to: chrom, start, end, group.a, group.b
+#        - drop duplicated A–B / B–A (keep canonical order)
+#        - reduce to: chrom, start, end, group.a, group.b, estimated.identity
 #        - append to output (streaming)
-#   4. Optionally collapse contiguous segments at the end.
 #
 # IBS is defined using the `estimated.identity` column
 # from `impg similarity` output.
@@ -32,8 +32,6 @@ Required:
 Optional:
   -c CUTOFF                     Cutoff on estimated.identity (default: 1.0)
   -m METRIC                     Only informational for now (default: cosin)
-  --colapse F|T                 Collapse contiguous IBS segments (default: F)
-  --collapse F|T                Alias of --colapse
   --region-length LEN           Total length of REGION if you use -region chr1
 
 Example (small region):
@@ -46,7 +44,6 @@ Example (small region):
     -region chr20:1-15000 \\
     -size 5000 \\
     --subset-sequence-list ibs_example.txt \\
-    --colapse F \\
     --output ibs_chr20_15kb.out
 EOF
 }
@@ -60,7 +57,6 @@ REF_NAME=""
 REGION=""
 WINDOW_SIZE=""
 SUBSET_LIST=""
-COLLAPSE="F"
 OUTPUT=""
 REGION_LEN=""
 
@@ -88,8 +84,6 @@ while [[ $# -gt 0 ]]; do
       WINDOW_SIZE="$2"; shift 2;;
     --subset-sequence-list)
       SUBSET_LIST="$2"; shift 2;;
-    --colapse|--collapse)
-      COLLAPSE="$2"; shift 2;;
     --output)
       OUTPUT="$2"; shift 2;;
     --region-length)
@@ -139,22 +133,12 @@ else
   REG_END="$REGION_LEN"
 fi
 
-# Temp file used only if collapsing
-TMP_IBS_COLS="$(mktemp)"
-trap 'rm -f "$TMP_IBS_COLS"' EXIT
+# Truncate output at start
+: > "$OUTPUT"
 
-# Decide where to stream per-chunk IBS
-STREAM_TARGET="$OUTPUT"
-if [[ "$COLLAPSE" == "T" || "$COLLAPSE" == "t" ]]; then
-  STREAM_TARGET="$TMP_IBS_COLS"
-fi
-
-# Truncate stream target at start
-: > "$STREAM_TARGET"
-
-# 1) Loop over windows and call impg similarity, streaming into STREAM_TARGET
+# 1) Loop over windows and call impg similarity, streaming into OUTPUT
 start_pos="$REG_START"
-add_header=1   # whether IBS header (chrom, start, end, group.a, group.b) should be printed
+add_header=1   # whether IBS header (chrom, start, end, group.a, group.b, estimated.identity) should be printed
 
 while [[ "$start_pos" -le "$REG_END" ]]; do
   end_pos=$(( start_pos + WINDOW_SIZE - 1 ))
@@ -189,7 +173,7 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
         exit 1
       }
       if (add_header == 1) {
-        print "chrom","start","end","group.a","group.b"
+        print "chrom","start","end","group.a","group.b","estimated.identity"
       }
       next
     }
@@ -204,48 +188,16 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
       if (index($c_ga, ref "#") == 1) next
       if (index($c_gb, ref "#") == 1) next
 
+      # Keep only one direction per pair (canonical lexicographic order)
+      if ($c_ga > $c_gb) next
+
       # Keep only "real" haplotype-haplotype comparisons
-      print $c_chrom, $c_start, $c_end, $c_ga, $c_gb
+      print $c_chrom, $c_start, $c_end, $c_ga, $c_gb, $est
     }
-  ' >> "$STREAM_TARGET"
+  ' >> "$OUTPUT"
 
   add_header=0
   start_pos=$(( end_pos + 1 ))
 done
 
-# 2) Collapse contiguous segments if requested
-if [[ "$COLLAPSE" == "T" || "$COLLAPSE" == "t" ]]; then
-  {
-    read header
-    echo "$header"
-    sort -k1,1 -k4,4 -k5,5 -k2,2n
-  } < "$TMP_IBS_COLS" | \
-  awk '
-    BEGIN { FS=OFS="\t" }
-    NR==1 {
-      print $0     # header
-      next
-    }
-    NR==2 {
-      prev_chrom=$1; prev_start=$2; prev_end=$3; prev_ga=$4; prev_gb=$5
-      next
-    }
-    {
-      chrom=$1; s=$2; e=$3; ga=$4; gb=$5
-      if (chrom==prev_chrom && ga==prev_ga && gb==prev_gb && s <= prev_end+1) {
-        if (e > prev_end) prev_end=e
-      } else {
-        print prev_chrom, prev_start, prev_end, prev_ga, prev_gb
-        prev_chrom=chrom; prev_start=s; prev_end=e; prev_ga=ga; prev_gb=gb
-      }
-    }
-    END {
-      if (NR >= 2) {
-        print prev_chrom, prev_start, prev_end, prev_ga, prev_gb
-      }
-    }
-  ' > "$OUTPUT"
-fi
-
 echo "IBS written to: $OUTPUT"
-
