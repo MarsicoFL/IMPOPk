@@ -201,3 +201,4 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
 done
 
 echo "IBS written to: $OUTPUT"
+
