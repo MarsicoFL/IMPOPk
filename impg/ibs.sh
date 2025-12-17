@@ -26,13 +26,13 @@ Required:
   -r REF_NAME                   Reference name (e.g. CHM13)
   -region REGION                Region, e.g. chr1:1-248956422 or chr1
   -size WINDOW_SIZE             Window size in bp
-  --subset-sequence-list FILE   Haplotypes to compare (e.g. ibs_example.txt)
   --output FILE                 Output file
 
 Optional:
   -c CUTOFF                     Cutoff on estimated.identity (default: 1.0)
   -m METRIC                     Only informational for now (default: cosin)
   --region-length LEN           Total length of REGION if you use -region chr1
+  --subset-sequence-list FILE   Haplotypes to compare (if not provided, compares all)
 
 Example (small region):
   ./ibs.sh \\
@@ -98,7 +98,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Required arguments
-for var in SEQ_FILES ALIGN REF_NAME REGION WINDOW_SIZE SUBSET_LIST OUTPUT; do
+for var in SEQ_FILES ALIGN REF_NAME REGION WINDOW_SIZE OUTPUT; do
   if [[ -z "${!var}" ]]; then
     echo "ERROR: missing required parameter: $var" >&2
     usage
@@ -150,12 +150,14 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
 
   echo "Processing window ${REF_REGION}" >&2
 
-  impg similarity \
-    --sequence-files "$SEQ_FILES" \
-    -p "$ALIGN" \
-    -r "$REF_REGION" \
-    --subset-sequence-list "$SUBSET_LIST" \
-    --force-large-region | \
+  # Build impg command with optional subset-sequence-list
+  IMPG_CMD="impg similarity --sequence-files \"$SEQ_FILES\" -a \"$ALIGN\" -r \"$REF_REGION\" --force-large-region"
+  
+  if [[ -n "$SUBSET_LIST" ]]; then
+    IMPG_CMD="$IMPG_CMD --subset-sequence-list \"$SUBSET_LIST\""
+  fi
+
+  eval "$IMPG_CMD" | \
   awk -v cutoff="$CUTOFF" -v add_header="$add_header" -v ref="$REF_NAME" '
     BEGIN { FS=OFS="\t" }
     NR==1 {
@@ -201,4 +203,3 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
 done
 
 echo "IBS written to: $OUTPUT"
-
