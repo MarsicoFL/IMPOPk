@@ -111,9 +111,6 @@ if ! command -v impg >/dev/null 2>&1; then
   exit 1
 fi
 
-# Parse REGION:
-#   chr1:1-248956422  -> explicit bounds
-#   chr1              -> requires --region-length
 REG_CHROM=""
 REG_START=""
 REG_END=""
