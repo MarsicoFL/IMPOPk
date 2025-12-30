@@ -1,0 +1,233 @@
+Sample ID,Population Abbreviation,Population Descriptor
+HG01891,ACB,African Caribbean in Barbados
+HG01123,CLM,"Colombian in Medellin, Colombia"
+HG02559,ACB,African Caribbean in Barbados
+HG02486,ACB,African Caribbean in Barbados
+HG01361,CLM,"Colombian in Medellin, Colombia"
+HG02572,GWD,Gambian in Western Division Ð Mandinka
+HG03516,ESN,Esan in Nigeria
+HG02717,GWD,Gambian in Western Division Ð Mandinka
+HG02886,GWD,Gambian in Western Division Ð Mandinka
+HG02630,GWD,Gambian in Western Division Ð Mandinka
+HG03453,MSL,Mende in Sierra Leone
+HG03579,MSL,Mende in Sierra Leone
+HG03540,GWD,Gambian in Western Division Ð Mandinka
+HG02622,GWD,Gambian in Western Division Ð Mandinka
+HG03471,MSL,Mende in Sierra Leone
+HG01928,PEL,"Peruvian in Lima, Peru"
+HG01175,PUR,Puerto Rican in Puerto Rico
+HG01106,PUR,Puerto Rican in Puerto Rico
+HG00735,PUR,Puerto Rican in Puerto Rico
+HG00438,CHS,"Han Chinese South, China"
+HG00673,CHS,"Han Chinese South, China"
+HG02257,ACB,African Caribbean in Barbados
+HG01358,CLM,"Colombian in Medellin, Colombia"
+HG01258,CLM,"Colombian in Medellin, Colombia"
+HG00733,PUR,Puerto Rican in Puerto Rico
+HG01978,PEL,"Peruvian in Lima, Peru"
+HG01952,PEL,"Peruvian in Lima, Peru"
+HG02148,PEL,"Peruvian in Lima, Peru"
+HG00741,PUR,Puerto Rican in Puerto Rico
+HG01071,PUR,Puerto Rican in Puerto Rico
+HG00621,CHS,"Han Chinese South, China"
+NA18940,JPT,"Japanese in Tokyo, Japan"
+NA18943,JPT,"Japanese in Tokyo, Japan"
+NA18944,JPT,"Japanese in Tokyo, Japan"
+NA18945,JPT,"Japanese in Tokyo, Japan"
+NA18948,JPT,"Japanese in Tokyo, Japan"
+NA18959,JPT,"Japanese in Tokyo, Japan"
+NA18960,JPT,"Japanese in Tokyo, Japan"
+NA18967,JPT,"Japanese in Tokyo, Japan"
+NA18970,JPT,"Japanese in Tokyo, Japan"
+NA18982,JPT,"Japanese in Tokyo, Japan"
+HG06807,ASL,"African Americans living in St. Louis, Missouri"
+HG00235,GBR,British from England and Scotland
+HG00253,GBR,British from England and Scotland
+HG00321,FIN,Finnish in Finland
+HG02583,GWD,Gambian in Western Division Ð Mandinka
+NA18620,CHB,"Han Chinese in Beijing, China"
+NA21110,GIH,"Gujarati Indians in Houston, Texas, USA"
+HG01109,PUR,Puerto Rican in Puerto Rico
+HG00146,GBR,British from England and Scotland
+HG00232,GBR,British from England and Scotland
+HG00290,FIN,Finnish in Finland
+HG03874,ITU,Indian Telugu in the UK
+NA19036,LWK,"Luhya in Webuye, Kenya"
+NA19443,LWK,"Luhya in Webuye, Kenya"
+NA19700,ASW,African Ancestry in Southwest USA
+NA20762,TSI,Toscani in Italia
+NA20827,TSI,Toscani in Italia
+NA21093,GIH,"Gujarati Indians in Houston, Texas, USA"
+NA21102,GIH,"Gujarati Indians in Houston, Texas, USA"
+NA21144,GIH,"Gujarati Indians in Houston, Texas, USA"
+HG00558,CHS,"Han Chinese South, China"
+HG01252,CLM,"Colombian in Medellin, Colombia"
+HG02258,ACB,African Caribbean in Barbados
+HG03834,BEB,Bengali in Bangladesh
+HG00658,CHS,"Han Chinese South, China"
+HG02514,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG03041,GWD,Gambian in Western Division Ð Mandinka
+HG03050,GWD,Gambian in Western Division Ð Mandinka
+HG03239,PJL,"Punjabi in Lahore, Pakistan"
+HG03486,MSL,Mende in Sierra Leone
+NA18906,YRI,"Yoruba in Ibadan, Nigeria"
+HG01074,PUR,Puerto Rican in Puerto Rico
+HG02818,GWD,Gambian in Western Division Ð Mandinka
+NA21309,MKK,"Maasai in Kinyawa, Kenya"
+HG00639,PUR,Puerto Rican in Puerto Rico
+HG01081,PUR,Puerto Rican in Puerto Rico
+HG01150,CLM,"Colombian in Medellin, Colombia"
+HG01940,PEL,"Peruvian in Lima, Peru"
+HG01969,PEL,"Peruvian in Lima, Peru"
+HG03017,PJL,"Punjabi in Lahore, Pakistan"
+HG002,Unspecified,Unspecified
+NA20129,ASW,African Ancestry in Southwest USA
+NA19240,YRI,"Yoruba in Ibadan, Nigeria"
+HG02273,PEL,"Peruvian in Lima, Peru"
+HG02965,ESN,Esan in Nigeria
+HG02976,ESN,Esan in Nigeria
+HG03195,ESN,Esan in Nigeria
+HG03225,MSL,Mende in Sierra Leone
+HG02080,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG02145,ACB,African Caribbean in Barbados
+HG02055,ACB,African Caribbean in Barbados
+NA18522,YRI,"Yoruba in Ibadan, Nigeria"
+HG03098,MSL,Mende in Sierra Leone
+HG03130,ESN,Esan in Nigeria
+HG03139,ESN,Esan in Nigeria
+HG03209,MSL,Mende in Sierra Leone
+NA19338,LWK,"Luhya in Webuye, Kenya"
+NA19391,LWK,"Luhya in Webuye, Kenya"
+NA19468,LWK,"Luhya in Webuye, Kenya"
+HG03470,MSL,Mende in Sierra Leone
+HG005,Unspecified,Unspecified
+HG02109,ACB,African Caribbean in Barbados
+HG00738,PUR,Puerto Rican in Puerto Rico
+HG02135,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+NA18747,CHB,"Han Chinese in Beijing, China"
+NA18971,JPT,"Japanese in Tokyo, Japan"
+NA18983,JPT,"Japanese in Tokyo, Japan"
+HG00140,GBR,British from England and Scotland
+HG00323,FIN,Finnish in Finland
+HG02040,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG02155,CDX,Chinese Dai in Xishuangbanna
+HG02165,CDX,Chinese Dai in Xishuangbanna
+HG02922,ESN,Esan in Nigeria
+HG00544,CHS,"Han Chinese South, China"
+HG00706,CHS,"Han Chinese South, China"
+HG01255,CLM,"Colombian in Medellin, Colombia"
+HG02071,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG02074,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG02132,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG02602,PJL,"Punjabi in Lahore, Pakistan"
+HG02615,GWD,Gambian in Western Division Ð Mandinka
+HG02668,GWD,Gambian in Western Division Ð Mandinka
+HG02698,PJL,"Punjabi in Lahore, Pakistan"
+HG03710,PJL,"Punjabi in Lahore, Pakistan"
+HG03804,BEB,Bengali in Bangladesh
+HG03816,BEB,Bengali in Bangladesh
+HG03942,BEB,Bengali in Bangladesh
+HG00408,CHS,"Han Chinese South, China"
+HG00597,CHS,"Han Chinese South, China"
+HG01261,CLM,"Colombian in Medellin, Colombia"
+HG01934,PEL,"Peruvian in Lima, Peru"
+HG03654,PJL,"Punjabi in Lahore, Pakistan"
+HG03669,PJL,"Punjabi in Lahore, Pakistan"
+HG03688,STU,Sri Lankan Tamil in the UK
+HG04115,STU,Sri Lankan Tamil in the UK
+HG01960,ACB,African Caribbean in Barbados
+HG01975,PEL,"Peruvian in Lima, Peru"
+HG02841,GWD,Gambian in Western Division Ð Mandinka
+HG02984,GWD,Gambian in Western Division Ð Mandinka
+HG04157,BEB,Bengali in Bangladesh
+HG04160,BEB,Bengali in Bangladesh
+HG00272,FIN,Finnish in Finland
+NA18879,YRI,"Yoruba in Ibadan, Nigeria"
+NA20809,TSI,Toscani in Italia
+NA20850,GIH,"Gujarati Indians in Houston, Texas, USA"
+HG00609,CHS,"Han Chinese South, China"
+HG00642,PUR,Puerto Rican in Puerto Rico
+HG01099,PUR,Puerto Rican in Puerto Rico
+HG01433,CLM,"Colombian in Medellin, Colombia"
+HG01993,PEL,"Peruvian in Lima, Peru"
+HG02647,GWD,Gambian in Western Division Ð Mandinka
+HG03831,BEB,Bengali in Bangladesh
+HG03927,BEB,Bengali in Bangladesh
+HG04187,BEB,Bengali in Bangladesh
+HG04199,STU,Sri Lankan Tamil in the UK
+HG04204,STU,Sri Lankan Tamil in the UK
+HG04228,STU,Sri Lankan Tamil in the UK
+NA18570,CHB,"Han Chinese in Beijing, China"
+NA19159,YRI,"Yoruba in Ibadan, Nigeria"
+NA19185,YRI,"Yoruba in Ibadan, Nigeria"
+NA20805,TSI,Toscani in Italia
+HG02391,CDX,Chinese Dai in Xishuangbanna
+HG01346,CLM,"Colombian in Medellin, Colombia"
+HG01496,CLM,"Colombian in Medellin, Colombia"
+HG01884,ACB,African Caribbean in Barbados
+HG01943,PEL,"Peruvian in Lima, Peru"
+HG02280,ACB,African Caribbean in Barbados
+HG02293,PEL,"Peruvian in Lima, Peru"
+HG02300,PEL,"Peruvian in Lima, Peru"
+HG02451,ACB,African Caribbean in Barbados
+HG02735,PJL,"Punjabi in Lahore, Pakistan"
+HG02738,PJL,"Punjabi in Lahore, Pakistan"
+HG02809,GWD,Gambian in Western Division Ð Mandinka
+HG03704,PJL,"Punjabi in Lahore, Pakistan"
+HG01981,PEL,"Peruvian in Lima, Peru"
+HG02004,PEL,"Peruvian in Lima, Peru"
+HG04184,BEB,Bengali in Bangladesh
+HG00126,GBR,British from England and Scotland
+HG00133,GBR,British from England and Scotland
+HG01167,PUR,Puerto Rican in Puerto Rico
+HG01192,PUR,Puerto Rican in Puerto Rico
+NA18508,YRI,"Yoruba in Ibadan, Nigeria"
+NA19087,JPT,"Japanese in Tokyo, Japan"
+NA20752,TSI,Toscani in Italia
+HG00099,GBR,British from England and Scotland
+HG00280,FIN,Finnish in Finland
+HG01530,IBS,Iberian Populations in Spain
+HG01784,IBS,Iberian Populations in Spain
+NA19043,LWK,"Luhya in Webuye, Kenya"
+NA20799,TSI,Toscani in Italia
+NA20905,GIH,"Gujarati Indians in Houston, Texas, USA"
+HG03742,ITU,Indian Telugu in the UK
+HG03369,ESN,Esan in Nigeria
+NA18565,CHB,"Han Chinese in Beijing, China"
+HG02015,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG02056,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG02129,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG03784,ITU,Indian Telugu in the UK
+HG00329,FIN,Finnish in Finland
+HG00350,FIN,Finnish in Finland
+HG03270,ESN,Esan in Nigeria
+HG03521,ESN,Esan in Nigeria
+NA18505,YRI,"Yoruba in Ibadan, Nigeria"
+NA19776,MXL,"Mexican Ancestry in Los Angeles, California, USA"
+NA21106,GIH,"Gujarati Indians in Houston, Texas, USA"
+HG00097,GBR,British from England and Scotland
+HG00344,FIN,Finnish in Finland
+HG02392,CDX,Chinese Dai in Xishuangbanna
+HG03583,MSL,Mende in Sierra Leone
+NA18608,CHB,"Han Chinese in Beijing, China"
+NA19835,ASW,African Ancestry in Southwest USA
+NA19909,ASW,African Ancestry in Southwest USA
+NA20870,GIH,"Gujarati Indians in Houston, Texas, USA"
+HG01786,IBS,Iberian Populations in Spain
+NA18952,JPT,"Japanese in Tokyo, Japan"
+NA18974,JPT,"Japanese in Tokyo, Japan"
+NA19682,MXL,"Mexican Ancestry in Los Angeles, California, USA"
+NA20346,ASW,African Ancestry in Southwest USA
+HG00128,GBR,British from England and Scotland
+HG00423,CHS,"Han Chinese South, China"
+HG02027,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG02083,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG02523,KHV,"Kinh in Ho Chi Minh City, Vietnam"
+HG00320,FIN,Finnish in Finland
+HG02178,CDX,Chinese Dai in Xishuangbanna
+NA18976,JPT,"Japanese in Tokyo, Japan"
+NA20282,ASW,African Ancestry in Southwest USA
+NA20503,TSI,Toscani in Italia
+NA20806,TSI,Toscani in Italia
+HG01243,PUR,Puerto Rican in Puerto Rico
+HG02723,GWD,Gambian in Western Division Ð Mandinka
