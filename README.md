@@ -1,26 +1,37 @@
 # Identity-By-State and Identity-By-Descent Analysis in HPRCv2
 
-Using available vcfs from HPRCv2 and public data: https://data.humanpangenome.org/raw-sequencing-data
+We use public HPRC assemblies plus impg-based similarity to explore IBS/IBD
+relationships between haplotypes. The repository now separates reporting assets
+from production tooling so each can evolve independently.
 
-### **Tracing HPRC haplotypes in public cohorts**
-> *Where else does this haplotype appear?*
+## Repository layout
+- `production/ibs-cli/` – Rust CLI (`cargo run -- --help`) together with the
+  operational bash wrappers for large impg jobs and Jacquard summaries. See
+  `production/ibs-cli/README.md`.
+- `analysis/ibd-network/` – exploratory notebooks and lightweight scripts used
+  while drafting HPRC reports. Documentation lives in `analysis/ibd-network/README.md`.
+- `docs/reports/` – published artifacts that were delivered to the HPRC
+  consortium (PDFs, slide decks, etc.).
+- `data/` – small metadata tracked in git. Large AGC/PAF inputs are expected to
+  live in sibling folders under `data/` but are not committed; point the scripts
+  at your local copies via CLI flags or environment variables.
 
-Search for IBD segments shared between HPRC haplotypes and individuals in genomic datasets. It can help to estimate population frequency, geographic spread, or uniqueness of reference haplotypes.
+## Production IBS/IBD tooling
+1. `cd production/ibs-cli`.
+2. Build the Rust CLI: `cargo build --release`.
+3. Run the streaming IBS caller either via the Rust binary (`cargo run -- ...`)
+   or the bash wrapper `scripts/ibs.sh`.
+4. Use `scripts/run_full.sh` when you want to tile a chromosome into windows and
+   dispatch multiple workers via GNU Parallel. Override defaults with env vars
+   (e.g. `AGC=/path/to.agc CHR=chr7 scripts/run_full.sh`).
+5. Feed the resulting IBS windows to `scripts/ibd.sh` or
+   `scripts/jacquard_coeffs.sh` for IBD calling and Jacquard deltas.
 
+## Analysis and reporting assets
+- Notebooks plus helper scripts live under `analysis/ibd-network`. They consume
+  the per-window IBS tables generated above and were the source for the deliverables stored in `docs/reports/` (e.g. `HPRCv2_IBD.pdf`).
+- Keep heavyweight raw data out of git; drop them under `data/` or supply
+  explicit paths when executing the scripts.
 
-### **Measuring effective contribution of each haplotype**
-> *How much variation does this sample really add?*
-
-Use IBD to assess how genealogically redundant each haplotype is relative to the panel. It can be used for estimating unique haplotypic content. Can be integrated with diversity summaries from PCA/FST. Also, it can provide a framework for selecting new samples (which haplotype information is not covered) from different projects, such as All of Us.
-
----
-
-## Dev
-
-Pangenome application can be used as a framework to re-evaluate IBD inference.
-
-
-### **Exploring IBS and IBD estimation from the pangenome graph**
-
-Propose defining IBD as common trajectories through the pangenome graph, rather than intervals on a linear reference. 
-We are using impg as a scaffold for IBS and IBD detection. This is part of impop.
+This split should make it easier to add tests/CI for the production pipeline
+while keeping exploratory work organized for future HPRC reports.
