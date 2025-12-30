@@ -19,13 +19,18 @@ from production tooling so each can evolve independently.
 ## Production IBS/IBD tooling
 1. `cd production/ibs-cli`.
 2. Build the Rust CLI: `cargo build --release`.
-3. Run the streaming IBS caller either via the Rust binary (`cargo run -- ...`)
-   or the bash wrapper `scripts/ibs.sh`.
+3. Run the streaming IBS caller via `cargo run --bin ibs -- ...` or the bash
+   wrapper `scripts/ibs.sh`.
 4. Use `scripts/run_full.sh` when you want to tile a chromosome into windows and
    dispatch multiple workers via GNU Parallel. Override defaults with env vars
    (e.g. `AGC=/path/to.agc CHR=chr7 scripts/run_full.sh`).
-5. Feed the resulting IBS windows to `scripts/ibd.sh` or
-   `scripts/jacquard_coeffs.sh` for IBD calling and Jacquard deltas.
+5. Feed the resulting IBS windows to either the Rust Jacquard port (`cargo run
+   --bin jacquard -- ...`) or the legacy bash script
+   `scripts/jacquard_coeffs.sh` for Delta summaries, and continue with
+   `scripts/ibd.sh` for HMM-based IBD calling when needed.
+6. For new utilities start in Bash/Python, describe the CLI contract in
+   `tests/parity/*.toml`, and rely on `cargo test --test parity` to guarantee
+   that the eventual Rust binary matches the prototype. See `docs/PORTING.md`.
 
 ## Analysis and reporting assets
 - Notebooks plus helper scripts live under `analysis/ibd-network`. They consume

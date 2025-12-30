@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
+"""IBD segment calling prototypes used in the network analysis notebooks."""
 
-import sys, csv, argparse
+import argparse
+import csv
+import sys
 from collections import defaultdict, namedtuple
 
 Row = namedtuple("Row", "region chr start end length a b ident")
 
 def parse_table(path, identity_col="estimated.identity"):
+    """Load the per-window or per-region pairwise identities produced by impg."""
     req = {"REGION","CHR","START","END","LENGTH","group.a","group.b",identity_col}
     rows = []
     with open(path, newline="") as fh:
@@ -32,9 +36,11 @@ def parse_table(path, identity_col="estimated.identity"):
     return rows
 
 def pair_key(a,b):
+    """Return an ordered key for the unordered pair (A,B)."""
     return (a,b) if a<=b else (b,a)
 
 def build_windows(rows):
+    """Generate a canonical list of windows per chromosome for indexing segments."""
     # one ordered list per chromosome (keeps windows contiguous by chr)
     uniq = defaultdict(dict)  # chr -> {(start,end,length): None}
     for r in rows:
@@ -49,6 +55,7 @@ def build_windows(rows):
     return wins_by_chr, index_by_chr
 
 def build_pair_tracks(rows, index_by_chr):
+    """Collapse the giant table into ordered tracks per (pair, chromosome)."""
     # per pair -> per chr -> list of (win_idx, ident)
     tracks = defaultdict(lambda: defaultdict(list))
     for r in rows:
@@ -63,7 +70,7 @@ def build_pair_tracks(rows, index_by_chr):
 
 def rle_segments_for_pair(track_list, wins, min_id, max_gap, min_windows, min_len_bp,
                           treat_missing_as_gap=True, drop_tolerance=0.0):
-    """Simple run-length thresholding with gap tolerance (works on one chr)."""
+    """Simple run-length thresholding with a configurable gap tolerance."""
     ident_by_idx = {idx:ident for idx,ident,_ in track_list}
     segments = []
     n_wins_total = len(wins)
@@ -123,9 +130,10 @@ def rle_segments_for_pair(track_list, wins, min_id, max_gap, min_windows, min_le
 def seed_extend_segments_for_pair(track_list, wins, seed_thr, seed_k,
                                   ext_thr, xdrop, reward, pen_bad, pen_miss,
                                   min_windows, min_len_bp, treat_missing_as_gap=True):
-    """Seed-and-extend (x-drop) per chromosome: 
-       1) find seeds = runs of >= seed_k windows with ident >= seed_thr
-       2) extend left/right using x-drop on a simple scoring scheme
+    """Seed-and-extend (x-drop) per chromosome.
+
+    1) Find seeds = runs of >= seed_k windows with identity >= seed_thr.
+    2) Extend left/right using a simple scoring scheme with x-drop termination.
     """
     ident_by_idx = {idx:ident for idx,ident,_ in track_list}
     n = len(wins)
@@ -222,6 +230,7 @@ def seed_extend_segments_for_pair(track_list, wins, seed_thr, seed_k,
     return segments
 
 def summarize_segment(s, e, wins, ident_by_idx):
+    """Aggregate a contiguous block of windows into a single segment summary."""
     start_bp = wins[s].start; end_bp = wins[e].end
     n_windows = e - s + 1
     covered_bp = sum(w.length for w in wins[s:e+1])
@@ -241,6 +250,7 @@ def summarize_segment(s, e, wins, ident_by_idx):
     }
 
 def merge_segments(segs, wins):
+    """Merge overlapping/adjacent segments for cleaner output."""
     if not segs: return []
     segs = sorted(segs, key=lambda s:(s["chr"], s["start"], s["end"]))
     out = [segs[0]]
@@ -257,6 +267,7 @@ def merge_segments(segs, wins):
 
 def finalize_segment(current, wins, called, ident_sum, min_ident,
                      min_windows, min_len_bp, gaps_allowed=0, **kwargs):
+    """Check whether the current run satisfies filters and return its summary."""
     s = current["start_idx"]; e = current["end_idx"]
     n_windows = e - s + 1
     start_bp = wins[s].start; end_bp = wins[e].end
@@ -279,6 +290,8 @@ def finalize_segment(current, wins, called, ident_sum, min_ident,
     return None
 
 def main():
+    """CLI entry-point used from notebooks as well as unit tests."""
+
     ap = argparse.ArgumentParser(description="Call IBD segments from per-window pairwise identities")
     ap.add_argument("pairwise_tsv", help="Output of run_pairwise_impg.sh")
     ap.add_argument("--mode", choices=["rle","seed"], default="seed",

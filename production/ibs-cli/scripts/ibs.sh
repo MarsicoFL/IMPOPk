@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ibs: wrapper around `impg similarity` to obtain IBS segments.
+# -----------------------------------------------------------------------------
+# Streaming `impg similarity` wrapper.
 #
-# Pipeline:
-#   1. Slide a window across a reference chromosome.
-#   2. Run `impg similarity` in each window.
-#   3. For each window, immediately:
-#        - filter rows by estimated.identity >= cutoff
-#        - drop self-self and ref-involving comparisons
-#        - drop duplicated A–B / B–A (keep canonical order)
-#        - reduce to: chrom, start, end, group.a, group.b, estimated.identity
-#        - append to output (streaming)
+# The Bash version mirrors the Rust binary under `production/ibs-cli`. It is
+# kept around for prototyping and for parity tests. The pipeline:
+#   1. Slide a fixed-size window across a reference chromosome.
+#   2. Call `impg similarity` on each region.
+#   3. Filter/normalize the output immediately and append it to a TSV stream.
 #
-# IBS is defined using the `estimated.identity` column
-# from `impg similarity` output.
+# Windows are non-overlapping and processed sequentially, which keeps the peak
+# memory footprint low and makes it straightforward to tee the results into
+# other pipelines. This script intentionally accepts the same flags as the Rust
+# binary so we can share documentation and automated parity tests.
+# -----------------------------------------------------------------------------
 
 usage() {
   cat <<EOF
@@ -48,7 +48,7 @@ Example (small region):
 EOF
 }
 
-# Parameters
+# --- CLI argument defaults ---------------------------------------------------
 SEQ_FILES=""
 ALIGN=""
 CUTOFF="1.0"
@@ -65,7 +65,7 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
-# Argument parsing
+# --- CLI argument parsing ----------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --sequence-files)
@@ -133,7 +133,8 @@ fi
 # Truncate output at start
 : > "$OUTPUT"
 
-# 1) Loop over windows and call impg similarity, streaming into OUTPUT
+# --- Sliding window execution ------------------------------------------------
+# Build non-overlapping windows and stream each `impg similarity` call.
 start_pos="$REG_START"
 add_header=1   # whether IBS header (chrom, start, end, group.a, group.b, estimated.identity) should be printed
 
