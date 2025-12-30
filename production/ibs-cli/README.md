@@ -1,8 +1,9 @@
 # IBS CLI and Production Scripts
 
-This directory encapsulates the "production" side of the project: the Rust CLI
-(`ibs`) plus the operational shell scripts that wrap `impg similarity` for large
-runs and Jacquard coefficient summaries.
+`production/ibs-cli/` hosts the production-ready tooling used to generate IBS
+windows and downstream summaries. The Rust binaries and shell wrappers share the
+same CLI surface so researchers can prototype in Bash/Python and transition into
+Rust when necessary.
 
 - `src/` and `Cargo.toml`: the Rust crate hosts multiple binaries. Today we ship
   the original streaming IBS caller (`cargo run --bin ibs -- --help`) and a
@@ -30,5 +31,5 @@ is implemented in `tests/parity.rs`. See `docs/PORTING.md` for the full
 workflow. Once you add a spec you can run `cargo test --test parity` to ensure
 the legacy script and the Rust binary produce identical stdout/stderr.
 
-By treating this production stack as an isolated package we can add CI/tests in
-one place without disturbing exploratory notebooks.
+Treating this production stack as an isolated package keeps CI/tests focused in
+one location while leaving exploratory notebooks untouched.
