@@ -1,8 +1,9 @@
 # Identity-By-State and Identity-By-Descent Analysis in HPRCv2
 
-We use public HPRC assemblies plus impg-based similarity to explore IBS/IBD
-relationships between haplotypes. The repository now separates reporting assets
-from production tooling so each can evolve independently.
+Public HPRC assemblies plus impg-based similarity provide the raw material for
+exploring Identity-By-State (IBS) and Identity-By-Descent (IBD) connections
+between haplotypes. The repository separates production tooling, exploratory
+analyses, and published reports so that each area can evolve independently.
 
 ## Repository layout
 - `production/ibs-cli/` – Rust CLI (`cargo run -- --help`) together with the
@@ -34,9 +35,10 @@ from production tooling so each can evolve independently.
 
 ## Analysis and reporting assets
 - Notebooks plus helper scripts live under `analysis/ibd-network`. They consume
-  the per-window IBS tables generated above and were the source for the deliverables stored in `docs/reports/` (e.g. `HPRCv2_IBD.pdf`).
-- Keep heavyweight raw data out of git; drop them under `data/` or supply
+  the per-window IBS tables generated above and produced the deliverables stored
+  in `docs/reports/` (e.g. `HPRCv2_IBD.pdf`).
+- Keep heavyweight raw data out of git; store them under `data/` or supply
   explicit paths when executing the scripts.
 
-This split should make it easier to add tests/CI for the production pipeline
-while keeping exploratory work organized for future HPRC reports.
+Each area in this layout focuses on a single audience: production code with
+tests, repeatable analysis notebooks, and published reports for broader review.
