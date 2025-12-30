@@ -1,13 +1,17 @@
 #!/bin/bash
 set -euo pipefail
 
-# Paths (adjust as needed)
-PAF_FILE="../data/hprc465vschm13.aln.paf.gz"
-SEQUENCE_FILES="../data/HPRC_r2_assemblies_0.6.1.agc"
-REGION_PREFIX="CHM13#0#"
-SUBSET_LIST=""
-OUTPUT_FILE=""
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(cd "${SCRIPT_DIR}/../.." && pwd)
+DEFAULT_DATA_DIR="${REPO_ROOT}/data"
+
+PAF_FILE="${PAF_FILE:-${DEFAULT_DATA_DIR}/hprc465vschm13.aln.paf.gz}"
+SEQUENCE_FILES="${SEQUENCE_FILES:-${DEFAULT_DATA_DIR}/HPRC_r2_assemblies_0.6.1.agc}"
+REGION_PREFIX="${REGION_PREFIX:-CHM13#0#}"
+SUBSET_LIST="${SUBSET_LIST:-}"
+OUTPUT_FILE="${OUTPUT_FILE:-}"
 VERBOSE=""
+BED_FILE=""
 
 usage() {
   cat <<USAGE
@@ -16,7 +20,8 @@ Emit all pairwise identities per window as returned by 'impg similarity', plus
 REGION/CHR/START/END/LENGTH:
   REGION CHR START END LENGTH group.a group.b estimated.identity
 Notes:
-- Mirrors the style of existing wrappers (region prefix, subset, etc.).
+- Defaults assume reference data lives in \
+  ${DEFAULT_DATA_DIR} (override with env vars or flags).
 - Recommended window size for 'impg similarity': <=10kb.
 USAGE
   exit 1
@@ -36,11 +41,11 @@ while getopts "b:p:s:u:P:o:vh" opt; do
   esac
 done
 
-[ -z "${BED_FILE:-}" ] && { echo "Error: -b <bed> is required" >&2; usage; }
+[ -z "$BED_FILE" ] && { echo "Error: -b <bed> is required" >&2; usage; }
 [ -f "$BED_FILE" ] || { echo "Error: BED '$BED_FILE' not found" >&2; exit 1; }
 [ -f "$PAF_FILE" ] || { echo "Error: PAF '$PAF_FILE' not found" >&2; exit 1; }
 [ -f "$SEQUENCE_FILES" ] || { echo "Error: AGC '$SEQUENCE_FILES' not found" >&2; exit 1; }
-[ -z "${SUBSET_LIST}" ] || [ -f "$SUBSET_LIST" ] || { echo "Error: subset '$SUBSET_LIST' not found" >&2; exit 1; }
+[ -z "$SUBSET_LIST" ] || [ -f "$SUBSET_LIST" ] || { echo "Error: subset '$SUBSET_LIST' not found" >&2; exit 1; }
 
 out="${OUTPUT_FILE:-/dev/stdout}"
 tmp=$(mktemp)
