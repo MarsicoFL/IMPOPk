@@ -1,29 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ibd: wrapper around `impg similarity` + HMM to obtain IBD segments.
+# -----------------------------------------------------------------------------
+# ibd.sh – glue `impg similarity` and a lightweight HMM for IBD calling.
 #
-# Pipeline:
-#   1. Slide a window across a reference chromosome.
-#   2. Run `impg similarity` in each window.
-#   3. For each window:
-#        - keep ALL rows from similarity output (no identity cutoff)
-#        - drop self–self and ref-involving comparisons
-#        - drop duplicated A–B / B–A (keep canonical order)
-#        - reduce to: chrom, start, end, group.a, group.b, estimated.identity
-#   4. After all windows:
-#        - run an HMM (in R) per (chrom, group.a, group.b)
-#        - call IBD segments along the chromosome
-#
-# The HMM:
-#   - States: S=1 (no-IBD), S=2 (IBD)
-#   - Observations: estimated.identity in [0,1]
-#   - Emissions: Gaussian per estado, parámetros inferidos con k-means sobre identity
-#   - Transiciones: constantes por ventana, con longitud esperada de segmento IBD
-#
-# Requiere:
-#   - impg en $PATH
-#   - Rscript en $PATH
+# This bash pipeline predates the Rust CLI but remains useful for experimentation
+# and serves as the truth-table for the parity tests. It keeps the per-window
+# streaming behavior and delegates the segment calling to a compact HMM written
+# in R. The documentation here mirrors the README so that researchers can stay
+# in the shell without referencing external docs.
+# -----------------------------------------------------------------------------
 
 usage() {
   cat <<EOF
@@ -76,7 +62,7 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
-# Argument parsing
+# --- CLI argument parsing ----------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --sequence-files)
@@ -110,6 +96,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# --- Input validation -------------------------------------------------------
+# Ensure the user provided the minimum information required to launch impg.
 # Required arguments
 for var in SEQ_FILES ALIGN REF_NAME REGION WINDOW_SIZE SUBSET_LIST OUTPUT; do
   if [[ -z "${!var}" ]]; then
@@ -438,4 +426,3 @@ write.table(seg_df, file = output, quote = FALSE, sep = "\t", row.names = FALSE)
 RSCRIPT
 
 echo "IBD segments written to: $OUTPUT"
-

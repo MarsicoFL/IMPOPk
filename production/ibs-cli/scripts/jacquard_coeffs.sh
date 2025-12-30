@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# -----------------------------------------------------------------------------
+# jacquard_coeffs.sh – derive Jacquard Delta coefficients from IBS windows.
+#
+# This script is the canonical implementation used for validating the Rust
+# port. It expects a tabular IBS window file sorted by genomic position and the
+# identifiers for the two diploid samples of interest. Each window is mapped to
+# one of the nine Jacquard states and summarized at the end.
+# -----------------------------------------------------------------------------
+
 usage() {
   cat <<EOF
 Usage: $(basename "$0") --ibs IBS.tsv \\
@@ -33,6 +42,7 @@ HAP_A2=""
 HAP_B1=""
 HAP_B2=""
 
+# --- CLI argument parsing ----------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --ibs)    IBS_FILE="$2"; shift 2 ;;
@@ -54,6 +64,9 @@ if [[ -z "$IBS_FILE" || -z "$HAP_A1" || -z "$HAP_A2" || -z "$HAP_B1" || -z "$HAP
   exit 1
 fi
 
+# --- Core classification ----------------------------------------------------
+# Sort the file once to guarantee deterministic processing before feeding it to
+# the AWK classifier.
 sort -k1,1 -k2,2n -k3,3n "$IBS_FILE" | \
 awk -v A1="$HAP_A1" -v A2="$HAP_A2" -v B1="$HAP_B1" -v B2="$HAP_B2" '
 BEGIN {
@@ -305,4 +318,3 @@ function classify_state(nb, blk, size,   i,j,arr,nTok,aCount,bCount, bA, bB, pai
   return 0;
 }
 '
-
