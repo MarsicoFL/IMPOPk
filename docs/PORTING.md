@@ -1,8 +1,8 @@
 # Porting Shell/Python Prototypes into `ibs-cli`
 
-We often start experiments as short Bash or Python scripts. The `ibs-cli`
-package now ships with a repeatable framework that 1) records the contract of a
-script, 2) scaffolds a Rust port, and 3) continuously tests that both
+Experimental ideas typically begin as short Bash or Python scripts. The
+`ibs-cli` package includes a repeatable framework that (1) records the contract
+of a script, (2) scaffolds a Rust port, and (3) continuously tests that both
 implementations behave the same.
 
 ## Workflow overview
@@ -22,9 +22,9 @@ implementations behave the same.
    their stdout/stderr/exit codes match. Specs double as machine-readable
    documentation and allow us to extend coverage gradually.
 
-With this setup you can keep iterating in shell/Python while the Rust binary is
-being developed. Once the parity tests pass the legacy script can be removed (or
-kept for user familiarity) knowing that CI will guard against regressions.
+This workflow allows fast iteration in shell/Python while the Rust binary is
+under development. Once the parity tests pass, the legacy script can be removed
+(or kept for familiarity) knowing that CI guards against regressions.
 
 ## Spec format
 ```toml

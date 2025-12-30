@@ -1,11 +1,9 @@
 # Haplotype-Based IBS/IBD Analysis for HPRCv2
 
-This repository keeps the tooling that powers the upcoming HPRC reports focused
-on haplotype matching. We rely on `impg` to scan selected windows across HPRC
-assemblies, measure identity-by-state (IBS) between every pair of haplotypes,
-and summarize the IBS tiles into identity-by-descent (IBD) calls. The aim is to
-keep a consistent impg-centered workflow so ongoing studies can mix VCF-derived
-and haplotype-derived evidence without extra glue code.
+Public HPRC assemblies plus impg-based similarity provide the raw material for
+exploring Identity-By-State (IBS) and Identity-By-Descent (IBD) connections
+between haplotypes. The repository separates production tooling, exploratory
+analyses, and published reports so that each area can evolve independently.
 
 ## What we are doing
 - define window tilings per chromosome and stream `impg` similarity over them;
@@ -26,18 +24,12 @@ research updates shared with the consortium.
 4. Consume the output from notebooks under `analysis/ibd-network` to update the
    HPRC report decks in `docs/reports`.
 
-Override defaults with environment variables such as `AGC`, `CHR`, or
-`WINDOW_SIZE` so the same script set can operate on local copies of the HPRC
-assemblies. Large AGC/PAF inputs are never checked into git—place them under
-`data/` or point the CLI flags to an external location.
+## Analysis and reporting assets
+- Notebooks plus helper scripts live under `analysis/ibd-network`. They consume
+  the per-window IBS tables generated above and produced the deliverables stored
+  in `docs/reports/` (e.g. `HPRCv2_IBD.pdf`).
+- Keep heavyweight raw data out of git; store them under `data/` or supply
+  explicit paths when executing the scripts.
 
-## Repository layout
-- `production/ibs-cli/` – Rust CLI plus bash wrappers for impg jobs and Jacquard
-  reductions. `cargo test --test parity` guards prototypes vs. Rust ports.
-- `analysis/ibd-network/` – notebooks and small helpers that read the IBS/IBD
-  tables and prepare figures for the consortium.
-- `docs/reports/` – shipped report artifacts (PDFs, slide decks, etc.).
-- `data/` – lightweight metadata kept in git; drop heavy reference data beside
-  it locally.
-Together these pieces cover how we run impg-based IBS window scans, connect them
-to IBD calls, and study the results for the next HPRCv2 iterations.
+Each area in this layout focuses on a single audience: production code with
+tests, repeatable analysis notebooks, and published reports for broader review.
