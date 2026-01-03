@@ -1,5 +1,32 @@
 # Build artifacts
 **/target/
+Cargo.lock
 
-# Misc
+# Development notes (internal)
+progress.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Test outputs
+*.out
+*.log
+test_*.tsv
+
+# Temporary
+tmp/
+temp/
+*.tmp
