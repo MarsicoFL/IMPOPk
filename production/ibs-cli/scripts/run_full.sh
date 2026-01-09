@@ -64,7 +64,18 @@ CMD="./ibs.sh --sequence-files '$AGC' -a '$PAF' -c 0.99999 -m cosin -r '$REF' \
   -region '$CHR':{1}-{2} -size '$SIZE' --subset-sequence-list '$SUB' \
   --output $TMPDIR/ibs_part_{#}.out"
 
-parallel -j "$JOBS" --colsep '\t' "$CMD" :::: "$REGIONS_FILE"
+if ! parallel -j "$JOBS" --colsep '\t' "$CMD" :::: "$REGIONS_FILE"; then
+  echo "ERROR: one or more parallel jobs failed" >&2
+  exit 1
+fi
+
+# Verify all expected output files exist
+for i in $(seq 1 "$JOBS"); do
+  if [[ ! -f "$TMPDIR/ibs_part_${i}.out" ]]; then
+    echo "ERROR: missing output file for job $i" >&2
+    exit 1
+  fi
+done
 
 # --- Merge ------------------------------------------------------------------
 cat "$TMPDIR"/ibs_part_*.out | sort -k1,1 -k2,2n -k3,3n > "$CLI_ROOT/ibs_for_ibd.out"

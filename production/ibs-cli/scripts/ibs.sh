@@ -111,6 +111,16 @@ if ! command -v impg >/dev/null 2>&1; then
   exit 1
 fi
 
+# Validate output directory exists and is writable
+OUTPUT_DIR=$(dirname "$OUTPUT")
+if [[ ! -d "$OUTPUT_DIR" ]]; then
+  mkdir -p "$OUTPUT_DIR" || { echo "ERROR: cannot create output directory: $OUTPUT_DIR" >&2; exit 1; }
+fi
+if [[ ! -w "$OUTPUT_DIR" ]]; then
+  echo "ERROR: output directory is not writable: $OUTPUT_DIR" >&2
+  exit 1
+fi
+
 REG_CHROM=""
 REG_START=""
 REG_END=""
@@ -155,7 +165,7 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
     IMPG_CMD="$IMPG_CMD --subset-sequence-list \"$SUBSET_LIST\""
   fi
 
-  eval "$IMPG_CMD" | \
+  if ! eval "$IMPG_CMD" | \
   awk -v cutoff="$CUTOFF" -v add_header="$add_header" -v ref="$REF_NAME" '
     BEGIN { FS=OFS="\t" }
     NR==1 {
@@ -194,7 +204,10 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
       # Keep only "real" haplotype-haplotype comparisons
       print $c_chrom, $c_start, $c_end, $c_ga, $c_gb, $est
     }
-  ' >> "$OUTPUT"
+  ' >> "$OUTPUT"; then
+    echo "ERROR: impg/awk pipeline failed for window ${REF_REGION}" >&2
+    exit 1
+  fi
 
   add_header=0
   start_pos=$(( end_pos + 1 ))

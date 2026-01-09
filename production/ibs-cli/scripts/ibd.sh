@@ -117,6 +117,16 @@ if ! command -v Rscript >/dev/null 2>&1; then
   exit 1
 fi
 
+# Validate output directory exists and is writable
+OUTPUT_DIR=$(dirname "$OUTPUT")
+if [[ ! -d "$OUTPUT_DIR" ]]; then
+  mkdir -p "$OUTPUT_DIR" || { echo "ERROR: cannot create output directory: $OUTPUT_DIR" >&2; exit 1; }
+fi
+if [[ ! -w "$OUTPUT_DIR" ]]; then
+  echo "ERROR: output directory is not writable: $OUTPUT_DIR" >&2
+  exit 1
+fi
+
 # Parse REGION:
 #   chr1:1-248956422  -> explicit bounds
 #   chr1              -> requires --region-length
@@ -169,7 +179,7 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
 
   echo "Processing window ${REF_REGION}" >&2
 
-  impg similarity \
+  if ! impg similarity \
     --sequence-files "$SEQ_FILES" \
     -p "$ALIGN" \
     -r "$REF_REGION" \
@@ -212,7 +222,10 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
       # Output per-window identity
       print $c_chrom, $c_start, $c_end, $c_ga, $c_gb, $est
     }
-  ' >> "$IBS_OUTPUT"
+  ' >> "$IBS_OUTPUT"; then
+    echo "ERROR: impg/awk pipeline failed for window ${REF_REGION}" >&2
+    exit 1
+  fi
 
   add_header=0
   start_pos=$(( end_pos + 1 ))
