@@ -31,7 +31,7 @@ research updates.
 - Keep heavyweight raw data out of git; store them under `data/` or supply
   explicit paths when executing the scripts.
 
-## Where the data is?
+## Where the data are?
 
 1. **sequences in agc format:** 
 
