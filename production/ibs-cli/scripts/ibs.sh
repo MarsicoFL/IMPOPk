@@ -1,28 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# -----------------------------------------------------------------------------
-# Streaming `impg similarity` wrapper.
-#
-# The Bash version mirrors the Rust binary under `production/ibs-cli`. It is
-# kept around for prototyping and for parity tests. The pipeline:
-#   1. Slide a fixed-size window across a reference chromosome.
-#   2. Call `impg similarity` on each region.
-#   3. Filter/normalize the output immediately and append it to a TSV stream.
-#
-# Windows are non-overlapping and processed sequentially, which keeps the peak
-# memory footprint low and makes it straightforward to tee the results into
-# other pipelines. This script intentionally accepts the same flags as the Rust
-# binary so we can share documentation and automated parity tests.
-# -----------------------------------------------------------------------------
-
 usage() {
   cat <<EOF
 Usage: ibs [options]
 
 Required:
   --sequence-files FILE         Sequence file(s) for impg (e.g. .agc)
-  -a ALIGN_PAF                  Alignment file (.paf/.paf.gz/.1aln) [passed to impg as -p]
+  -a ALIGN_PAF                  Alignment file (.paf/.paf.gz/.1aln)
   -r REF_NAME                   Reference name (e.g. CHM13)
   -region REGION                Region, e.g. chr1:1-248956422 or chr1
   -size WINDOW_SIZE             Window size in bp
@@ -34,21 +19,17 @@ Optional:
   --region-length LEN           Total length of REGION if you use -region chr1
   --subset-sequence-list FILE   Haplotypes to compare (if not provided, compares all)
 
-Example (small region):
+Example:
   ./ibs.sh \\
     --sequence-files ../data/human/HPRC_r2_assemblies_0.6.1.agc \\
     -a ../data/human/hprc465vschm13.aln.paf.gz \\
-    -c 1.0 \\
-    -m cosin \\
-    -r CHM13 \\
-    -region chr20:1-15000 \\
-    -size 5000 \\
+    -c 1.0 -m cosin -r CHM13 \\
+    -region chr20:1-15000 -size 5000 \\
     --subset-sequence-list ibs_example.txt \\
     --output ibs_chr20_15kb.out
 EOF
 }
 
-# --- CLI argument defaults ---------------------------------------------------
 SEQ_FILES=""
 ALIGN=""
 CUTOFF="1.0"
@@ -65,7 +46,6 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
-# --- CLI argument parsing ----------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --sequence-files)
@@ -97,7 +77,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Required arguments
 for var in SEQ_FILES ALIGN REF_NAME REGION WINDOW_SIZE OUTPUT; do
   if [[ -z "${!var}" ]]; then
     echo "ERROR: missing required parameter: $var" >&2
@@ -111,7 +90,6 @@ if ! command -v impg >/dev/null 2>&1; then
   exit 1
 fi
 
-# Validate output directory exists and is writable
 OUTPUT_DIR=$(dirname "$OUTPUT")
 if [[ ! -d "$OUTPUT_DIR" ]]; then
   mkdir -p "$OUTPUT_DIR" || { echo "ERROR: cannot create output directory: $OUTPUT_DIR" >&2; exit 1; }
@@ -140,13 +118,10 @@ else
   REG_END="$REGION_LEN"
 fi
 
-# Truncate output at start
 : > "$OUTPUT"
 
-# --- Sliding window execution ------------------------------------------------
-# Build non-overlapping windows and stream each `impg similarity` call.
 start_pos="$REG_START"
-add_header=1   # whether IBS header (chrom, start, end, group.a, group.b, estimated.identity) should be printed
+add_header=1
 
 while [[ "$start_pos" -le "$REG_END" ]]; do
   end_pos=$(( start_pos + WINDOW_SIZE - 1 ))
@@ -158,9 +133,8 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
 
   echo "Processing window ${REF_REGION}" >&2
 
-  # Build impg command with optional subset-sequence-list
   IMPG_CMD="impg similarity --sequence-files \"$SEQ_FILES\" -a \"$ALIGN\" -r \"$REF_REGION\" --force-large-region"
-  
+
   if [[ -n "$SUBSET_LIST" ]]; then
     IMPG_CMD="$IMPG_CMD --subset-sequence-list \"$SUBSET_LIST\""
   fi
@@ -169,7 +143,6 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
   awk -v cutoff="$CUTOFF" -v add_header="$add_header" -v ref="$REF_NAME" '
     BEGIN { FS=OFS="\t" }
     NR==1 {
-      # Identify columns on the header
       for (i=1; i<=NF; i++) {
         if ($i == "estimated.identity") est=i
         if ($i == "chrom")   c_chrom=i
@@ -188,20 +161,11 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
       next
     }
     {
-      # Apply identity threshold
       if ($est+0 < cutoff) next
-
-      # Skip self-self comparisons
       if ($c_ga == $c_gb) next
-
-      # Skip any comparison involving the reference (e.g. CHM13#0#...)
       if (index($c_ga, ref "#") == 1) next
       if (index($c_gb, ref "#") == 1) next
-
-      # Keep only one direction per pair (canonical lexicographic order)
       if ($c_ga > $c_gb) next
-
-      # Keep only "real" haplotype-haplotype comparisons
       print $c_chrom, $c_start, $c_end, $c_ga, $c_gb, $est
     }
   ' >> "$OUTPUT"; then

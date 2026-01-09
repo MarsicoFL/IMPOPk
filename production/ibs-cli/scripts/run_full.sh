@@ -1,16 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# -----------------------------------------------------------------------------
-# run_full.sh – orchestrate a chromosome-wide IBS tiling run via GNU Parallel.
-#
-# We keep this Bash helper even with the Rust CLI available so that analysts
-# can quickly spin up multi-window jobs before a proper workflow is codified in
-# Nextflow/Snakemake. The script focuses on discoverability: everything (paths,
-# regions, number of jobs) can be overridden via environment variables and the
-# logic is split into well-commented sections.
-# -----------------------------------------------------------------------------
-
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 CLI_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 REPO_ROOT=$(cd "${CLI_ROOT}/.." && pwd)
@@ -27,7 +17,6 @@ END=${END:-60000000}
 SIZE=${SIZE:-5000}
 JOBS=${JOBS:-10}
 
-# --- Input validation -------------------------------------------------------
 if [[ ! -f "$AGC" ]]; then
   echo "ERROR: sequence file not found ($AGC). Override AGC=..." >&2
   exit 1
@@ -41,14 +30,12 @@ if [[ ! -f "$SUB" ]]; then
   exit 1
 fi
 
-# --- Region tiling ----------------------------------------------------------
 CHUNK=$(( (END-START+1) / JOBS ))
 if (( CHUNK <= 0 )); then
   echo "ERROR: invalid region/JOBS combination" >&2
   exit 1
 fi
 
-# --- Parallel launch --------------------------------------------------------
 cd "$SCRIPT_DIR"
 TMPDIR=$(mktemp -d "run_full.XXXXXX")
 trap 'rm -rf "$TMPDIR"' EXIT
@@ -69,7 +56,6 @@ if ! parallel -j "$JOBS" --colsep '\t' "$CMD" :::: "$REGIONS_FILE"; then
   exit 1
 fi
 
-# Verify all expected output files exist
 for i in $(seq 1 "$JOBS"); do
   if [[ ! -f "$TMPDIR/ibs_part_${i}.out" ]]; then
     echo "ERROR: missing output file for job $i" >&2
@@ -77,6 +63,5 @@ for i in $(seq 1 "$JOBS"); do
   fi
 done
 
-# --- Merge ------------------------------------------------------------------
 cat "$TMPDIR"/ibs_part_*.out | sort -k1,1 -k2,2n -k3,3n > "$CLI_ROOT/ibs_for_ibd.out"
 echo "Merged IBS windows -> $CLI_ROOT/ibs_for_ibd.out"

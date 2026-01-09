@@ -1,23 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# -----------------------------------------------------------------------------
-# ibd.sh – glue `impg similarity` and a lightweight HMM for IBD calling.
-#
-# This bash pipeline predates the Rust CLI but remains useful for experimentation
-# and serves as the truth-table for the parity tests. It keeps the per-window
-# streaming behavior and delegates the segment calling to a compact HMM written
-# in R. The documentation here mirrors the README so that researchers can stay
-# in the shell without referencing external docs.
-# -----------------------------------------------------------------------------
-
 usage() {
   cat <<EOF
 Usage: ibd [options]
 
 Required:
   --sequence-files FILE         Sequence file(s) for impg (e.g. .agc)
-  -a ALIGN_PAF                  Alignment file (.paf/.paf.gz/.1aln) [passed to impg as -p]
+  -a ALIGN_PAF                  Alignment file (.paf/.paf.gz/.1aln)
   -r REF_NAME                   Reference name (e.g. CHM13)
   -region REGION                Region, e.g. chr1:1-248956422 or chr1
   -size WINDOW_SIZE             Window size in bp
@@ -35,16 +25,12 @@ Example:
   ./ibd.sh \\
     --sequence-files ../data/human/HPRC_r2_assemblies_0.6.1.agc \\
     -a ../data/human/hprc465vschm13.aln.paf.gz \\
-    -r CHM13 \\
-    -region chr20:1-64000000 \\
-    -size 5000 \\
+    -r CHM13 -region chr20:1-64000000 -size 5000 \\
     --subset-sequence-list ibs_example.txt \\
     --output ibd_chr20_5kb.tsv
-
 EOF
 }
 
-# Defaults
 SEQ_FILES=""
 ALIGN=""
 REF_NAME=""
@@ -62,7 +48,6 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
-# --- CLI argument parsing ----------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --sequence-files)
@@ -96,9 +81,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# --- Input validation -------------------------------------------------------
-# Ensure the user provided the minimum information required to launch impg.
-# Required arguments
 for var in SEQ_FILES ALIGN REF_NAME REGION WINDOW_SIZE SUBSET_LIST OUTPUT; do
   if [[ -z "${!var}" ]]; then
     echo "ERROR: missing required parameter: $var" >&2
@@ -117,7 +99,6 @@ if ! command -v Rscript >/dev/null 2>&1; then
   exit 1
 fi
 
-# Validate output directory exists and is writable
 OUTPUT_DIR=$(dirname "$OUTPUT")
 if [[ ! -d "$OUTPUT_DIR" ]]; then
   mkdir -p "$OUTPUT_DIR" || { echo "ERROR: cannot create output directory: $OUTPUT_DIR" >&2; exit 1; }
@@ -127,9 +108,6 @@ if [[ ! -w "$OUTPUT_DIR" ]]; then
   exit 1
 fi
 
-# Parse REGION:
-#   chr1:1-248956422  -> explicit bounds
-#   chr1              -> requires --region-length
 REG_CHROM=""
 REG_START=""
 REG_END=""
@@ -149,7 +127,6 @@ else
   REG_END="$REGION_LEN"
 fi
 
-# Resolve IBS output name
 if [[ -z "$IBS_OUTPUT" ]]; then
   IBS_OUTPUT="${OUTPUT}.ibs_windows.tsv"
 fi
@@ -161,13 +138,11 @@ echo "IBD segments output: ${OUTPUT}" >&2
 echo "Min IBD segment length: ${MIN_LEN_BP} bp" >&2
 echo "Expected IBD length (windows): ${EXPECTED_SEG_WINDOWS}" >&2
 
-# Truncate outputs
 : > "$IBS_OUTPUT"
 : > "$OUTPUT"
 
-# 1) Loop over windows and call impg similarity, streaming into IBS_OUTPUT
 start_pos="$REG_START"
-add_header=1   # whether header should be printed
+add_header=1
 
 while [[ "$start_pos" -le "$REG_END" ]]; do
   end_pos=$(( start_pos + WINDOW_SIZE - 1 ))
@@ -188,7 +163,6 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
   awk -v add_header="$add_header" -v ref="$REF_NAME" '
     BEGIN { FS=OFS="\t" }
     NR==1 {
-      # Identify columns on the header
       for (i=1; i<=NF; i++) {
         if ($i == "estimated.identity") est=i
         if ($i == "chrom")   c_chrom=i
@@ -207,19 +181,10 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
       next
     }
     {
-      # NO identity threshold here: keep all windows
-
-      # Skip self-self comparisons
       if ($c_ga == $c_gb) next
-
-      # Skip any comparison involving the reference (e.g. CHM13#0#...)
       if (index($c_ga, ref "#") == 1) next
       if (index($c_gb, ref "#") == 1) next
-
-      # Keep only one direction per pair (canonical lexicographic order)
       if ($c_ga > $c_gb) next
-
-      # Output per-window identity
       print $c_chrom, $c_start, $c_end, $c_ga, $c_gb, $est
     }
   ' >> "$IBS_OUTPUT"; then
@@ -233,7 +198,6 @@ done
 
 echo "Per-window IBS written to: $IBS_OUTPUT" >&2
 
-# 2) Run HMM in R to obtain IBD segments
 export IBS_INPUT="$IBS_OUTPUT"
 export IBD_OUTPUT="$OUTPUT"
 export MIN_LEN_BP
@@ -257,7 +221,6 @@ suppressWarnings({
 })
 
 if (inherits(df, "try-error") || NROW(df) == 0) {
-  # Empty or error -> write empty output
   seg_df <- data.frame(
     chrom = character(0),
     start = integer(0),
@@ -272,18 +235,14 @@ if (inherits(df, "try-error") || NROW(df) == 0) {
   quit(save = "no", status = 0)
 }
 
-# Basic type coercions
 df$start <- as.numeric(df$start)
 df$end <- as.numeric(df$end)
 df$estimated.identity <- as.numeric(df$estimated.identity)
-
 df <- df[!is.na(df$start) & !is.na(df$end) & !is.na(df$estimated.identity), ]
 
-# Order by chrom, pair, start
 ord <- order(df$chrom, df$group.a, df$group.b, df$start)
 df <- df[ord, ]
 
-# Split by (chrom, group.a, group.b)
 key <- paste(df$chrom, df$group.a, df$group.b, sep = "||")
 groups <- split(df, key)
 
@@ -297,14 +256,12 @@ viterbi_gauss <- function(y, mu, sigma, pi_vec, A) {
 
   logB <- matrix(0, nrow = S, ncol = Tn)
   for (s in 1:S) {
-    # simple Gaussian; y in [0,1]
     logB[s, ] <- dnorm(y, mean = mu[s], sd = sigma[s], log = TRUE)
   }
 
   delta <- matrix(NA_real_, nrow = S, ncol = Tn)
   psi <- matrix(NA_integer_, nrow = S, ncol = Tn)
 
-  # t = 1
   delta[, 1] <- logPi + logB[, 1]
   psi[, 1] <- 0L
 
@@ -334,17 +291,11 @@ for (gname in names(groups)) {
   y <- g$estimated.identity
   Tn <- length(y)
 
-  if (Tn < 3 || sd(y, na.rm = TRUE) < 1e-6) {
-    # Muy poca info para segmentar
-    next
-  }
+  if (Tn < 3 || sd(y, na.rm = TRUE) < 1e-6) next
 
-  # 1) Estimar dos clusters (bajo identity = no-IBD, alto = IBD)
   km <- try(kmeans(y, centers = c(0.2, 0.8), iter.max = 20), silent = TRUE)
 
-  if (inherits(km, "try-error") || length(km$size) < 2 ||
-      any(km$size == 0)) {
-    # fallback muy básico
+  if (inherits(km, "try-error") || length(km$size) < 2 || any(km$size == 0)) {
     mu1 <- quantile(y, 0.3, na.rm = TRUE)
     mu2 <- quantile(y, 0.9, na.rm = TRUE)
     sd_all <- sd(y, na.rm = TRUE)
@@ -352,7 +303,6 @@ for (gname in names(groups)) {
     mu <- c(mu1, mu2)
     sigma <- c(sd_all, sd_all)
   } else {
-    # Ordenar clusters por media (1 = no-IBD, 2 = IBD)
     centers <- km$centers[, 1]
     ordc <- order(centers)
     mu <- centers[ordc]
@@ -365,31 +315,23 @@ for (gname in names(groups)) {
     sigma <- c(sd1, sd2)
   }
 
-  # 2) Matriz de transición
-  # Estado 1 = no-IBD, 2 = IBD
-  p01 <- 1e-4  # no-IBD -> IBD
+  p01 <- 1e-4
   p_stay_ibd <- 1 - 1 / expected_seg_windows
   if (p_stay_ibd < 0.5) p_stay_ibd <- 0.5
   if (p_stay_ibd > 0.9999) p_stay_ibd <- 0.9999
-  p10 <- 1 - p_stay_ibd      # IBD -> no-IBD
+  p10 <- 1 - p_stay_ibd
 
-  A <- matrix(c(1 - p01, p01,
-                p10,      1 - p10),
-              nrow = 2, byrow = TRUE)
-
-  # 3) Distribución inicial (prior fuerte a no-IBD)
+  A <- matrix(c(1 - p01, p01, p10, 1 - p10), nrow = 2, byrow = TRUE)
   pi_vec <- c(0.99, 0.01)
 
-  # 4) Viterbi
   states <- viterbi_gauss(y, mu, sigma, pi_vec, A)
 
-  # 5) Extraer segmentos donde state == 2 (IBD)
   r <- rle(states)
   ends <- cumsum(r$lengths)
   begins <- c(1, head(ends, -1) + 1)
 
   for (i in seq_along(r$values)) {
-    if (r$values[i] != 2) next  # solo IBD
+    if (r$values[i] != 2) next
 
     idx_start <- begins[i]
     idx_end <- ends[i]
@@ -429,9 +371,7 @@ if (length(seg_list) == 0) {
   )
 } else {
   seg_df <- do.call(rbind, seg_list)
-  # Ordenar salida de forma razonable
-  seg_df <- seg_df[order(seg_df$chrom, seg_df$group.a,
-                         seg_df$group.b, seg_df$start), ]
+  seg_df <- seg_df[order(seg_df$chrom, seg_df$group.a, seg_df$group.b, seg_df$start), ]
 }
 
 write.table(seg_df, file = output, quote = FALSE, sep = "\t", row.names = FALSE)

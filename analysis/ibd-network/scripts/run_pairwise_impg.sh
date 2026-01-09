@@ -1,16 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# -----------------------------------------------------------------------------
-# Research helper: emit all per-window similarities for a BED file.
-#
-# This is the reference implementation used inside the notebooks. The flags and
-# defaults intentionally mirror those in the production Rust binary so we can
-# keep interoperability between ad-hoc analyses and the CLI. Paths default to
-# the repository layout but can be overridden via CLI flags or environment
-# variables.
-# -----------------------------------------------------------------------------
-
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "${SCRIPT_DIR}/../.." && pwd)
 DEFAULT_DATA_DIR="${REPO_ROOT}/data"
@@ -30,14 +20,12 @@ Emit all pairwise identities per window as returned by 'impg similarity', plus
 REGION/CHR/START/END/LENGTH:
   REGION CHR START END LENGTH group.a group.b estimated.identity
 Notes:
-- Defaults assume reference data lives in \
-  ${DEFAULT_DATA_DIR} (override with env vars or flags).
+- Defaults assume reference data lives in ${DEFAULT_DATA_DIR}.
 - Recommended window size for 'impg similarity': <=10kb.
 USAGE
   exit 1
 }
 
-# --- CLI argument parsing ----------------------------------------------------
 while getopts "b:p:s:u:P:o:vh" opt; do
   case $opt in
     b) BED_FILE="$OPTARG" ;;
@@ -64,9 +52,6 @@ trap 'rm -f "$tmp"' EXIT
 
 printed_header=""
 
-# --- Window loop -------------------------------------------------------------
-# Iterate through the BED file, derive the `impg` region, and append the
-# normalized output to the desired stream.
 while IFS=$'\t' read -r chr start end rest; do
   [[ -z "$chr" || "$chr" =~ ^# ]] && continue
   [[ "$start" =~ ^[0-9]+$ && "$end" =~ ^[0-9]+$ ]] || { echo "Warning: non-integer coords $chr:$start-$end, skip" >&2; continue; }
