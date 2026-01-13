@@ -30,3 +30,19 @@ research updates.
   in `docs/reports/` (e.g. `HPRCv2_IBD.pdf`).
 - Keep heavyweight raw data out of git; store them under `data/` or supply
   explicit paths when executing the scripts.
+
+## Where the data are?
+
+1. **sequences in agc format:** 
+
+wget https://s3-us-west-2.amazonaws.com/human-pangenomics/submissions/B4174A5F-F20E-4DCF-8470-F8A907B640BC--HPRCv2_0.6.1_pr_agc_submission/HPRC_r2_assemblies_0.6.1.agc
+
+2. **alignment of sequences against chm13:** 
+wget https://garrisonlab.s3.amazonaws.com/hprcv2/pafs/hprc465vschm13.aln.paf.gz 
+
+wget https://garrisonlab.s3.amazonaws.com/hprcv2/pafs/hprc465vschm13.aln.paf.gz.gzi 
+
+3. **implicit graph (chm13)**
+
+wget  https://garrisonlab.s3.amazonaws.com/hprcv2/impg/hprc465vschm13.aln.paf.gz.impg
+

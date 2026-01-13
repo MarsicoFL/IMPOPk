@@ -1,15 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# -----------------------------------------------------------------------------
-# jacquard_coeffs.sh – derive Jacquard Delta coefficients from IBS windows.
-#
-# This script is the canonical implementation used for validating the Rust
-# port. It expects a tabular IBS window file sorted by genomic position and the
-# identifiers for the two diploid samples of interest. Each window is mapped to
-# one of the nine Jacquard states and summarized at the end.
-# -----------------------------------------------------------------------------
-
 usage() {
   cat <<EOF
 Usage: $(basename "$0") --ibs IBS.tsv \\
@@ -42,7 +33,6 @@ HAP_A2=""
 HAP_B1=""
 HAP_B2=""
 
-# --- CLI argument parsing ----------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --ibs)    IBS_FILE="$2"; shift 2 ;;
@@ -64,9 +54,6 @@ if [[ -z "$IBS_FILE" || -z "$HAP_A1" || -z "$HAP_A2" || -z "$HAP_B1" || -z "$HAP
   exit 1
 fi
 
-# --- Core classification ----------------------------------------------------
-# Sort the file once to guarantee deterministic processing before feeding it to
-# the AWK classifier.
 sort -k1,1 -k2,2n -k3,3n "$IBS_FILE" | \
 awk -v A1="$HAP_A1" -v A2="$HAP_A2" -v B1="$HAP_B1" -v B2="$HAP_B2" '
 BEGIN {
@@ -85,7 +72,6 @@ BEGIN {
   for (k = 1; k <= 9; k++) counts[k] = 0;
 }
 
-# Extract hap key: sample#hapIndex from "sample#hapIndex#contig:coords"
 function hapkey(s,   a, n) {
   n = split(s, a, "#");
   if (n >= 2) {
@@ -96,7 +82,7 @@ function hapkey(s,   a, n) {
 }
 
 {
-  if (NR == 1 && $1 == "chrom") next;  # skip header
+  if (NR == 1 && $1 == "chrom") next;
 
   c = $1;
   s = $2 + 0;
@@ -111,7 +97,6 @@ function hapkey(s,   a, n) {
   } else {
     if (s < min_start) min_start = s;
     if (e > max_end)   max_end   = e;
-    # sanity: asumimos win_size constante
   }
 
   raw1 = $4;
@@ -120,12 +105,10 @@ function hapkey(s,   a, n) {
   k1 = hapkey(raw1);
   k2 = hapkey(raw2);
 
-  # si ninguno pertenece a los cuatro haps de interés, no sumamos edges
   if (!(k1 in four) && !(k2 in four)) next;
 
   locus = c ":" s "-" e;
 
-  # sólo guardamos pares si AMBOS son de los cuatro haps
   if ((k1 in four) && (k2 in four) && k1 != k2) {
     if (k1 < k2) pair = k1 "|" k2;
     else         pair = k2 "|" k1;
@@ -149,26 +132,22 @@ END {
     exit 1;
   }
 
-  # Procesamos SOLO los locus que tienen IBS entre los cuatro haps
   for (i = 1; i <= n_loci_ibsfour; i++) {
     locus = locus_order[i];
     process_locus(locus);
   }
 
-  # total de ventanas teórico en el rango [min_start, max_end]
   span = max_end - min_start + 1;
   if (span % win_size != 0) {
     print "WARNING: (max_end - min_start + 1) not divisible by win_size." > "/dev/stderr";
   }
   total_windows = int(span / win_size);
 
-  # ventanas sin IBS entre los cuatro haps -> Delta9
   classified_from_ibsfour = 0;
   for (k = 1; k <= 9; k++) classified_from_ibsfour += counts[k];
-  # ojo: classified_from_ibsfour == n_loci_ibsfour - n_unclassified, en la práctica
 
   missing = total_windows - n_loci_ibsfour;
-  if (missing < 0) missing = 0;  # por seguridad
+  if (missing < 0) missing = 0;
 
   counts[9] += missing;
 
@@ -190,7 +169,6 @@ END {
 }
 
 function process_locus(locus,    parent, nodes, i, r, block, block_size, nb, blk, size, pairs, np, p, arr, key) {
-  # union-find
   delete parent;
   parent[A1] = A1;
   parent[A2] = A2;
@@ -208,7 +186,6 @@ function process_locus(locus,    parent, nodes, i, r, block, block_size, nb, blk
     }
   }
 
-  # construir bloques
   delete block;
   delete block_size;
   nodes[1] = A1; nodes[2] = A2; nodes[3] = B1; nodes[4] = B2;
@@ -246,7 +223,6 @@ function unite(x, y, parent,    rx, ry) {
   if (rx != ry) parent[ry] = rx;
 }
 
-# partición {A1,A2,B1,B2} -> Delta1..9
 function classify_state(nb, blk, size,   i,j,arr,nTok,aCount,bCount, bA, bB, pairIndex, trip, condA,condB) {
   for (i = 1; i <= nb; i++) {
     aCount = 0; bCount = 0;
@@ -261,19 +237,16 @@ function classify_state(nb, blk, size,   i,j,arr,nTok,aCount,bCount, bA, bB, pai
     bB[i] = bCount;
   }
 
-  # Delta1: los 4 en un solo bloque
   if (nb == 1) {
     if (size[1] == 4) return 1;
     else return 0;
   }
 
-  # Delta9: cuatro singletons (ojo: esto aquí solo pasaría si no hubo edges)
   if (nb == 4) {
     for (i = 1; i <= 4; i++) if (size[i] != 1) return 0;
     return 9;
   }
 
-  # nb == 2: Delta2,3,5,7
   if (nb == 2) {
     i1 = 1; i2 = 2;
 
@@ -299,7 +272,6 @@ function classify_state(nb, blk, size,   i,j,arr,nTok,aCount,bCount, bA, bB, pai
     return 0;
   }
 
-  # nb == 3: Delta4,6,8
   if (nb == 3) {
     pairIndex = 0;
     for (i = 1; i <= 3; i++) {
