@@ -277,28 +277,3 @@ For two diploid individuals with haplotypes {a1, a2} and {b1, b2}:
 | S8 | {a1, b1}, {a2}, {b2} | Single cross-pair |
 | S9 | {a1}, {a2}, {b1}, {b2} | No observed IBS |
 
----
-
-## Citation
-
-If you use this pipeline, please cite:
-
-```
-[Citation to be added upon publication]
-```
-
-And the underlying tools:
-- impg: [Garrison et al., implicit pangenome graph]
-- HPRC: [Liao et al., 2023, Nature]
-
----
-
-## License
-
-[License information]
-
----
-
-## Contact
-
-For questions or issues, please open a GitHub issue or contact [maintainer information].
