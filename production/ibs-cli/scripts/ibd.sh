@@ -156,7 +156,7 @@ while [[ "$start_pos" -le "$REG_END" ]]; do
 
   if ! impg similarity \
     --sequence-files "$SEQ_FILES" \
-    -p "$ALIGN" \
+    -a "$ALIGN" \
     -r "$REF_REGION" \
     --subset-sequence-list "$SUBSET_LIST" \
     --force-large-region | \

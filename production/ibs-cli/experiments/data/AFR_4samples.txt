@@ -1,0 +1,8 @@
+HG02583_hap1_hprc_r2_v1.0.1
+HG02583_hap2_hprc_r2_v1.0.1
+HG02922_hap1_hprc_r2_v1.0.1
+HG02922_hap2_hprc_r2_v1.0.1
+HG02965_hap1_hprc_r2_v1.0.1
+HG02965_hap2_hprc_r2_v1.0.1
+HG02976_hap1_hprc_r2_v1.0.1
+HG02976_hap2_hprc_r2_v1.0.1

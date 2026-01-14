@@ -7,6 +7,7 @@ use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
+use rayon::prelude::*;
 
 use hprc_ibd::hmm::{extract_ibd_segments, viterbi, HmmParams};
 use hprc_ibd::{Region, WindowIterator};
@@ -52,6 +53,10 @@ struct Args {
 
     #[arg(long = "p-enter-ibd", default_value = "0.0001")]
     p_enter_ibd: f64,
+
+    /// Number of threads for parallel HMM processing (default: auto-detect)
+    #[arg(short = 't', long = "threads")]
+    threads: Option<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -167,48 +172,110 @@ fn collect_identities(
     Ok(pair_data)
 }
 
+/// IBD segment result from HMM processing
+#[derive(Debug, Clone)]
+struct IbdSegment {
+    chrom: String,
+    start_bp: u64,
+    end_bp: u64,
+    hap_a: String,
+    hap_b: String,
+    n_windows: usize,
+    mean_identity: f64,
+}
+
+/// Process a single haplotype pair and return IBD segments
+fn process_pair(
+    hap_a: String,
+    hap_b: String,
+    mut records: Vec<WindowRecord>,
+    expected_seg_windows: f64,
+    p_enter_ibd: f64,
+    min_windows: usize,
+    min_len_bp: u64,
+) -> Vec<IbdSegment> {
+    if records.len() < 3 {
+        return Vec::new();
+    }
+
+    records.sort_by_key(|r| r.start);
+    let observations: Vec<f64> = records.iter().map(|r| r.identity).collect();
+
+    let mut params = HmmParams::from_expected_length(expected_seg_windows, p_enter_ibd);
+    params.estimate_emissions(&observations);
+
+    let states = viterbi(&observations, &params);
+    let segments = extract_ibd_segments(&states);
+
+    let mut results = Vec::new();
+    for (start_idx, end_idx, n_windows) in segments {
+        if n_windows < min_windows {
+            continue;
+        }
+
+        let start_bp = records[start_idx].start;
+        let end_bp = records[end_idx].end;
+        let length_bp = end_bp.saturating_sub(start_bp);
+
+        if length_bp < min_len_bp {
+            continue;
+        }
+
+        let mean_identity: f64 =
+            observations[start_idx..=end_idx].iter().sum::<f64>() / n_windows as f64;
+
+        results.push(IbdSegment {
+            chrom: records[start_idx].chrom.clone(),
+            start_bp,
+            end_bp,
+            hap_a: hap_a.clone(),
+            hap_b: hap_b.clone(),
+            n_windows,
+            mean_identity,
+        });
+    }
+
+    results
+}
+
+/// Process all haplotype pairs in parallel and return IBD segments
 fn call_ibd_segments(
     pair_data: HashMap<(String, String), Vec<WindowRecord>>,
     args: &Args,
-    output: &mut BufWriter<File>,
-) -> Result<usize> {
-    writeln!(output, "chrom\tstart\tend\tgroup.a\tgroup.b\tn_windows\tmean_identity")?;
-    let mut total_segments = 0;
+) -> Vec<IbdSegment> {
+    eprintln!("Running HMM on {} pairs in parallel...", pair_data.len());
 
-    for ((hap_a, hap_b), mut records) in pair_data {
-        if records.len() < 3 { continue; }
+    // Convert HashMap to Vec for parallel iteration
+    let pairs: Vec<_> = pair_data.into_iter().collect();
 
-        records.sort_by_key(|r| r.start);
-        let observations: Vec<f64> = records.iter().map(|r| r.identity).collect();
-
-        let mut params = HmmParams::from_expected_length(args.expected_seg_windows, args.p_enter_ibd);
-        params.estimate_emissions(&observations);
-
-        let states = viterbi(&observations, &params);
-        let segments = extract_ibd_segments(&states);
-
-        for (start_idx, end_idx, n_windows) in segments {
-            if n_windows < args.min_windows { continue; }
-
-            let start_bp = records[start_idx].start;
-            let end_bp = records[end_idx].end;
-            let length_bp = end_bp.saturating_sub(start_bp);
-
-            if length_bp < args.min_len_bp { continue; }
-
-            let mean_identity: f64 = observations[start_idx..=end_idx].iter().sum::<f64>() / n_windows as f64;
-
-            writeln!(output, "{}\t{}\t{}\t{}\t{}\t{}\t{:.6}",
-                records[start_idx].chrom, start_bp, end_bp, hap_a, hap_b, n_windows, mean_identity)?;
-            total_segments += 1;
-        }
-    }
-
-    Ok(total_segments)
+    // Process pairs in parallel
+    pairs
+        .into_par_iter()
+        .flat_map(|((hap_a, hap_b), records)| {
+            process_pair(
+                hap_a,
+                hap_b,
+                records,
+                args.expected_seg_windows,
+                args.p_enter_ibd,
+                args.min_windows,
+                args.min_len_bp,
+            )
+        })
+        .collect()
 }
 
 fn run() -> Result<()> {
     let args = Args::parse();
+
+    // Configure thread pool if --threads is specified
+    if let Some(num_threads) = args.threads {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(num_threads)
+            .build_global()
+            .context("Failed to configure thread pool")?;
+        eprintln!("Using {} threads for parallel processing", num_threads);
+    }
 
     if Command::new("impg").arg("--version").output().is_err() {
         bail!("'impg' is not in PATH");
@@ -223,16 +290,30 @@ fn run() -> Result<()> {
     };
 
     let pair_data = collect_identities(&args, &region, ibs_output.as_mut())?;
-    if let Some(ref mut out) = ibs_output { out.flush()?; }
+    if let Some(ref mut out) = ibs_output {
+        out.flush()?;
+    }
 
     eprintln!("Collected data for {} pairs", pair_data.len());
 
+    // Process pairs in parallel using rayon
+    let segments = call_ibd_segments(pair_data, &args);
+
+    // Write results to output file
     let output_file = File::create(&args.output)?;
     let mut output = BufWriter::new(output_file);
-    let n_segments = call_ibd_segments(pair_data, &args, &mut output)?;
+
+    writeln!(output, "chrom\tstart\tend\tgroup.a\tgroup.b\tn_windows\tmean_identity")?;
+    for seg in &segments {
+        writeln!(
+            output,
+            "{}\t{}\t{}\t{}\t{}\t{}\t{:.6}",
+            seg.chrom, seg.start_bp, seg.end_bp, seg.hap_a, seg.hap_b, seg.n_windows, seg.mean_identity
+        )?;
+    }
 
     output.flush()?;
-    eprintln!("IBD complete: {} segments written to {}", n_segments, args.output);
+    eprintln!("IBD complete: {} segments written to {}", segments.len(), args.output);
 
     Ok(())
 }

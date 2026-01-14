@@ -1,0 +1,1 @@
+/home/franco/Escritorio/genomica/impop/data/human/HPRC_r2_assemblies_0.6.1.agc
