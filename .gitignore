@@ -30,3 +30,8 @@ test_*.tsv
 tmp/
 temp/
 *.tmp
+
+# Experiment results (large TSV files, ~150MB)
+# Data available upon request or by running experiment scripts
+production/ibs-cli/experiments/results/**/*.tsv
+production/ibs-cli/experiments/results/**/*_combined.txt
