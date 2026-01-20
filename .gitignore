@@ -2,6 +2,9 @@
 **/target/
 Cargo.lock
 
+# Local config
+.claude/
+
 # Python
 __pycache__/
 *.py[cod]
