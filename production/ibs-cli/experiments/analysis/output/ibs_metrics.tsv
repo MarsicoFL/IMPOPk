@@ -1,6 +1,0 @@
-population	n_individuals	n_haplotypes	possible_pairs	unique_records	unique_windows	ibs_rate	fold_enrichment	baseline
-AFR	4	8	28	21579	1997	0.383613	1.000000	AFR
-EUR	4	8	28	36822	2009	0.654590	1.706381	AFR
-EAS	4	8	28	35303	2004	0.627587	1.635989	AFR
-CSA	4	8	28	30477	2005	0.541794	1.412345	AFR
-AMR	3	6	15	17386	2004	0.576937	1.503956	AFR

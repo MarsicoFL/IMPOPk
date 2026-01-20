@@ -1,0 +1,6 @@
+Region,Gene,Chr,Size (kb),Windows,Target Pop,Target Haplotypes,Target Pairs,Target IBS Records,Target IBS Rate,AFR IBS Records,AFR IBS Rate,Fold Enrichment,Biological Function
+LCT,LCT,chr2,10049.333,2010,EUR,60,1770,949120,0.2667790988560025,1582279,0.08834064443800524,3.0198907937922037,Positive selection for lactase persistence in Europeans
+SLC24A5,SLC24A5,chr15,2000.0,400,EUR,60,1770,134630,0.19015536723163842,334411,0.0938197172034564,2.0268166745724634,Selection for light skin pigmentation in Europeans
+EDAR,EDAR,chr2,2000.0,400,EAS,100,4950,756107,0.3818722222222222,304061,0.08530496016159803,4.476553549744587,Selection for hair thickness in East Asians
+HBB,HBB,chr11,100.0,20,AFR,134,8911,10085,0.05658736393221861,0,0.0,1.0,Balancing selection for malaria resistance
+DARC,DARC,chr1,1000.0,199,AFR,134,8911,135835,0.07660059922550695,0,0.0,1.0,Selection for Plasmodium vivax resistance
