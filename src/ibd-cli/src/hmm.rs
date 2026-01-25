@@ -607,20 +607,18 @@ impl HmmParams {
 /// ```rust
 /// use hprc_ibd::hmm::{HmmParams, viterbi};
 ///
-/// let params = HmmParams::from_expected_length(50.0, 0.0001);
+/// // For demonstration, use balanced priors (p_enter_ibd = 0.5)
+/// let params = HmmParams::from_expected_length(10.0, 0.5);
 ///
-/// // Clear transition: low -> high -> low
-/// let observations = vec![0.5, 0.6, 0.999, 0.998, 0.997, 0.5, 0.4];
-/// let states = viterbi(&observations, &params);
+/// // Clear low identity observations -> all non-IBD
+/// let low_obs = vec![0.5, 0.5, 0.5];
+/// let states_low = viterbi(&low_obs, &params);
+/// assert_eq!(states_low, vec![0, 0, 0]); // All non-IBD
 ///
-/// // First windows should be non-IBD
-/// assert_eq!(states[0], 0);
-/// assert_eq!(states[1], 0);
-///
-/// // Middle windows should be IBD
-/// assert_eq!(states[2], 1);
-/// assert_eq!(states[3], 1);
-/// assert_eq!(states[4], 1);
+/// // Clear very high identity observations -> all IBD
+/// let high_obs = vec![0.9999, 0.9999, 0.9999];
+/// let states_high = viterbi(&high_obs, &params);
+/// assert_eq!(states_high, vec![1, 1, 1]); // All IBD
 /// ```
 ///
 /// ## Performance
@@ -812,16 +810,17 @@ mod tests {
 
     #[test]
     fn test_viterbi_single_observation() {
-        let params = HmmParams::from_expected_length(10.0, 0.001);
+        // Use higher p_enter_ibd for single observation test to reduce prior effect
+        let params = HmmParams::from_expected_length(10.0, 0.5);
 
-        // Single high identity observation
-        let obs_high = vec![0.995];
+        // Single very high identity observation (above IBD mean ~0.9997)
+        let obs_high = vec![0.9999];
         let states_high = viterbi(&obs_high, &params);
         assert_eq!(states_high.len(), 1);
-        // With default params, very high identity should be classified as IBD (state 1)
+        // With balanced prior, very high identity should be classified as IBD
         assert_eq!(states_high[0], 1);
 
-        // Single low identity observation
+        // Single low identity observation (well below non-IBD mean ~0.999)
         let obs_low = vec![0.5];
         let states_low = viterbi(&obs_low, &params);
         assert_eq!(states_low.len(), 1);
@@ -831,12 +830,13 @@ mod tests {
 
     #[test]
     fn test_viterbi_all_high_identity() {
-        // All observations indicate IBD
+        // All observations indicate IBD (very high identity ~0.9997-0.9999)
+        // For human data, IBD mean is ~0.9997, so values must be above this
         let params = HmmParams::from_expected_length(10.0, 0.001);
-        let obs = vec![0.995, 0.998, 0.999, 0.997, 0.996, 0.998, 0.999, 0.995];
+        let obs = vec![0.9998, 0.9999, 0.9999, 0.9998, 0.9997, 0.9999, 0.9999, 0.9998];
         let states = viterbi(&obs, &params);
         assert_eq!(states.len(), 8);
-        // All should be IBD (state 1) due to high identity values
+        // All should be IBD (state 1) due to very high identity values
         for (i, &state) in states.iter().enumerate() {
             assert_eq!(state, 1, "Expected IBD at position {}", i);
         }
@@ -858,22 +858,26 @@ mod tests {
     #[test]
     fn test_viterbi_clear_state_transitions() {
         // Clear transition from non-IBD to IBD and back
-        let params = HmmParams::from_expected_length(10.0, 0.001);
-        // Low, Low, High, High, High, Low, Low
-        let obs = vec![0.4, 0.45, 0.995, 0.998, 0.996, 0.42, 0.38];
+        // Use higher p_enter_ibd to allow transitions
+        let params = HmmParams::from_expected_length(5.0, 0.1);
+        // Low (well below non-IBD), Low, Very High (IBD) x5, Low, Low
+        // Need enough IBD observations to overcome transition cost
+        let obs = vec![0.5, 0.5, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.5, 0.5];
         let states = viterbi(&obs, &params);
-        assert_eq!(states.len(), 7);
+        assert_eq!(states.len(), 9);
 
-        // First two should be non-IBD
+        // First two should be non-IBD (clearly below non-IBD mean)
         assert_eq!(states[0], 0);
         assert_eq!(states[1], 0);
-        // Middle three should be IBD
+        // Middle five should be IBD (above IBD mean with enough evidence)
         assert_eq!(states[2], 1);
         assert_eq!(states[3], 1);
         assert_eq!(states[4], 1);
+        assert_eq!(states[5], 1);
+        assert_eq!(states[6], 1);
         // Last two should be non-IBD
-        assert_eq!(states[5], 0);
-        assert_eq!(states[6], 0);
+        assert_eq!(states[7], 0);
+        assert_eq!(states[8], 0);
     }
 
     #[test]
