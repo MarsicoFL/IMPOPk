@@ -74,10 +74,22 @@ temp/
 # ------------------------------------------
 # LOCAL ONLY (not part of package)
 # ------------------------------------------
-docs/
 experiments/
 reports/
-data/
 archive/
 CONTRIBUTING.md
 STRUCTURE.md
+
+# ------------------------------------------
+# DATA: Only include sample lists
+# ------------------------------------------
+data/*
+!data/samples/
+!data/README.md
+
+# ------------------------------------------
+# DOCS: Only include tutorials
+# ------------------------------------------
+docs/*
+!docs/tutorials/
+!docs/README.md
