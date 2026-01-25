@@ -1,73 +1,146 @@
 # HPRCv2-IBD
 
-IBS detection and IBD inference from HPRC pangenome assemblies using haplotype-level identity analysis.
+Identity-by-Descent (IBD) detection from Human Pangenome Reference Consortium (HPRC) assemblies using haplotype-level identity analysis.
 
-## What it does
+## Overview
 
-- **IBS detection**: Sliding window analysis over chromosomes using `impg` similarity
-- **IBD inference**: 2-state HMM (Viterbi) to distinguish true IBD from sporadic IBS
-- **Identity states**: Jacquard-style coefficients for diploid pairs
+This project provides tools and analysis pipelines for:
+
+- **IBS Detection**: Sliding window identity-by-state analysis using pangenome alignments
+- **IBD Inference**: Hidden Markov Model (Viterbi) to distinguish true IBD from background IBS
+- **Selection Scans**: Detection of positive selection signatures through IBS enrichment
+- **Population Genetics**: Comparative analysis across 5 continental populations
 
 ## Repository Structure
 
 ```
 HPRCv2-IBD/
-├── experiments/           # Completed experiments with data
-│   ├── chr1_full/        # Full chr1 analysis (EUR: 90M, AFR: 284M records)
-│   ├── chr2_50Mb_full/   # Chr2 50Mb reference experiment
-│   ├── chr2_50Mb_filtered/
-│   ├── selection_scan/   # Selection scan (LCT, DARC, EDAR, HBB, SLC24A5)
-│   ├── full_population/  # Full population IBS matrices
-│   └── benchmarks/       # Performance benchmarks
-├── tools/                # Rust CLI tools
-│   ├── ibd-cli/         # IBD detection with HMM
-│   ├── ibs-cli/         # IBS window detection
-│   └── jacquard-cli/    # Jacquard coefficients
-├── sample_lists/         # Population sample lists (EUR, AFR, EAS, CSA, AMR)
-├── data/                 # Symlinks to AGC/PAF files
-└── docs/                 # Documentation and tutorials
+├── src/                    # PACKAGE SOURCE CODE (Rust CLI tools)
+│   ├── ibd-cli/            # IBD detection with HMM
+│   ├── ibs-cli/            # IBS window detection
+│   └── jacquard-cli/       # Jacquard delta coefficients
+│
+├── data/                   # INPUT DATA
+│   ├── assemblies/         # HPRC genome assemblies (symlinks)
+│   ├── alignments/         # CHM13 reference alignments (symlinks)
+│   └── samples/            # Population sample lists
+│
+├── experiments/            # ANALYSIS EXPERIMENTS
+│   ├── chr1_full/          # Full chromosome 1 IBD analysis
+│   ├── selection_scan/     # Selection signature detection
+│   ├── full_population/    # 5-population IBS matrices
+│   └── benchmarks/         # Performance benchmarks
+│
+├── reports/                # FINAL REPORTS
+│   ├── main/               # Main analysis report (PDF, LaTeX, figures)
+│   └── supplementary/      # Additional analysis notes
+│
+├── docs/                   # DOCUMENTATION
+│   ├── tutorials/          # How-to guides
+│   └── methods/            # Scientific methodology
+│
+└── archive/                # Old versions (for reference)
+```
+
+## Quick Start
+
+### 1. Build Tools
+
+```bash
+cd src/ibs-cli && cargo build --release
+cd ../ibd-cli && cargo build --release
+```
+
+### 2. Run IBS Detection
+
+```bash
+./src/ibs-cli/target/release/ibs \
+    --sequence-files data/assemblies/HPRC_r2_assemblies_0.6.1.agc \
+    -a data/alignments/hprc465vschm13.aln.paf.gz \
+    --subset-sequence-list data/samples/EUR.txt \
+    --region chr1:1-10000000 \
+    --size 5000 \
+    -t 0.999 -m cosine \
+    --output results.tsv
+```
+
+### 3. Run IBD Inference
+
+```bash
+./src/ibd-cli/target/release/ibd-hmm inference \
+    --input results.tsv \
+    --output ibd_segments.json
 ```
 
 ## Requirements
 
-- Rust 1.70+
-- [impg](https://github.com/pangenome/impg)
-- GNU coreutils, parallel
+- **Rust** 1.70+ (install via [rustup](https://rustup.rs/))
+- **Python** 3.8+ (for analysis scripts)
+- **LaTeX** (for report compilation, optional)
 
-## Quick Start
-
+Python dependencies:
 ```bash
-# Build tools
-cd tools/ibs-cli && cargo build --release
-cd ../ibd-cli && cargo build --release
-
-# Run IBS detection
-./target/release/ibs \
-  --sequence-files ../../data/HPRC_r2_assemblies_0.6.1.agc \
-  -a ../../data/hprc465vschm13.aln.paf.gz \
-  --region "CHM13#0#chr2:1-50000000" \
-  --window-size 5000 \
-  --sample-list ../../sample_lists/HPRCv2_EUR_full.txt \
-  --output ibs_results.tsv
+pip install numpy matplotlib scipy pandas
 ```
 
 ## Data Sources
 
-Required external files (symlinked in `data/`):
+External data files (symlinked in `data/`):
 
-```bash
-# Sequence archive (3.1 GB)
-wget https://s3-us-west-2.amazonaws.com/human-pangenomics/submissions/B4174A5F-F20E-4DCF-8470-F8A907B640BC--HPRCv2_0.6.1_pr_agc_submission/HPRC_r2_assemblies_0.6.1.agc
+| File | Size | Source |
+|------|------|--------|
+| HPRC_r2_assemblies_0.6.1.agc | 3.1 GB | [HPRC](https://humanpangenome.org/) |
+| hprc465vschm13.aln.paf.gz | 5.3 GB | [GarrisonLab](https://garrisonlab.s3.amazonaws.com/) |
+| hprc465vschm13.aln.paf.gz.impg | 315 MB | [GarrisonLab](https://garrisonlab.s3.amazonaws.com/) |
 
-# Alignments and index (5.3 GB + 315 MB)
-wget https://garrisonlab.s3.amazonaws.com/hprcv2/pafs/hprc465vschm13.aln.paf.gz
-wget https://garrisonlab.s3.amazonaws.com/hprcv2/impg/hprc465vschm13.aln.paf.gz.impg
-```
+## Population Data
 
-## Main Experiments
+| Population | Individuals | Haplotypes | Description |
+|------------|-------------|------------|-------------|
+| AFR | 67 | 134 | African ancestry |
+| EUR | 30 | 60 | European ancestry |
+| EAS | 50 | 100 | East Asian ancestry |
+| CSA | 36 | 72 | Central/South Asian ancestry |
+| AMR | 44 | 88 | Admixed American ancestry |
+| **Total** | **227** | **454** | |
 
-| Experiment | Data Size | Description |
-|------------|-----------|-------------|
-| `chr1_full` | 45 GB | Full chromosome 1: EUR (30 ind), AFR (67 ind) |
-| `selection_scan` | 495 MB | Known selection regions across populations |
-| `full_population` | 6.8 GB | Inter/intra-population IBS matrices |
+## Main Results
+
+### Validated Findings
+
+1. **HMM Model Performance**: d' > 5 for both EUR and AFR (excellent state separation)
+2. **EUR IBD Detection**: Valid segments with ~99.99% identity
+3. **Selection Signatures**: 2.5-2.7x IBS enrichment at LCT, EDAR, SLC24A5
+
+### Data Quality Notes
+
+**Important**: See `reports/main/DATA_QUALITY_NOTES.md` for critical information about:
+- AFR IBD segment validity issues (require re-inference)
+- Centromeric region artifacts
+- v2 corrected emission parameters
+
+## Documentation
+
+- **Main Report**: `reports/main/HPRCv2_IBD_Report.pdf`
+- **Tutorials**: `docs/tutorials/`
+- **API Reference**: `docs/api/`
+- **Methods**: `docs/methods/`
+
+## Experiments
+
+| Experiment | Description | Data Size |
+|------------|-------------|-----------|
+| `chr1_full` | Full chromosome 1 IBD analysis | 45 GB |
+| `selection_scan` | 5 known selection loci | 2 GB |
+| `full_population` | 5-population IBS matrices | 6.8 GB |
+| `benchmarks` | Performance scaling tests | 500 MB |
+
+## License
+
+MIT License - See LICENSE file for details.
+
+## Citation
+
+If using this pipeline or data, please cite:
+- Human Pangenome Reference Consortium (2023)
+- This repository

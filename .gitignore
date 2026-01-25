@@ -1,0 +1,150 @@
+# ============================================
+# HPRCv2-IBD .gitignore
+# Focus: Package source code (src/)
+# Ignore: Large experiment data, build artifacts
+# ============================================
+
+# ------------------------------------------
+# RUST BUILD ARTIFACTS
+# ------------------------------------------
+**/target/
+**/*.rs.bk
+Cargo.lock
+
+# ------------------------------------------
+# PYTHON
+# ------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+*.manifest
+*.spec
+pip-log.txt
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+
+# ------------------------------------------
+# IDE / EDITOR
+# ------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.sublime-*
+
+# ------------------------------------------
+# OS
+# ------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ------------------------------------------
+# LOCAL CONFIGURATION
+# ------------------------------------------
+.claude/
+.env
+.env.*
+*.local
+config.local.*
+
+# ------------------------------------------
+# LATEX ARTIFACTS
+# ------------------------------------------
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+
+# ------------------------------------------
+# TEMPORARY FILES
+# ------------------------------------------
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# ------------------------------------------
+# LARGE DATA FILES (EXPERIMENT DATA)
+# ------------------------------------------
+
+# Chromosome 1 full analysis (~45 GB)
+experiments/chr1_full/data/*.tsv
+experiments/chr1_full/data/partial_runs/
+
+# Chromosome 2 experiments
+experiments/chr2_50Mb_full/data/*.tsv
+experiments/chr2_50Mb_filtered/data/*.tsv
+
+# Full population analysis (~6.8 GB)
+experiments/full_population/**/*.tsv
+experiments/full_population/intra/FULL-*/
+experiments/full_population/inter/FULL-*/
+
+# Selection scan data
+experiments/selection_scan/regions/**/*.tsv
+
+# Benchmark data
+experiments/benchmarks/**/data/*.tsv
+experiments/benchmarks/**/results/*.tsv
+
+# ------------------------------------------
+# EXTERNAL DATA (SYMLINKS - USER CREATES)
+# ------------------------------------------
+data/assemblies/*.agc
+data/alignments/*.paf.gz
+data/alignments/*.impg
+
+# ------------------------------------------
+# GENERATED FIGURES (REGENERABLE)
+# ------------------------------------------
+# Reports figures
+reports/**/figures/*.png
+reports/**/figures/*.pdf
+!reports/main/figures/.gitkeep
+
+# Experiment figures (all regenerable from scripts)
+experiments/**/figures/*.png
+experiments/**/figures/*.pdf
+experiments/**/output/*.png
+experiments/**/output/*.pdf
+experiments/**/*_ibs_matrix.png
+experiments/**/*_ibs_matrix.pdf
+experiments/**/*_ibs_enrichment.png
+experiments/**/*_ibs_enrichment.pdf
+
+# ------------------------------------------
+# ARCHIVE (OLD VERSIONS)
+# ------------------------------------------
+archive/
+
+# ------------------------------------------
+# KEEP EXPLICITLY
+# ------------------------------------------
+!.gitkeep
+!**/README.md
+!experiments/**/scripts/
+!experiments/**/results/json/
+!experiments/**/results/*.md
+!reports/main/*.tex
+!reports/main/*.md
