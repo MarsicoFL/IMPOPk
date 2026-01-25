@@ -27,6 +27,10 @@ A suite of Rust CLI tools for detecting IBD segments from whole-genome assemblie
 ### Build
 
 ```bash
+# Clone repository
+git clone https://github.com/MarsicoFL/HPRCv2-IBD.git
+cd HPRCv2-IBD
+
 # Build all tools
 cd src/ibs-cli && cargo build --release
 cd ../ibd-cli && cargo build --release
@@ -42,7 +46,7 @@ Binaries will be in `src/*/target/release/`.
 Compute pairwise identity in sliding windows:
 
 ```bash
-./src/ibs-cli/target/release/ibs \
+ibs \
     --sequence-files assemblies.agc \
     -a alignments.paf.gz \
     --subset-sequence-list samples.txt \
@@ -67,7 +71,7 @@ Compute pairwise identity in sliding windows:
 Infer IBD segments from IBS data using HMM:
 
 ```bash
-./src/ibd-cli/target/release/ibd-hmm inference \
+ibd-hmm inference \
     --input ibs_results.tsv \
     --output ibd_segments.json
 ```
@@ -79,7 +83,7 @@ Infer IBD segments from IBS data using HMM:
 Compute Jacquard delta coefficients:
 
 ```bash
-./src/jacquard-cli/target/release/jacquard \
+jacquard \
     --input identity_data.tsv \
     --output coefficients.json
 ```
@@ -103,34 +107,13 @@ HG00097#2
 
 Format: `{sample_id}#{haplotype}` (1 = hap1/maternal, 2 = hap2/paternal)
 
-## Data Sources
-
-Required external files:
+### Example Data (HPRC)
 
 | File | Size | Download |
 |------|------|----------|
-| HPRC_r2_assemblies_0.6.1.agc | 3.1 GB | [Download](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=submissions/B4174A5F-F20E-4DCF-8470-F8A907B640BC--HPRCv2_0.6.1_pr_agc_submission/) |
-| hprc465vschm13.aln.paf.gz | 5.3 GB | [Download](https://garrisonlab.s3.amazonaws.com/hprcv2/pafs/hprc465vschm13.aln.paf.gz) |
-| hprc465vschm13.aln.paf.gz.impg | 315 MB | [Download](https://garrisonlab.s3.amazonaws.com/hprcv2/impg/hprc465vschm13.aln.paf.gz.impg) |
-
-## Documentation
-
-- [IBS Tutorial](docs/tutorials/ibs.md)
-- [IBD Tutorial](docs/tutorials/ibd.md)
-- [API Reference](docs/API.md)
-
-## Repository Structure
-
-```
-HPRCv2-IBD/
-├── src/                    # Source code (Rust CLI tools)
-│   ├── ibd-cli/
-│   ├── ibs-cli/
-│   └── jacquard-cli/
-├── data/                   # Input data and sample lists
-├── docs/                   # Documentation and tutorials
-└── experiments/            # Analysis scripts and examples
-```
+| HPRC_r2_assemblies_0.6.1.agc | 3.1 GB | [Link](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=submissions/B4174A5F-F20E-4DCF-8470-F8A907B640BC--HPRCv2_0.6.1_pr_agc_submission/) |
+| hprc465vschm13.aln.paf.gz | 5.3 GB | [Link](https://garrisonlab.s3.amazonaws.com/hprcv2/pafs/hprc465vschm13.aln.paf.gz) |
+| hprc465vschm13.aln.paf.gz.impg | 315 MB | [Link](https://garrisonlab.s3.amazonaws.com/hprcv2/impg/hprc465vschm13.aln.paf.gz.impg) |
 
 ## License
 
