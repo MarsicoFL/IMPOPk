@@ -1,146 +1,141 @@
 # HPRCv2-IBD
 
-Identity-by-Descent (IBD) detection from Human Pangenome Reference Consortium (HPRC) assemblies using haplotype-level identity analysis.
+Identity-by-Descent (IBD) detection from pangenome assemblies using haplotype-level identity analysis.
 
 ## Overview
 
-This project provides tools and analysis pipelines for:
+A suite of Rust CLI tools for detecting IBD segments from whole-genome assemblies:
 
-- **IBS Detection**: Sliding window identity-by-state analysis using pangenome alignments
+- **IBS Detection**: Sliding window identity-by-state computation from pangenome alignments
 - **IBD Inference**: Hidden Markov Model (Viterbi) to distinguish true IBD from background IBS
-- **Selection Scans**: Detection of positive selection signatures through IBS enrichment
-- **Population Genetics**: Comparative analysis across 5 continental populations
+- **Jacquard Coefficients**: Delta coefficient estimation for relatedness analysis
+
+## Tools
+
+| Tool | Description | Documentation |
+|------|-------------|---------------|
+| [ibs-cli](src/ibs-cli/) | Window-based IBS detection | [README](src/ibs-cli/README.md) |
+| [ibd-cli](src/ibd-cli/) | HMM-based IBD inference | [README](src/ibd-cli/README.md) |
+| [jacquard-cli](src/jacquard-cli/) | Jacquard delta coefficients | [README](src/jacquard-cli/README.md) |
+
+## Installation
+
+### Requirements
+
+- **Rust** 1.70+ ([rustup.rs](https://rustup.rs/))
+
+### Build
+
+```bash
+# Build all tools
+cd src/ibs-cli && cargo build --release
+cd ../ibd-cli && cargo build --release
+cd ../jacquard-cli && cargo build --release
+```
+
+Binaries will be in `src/*/target/release/`.
+
+## Usage
+
+### 1. IBS Detection
+
+Compute pairwise identity in sliding windows:
+
+```bash
+./src/ibs-cli/target/release/ibs \
+    --sequence-files assemblies.agc \
+    -a alignments.paf.gz \
+    --subset-sequence-list samples.txt \
+    --region chr1:1-10000000 \
+    --size 5000 \
+    -t 0.999 \
+    -m cosine \
+    --output ibs_results.tsv
+```
+
+**Parameters:**
+- `--sequence-files`: AGC archive with assemblies
+- `-a`: PAF alignments to reference
+- `--subset-sequence-list`: File with haplotype IDs (one per line)
+- `--region`: Genomic region (chr:start-end)
+- `--size`: Window size in bp
+- `-t`: Identity threshold
+- `-m`: Similarity metric (cosine, jaccard)
+
+### 2. IBD Inference
+
+Infer IBD segments from IBS data using HMM:
+
+```bash
+./src/ibd-cli/target/release/ibd-hmm inference \
+    --input ibs_results.tsv \
+    --output ibd_segments.json
+```
+
+**Output:** JSON file with IBD segments including coordinates, identity, and posterior probabilities.
+
+### 3. Jacquard Coefficients
+
+Compute Jacquard delta coefficients:
+
+```bash
+./src/jacquard-cli/target/release/jacquard \
+    --input identity_data.tsv \
+    --output coefficients.json
+```
+
+## Input Data
+
+The tools require:
+
+1. **Assemblies**: AGC-compressed genome assemblies
+2. **Alignments**: PAF alignments to a reference genome
+3. **Sample list**: Text file with haplotype identifiers
+
+### Sample List Format
+
+```
+HG00096#1
+HG00096#2
+HG00097#1
+HG00097#2
+```
+
+Format: `{sample_id}#{haplotype}` (1 = hap1/maternal, 2 = hap2/paternal)
+
+## Data Sources
+
+Required external files:
+
+| File | Size | Download |
+|------|------|----------|
+| HPRC_r2_assemblies_0.6.1.agc | 3.1 GB | [Download](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=submissions/B4174A5F-F20E-4DCF-8470-F8A907B640BC--HPRCv2_0.6.1_pr_agc_submission/) |
+| hprc465vschm13.aln.paf.gz | 5.3 GB | [Download](https://garrisonlab.s3.amazonaws.com/hprcv2/pafs/hprc465vschm13.aln.paf.gz) |
+| hprc465vschm13.aln.paf.gz.impg | 315 MB | [Download](https://garrisonlab.s3.amazonaws.com/hprcv2/impg/hprc465vschm13.aln.paf.gz.impg) |
+
+## Documentation
+
+- [IBS Tutorial](docs/tutorials/ibs.md)
+- [IBD Tutorial](docs/tutorials/ibd.md)
+- [API Reference](docs/API.md)
 
 ## Repository Structure
 
 ```
 HPRCv2-IBD/
-├── src/                    # PACKAGE SOURCE CODE (Rust CLI tools)
-│   ├── ibd-cli/            # IBD detection with HMM
-│   ├── ibs-cli/            # IBS window detection
-│   └── jacquard-cli/       # Jacquard delta coefficients
-│
-├── data/                   # INPUT DATA
-│   ├── assemblies/         # HPRC genome assemblies (symlinks)
-│   ├── alignments/         # CHM13 reference alignments (symlinks)
-│   └── samples/            # Population sample lists
-│
-├── experiments/            # ANALYSIS EXPERIMENTS
-│   ├── chr1_full/          # Full chromosome 1 IBD analysis
-│   ├── selection_scan/     # Selection signature detection
-│   ├── full_population/    # 5-population IBS matrices
-│   └── benchmarks/         # Performance benchmarks
-│
-├── reports/                # FINAL REPORTS
-│   ├── main/               # Main analysis report (PDF, LaTeX, figures)
-│   └── supplementary/      # Additional analysis notes
-│
-├── docs/                   # DOCUMENTATION
-│   ├── tutorials/          # How-to guides
-│   └── methods/            # Scientific methodology
-│
-└── archive/                # Old versions (for reference)
+├── src/                    # Source code (Rust CLI tools)
+│   ├── ibd-cli/
+│   ├── ibs-cli/
+│   └── jacquard-cli/
+├── data/                   # Input data and sample lists
+├── docs/                   # Documentation and tutorials
+└── experiments/            # Analysis scripts and examples
 ```
-
-## Quick Start
-
-### 1. Build Tools
-
-```bash
-cd src/ibs-cli && cargo build --release
-cd ../ibd-cli && cargo build --release
-```
-
-### 2. Run IBS Detection
-
-```bash
-./src/ibs-cli/target/release/ibs \
-    --sequence-files data/assemblies/HPRC_r2_assemblies_0.6.1.agc \
-    -a data/alignments/hprc465vschm13.aln.paf.gz \
-    --subset-sequence-list data/samples/EUR.txt \
-    --region chr1:1-10000000 \
-    --size 5000 \
-    -t 0.999 -m cosine \
-    --output results.tsv
-```
-
-### 3. Run IBD Inference
-
-```bash
-./src/ibd-cli/target/release/ibd-hmm inference \
-    --input results.tsv \
-    --output ibd_segments.json
-```
-
-## Requirements
-
-- **Rust** 1.70+ (install via [rustup](https://rustup.rs/))
-- **Python** 3.8+ (for analysis scripts)
-- **LaTeX** (for report compilation, optional)
-
-Python dependencies:
-```bash
-pip install numpy matplotlib scipy pandas
-```
-
-## Data Sources
-
-External data files (symlinked in `data/`):
-
-| File | Size | Source |
-|------|------|--------|
-| HPRC_r2_assemblies_0.6.1.agc | 3.1 GB | [HPRC](https://humanpangenome.org/) |
-| hprc465vschm13.aln.paf.gz | 5.3 GB | [GarrisonLab](https://garrisonlab.s3.amazonaws.com/) |
-| hprc465vschm13.aln.paf.gz.impg | 315 MB | [GarrisonLab](https://garrisonlab.s3.amazonaws.com/) |
-
-## Population Data
-
-| Population | Individuals | Haplotypes | Description |
-|------------|-------------|------------|-------------|
-| AFR | 67 | 134 | African ancestry |
-| EUR | 30 | 60 | European ancestry |
-| EAS | 50 | 100 | East Asian ancestry |
-| CSA | 36 | 72 | Central/South Asian ancestry |
-| AMR | 44 | 88 | Admixed American ancestry |
-| **Total** | **227** | **454** | |
-
-## Main Results
-
-### Validated Findings
-
-1. **HMM Model Performance**: d' > 5 for both EUR and AFR (excellent state separation)
-2. **EUR IBD Detection**: Valid segments with ~99.99% identity
-3. **Selection Signatures**: 2.5-2.7x IBS enrichment at LCT, EDAR, SLC24A5
-
-### Data Quality Notes
-
-**Important**: See `reports/main/DATA_QUALITY_NOTES.md` for critical information about:
-- AFR IBD segment validity issues (require re-inference)
-- Centromeric region artifacts
-- v2 corrected emission parameters
-
-## Documentation
-
-- **Main Report**: `reports/main/HPRCv2_IBD_Report.pdf`
-- **Tutorials**: `docs/tutorials/`
-- **API Reference**: `docs/api/`
-- **Methods**: `docs/methods/`
-
-## Experiments
-
-| Experiment | Description | Data Size |
-|------------|-------------|-----------|
-| `chr1_full` | Full chromosome 1 IBD analysis | 45 GB |
-| `selection_scan` | 5 known selection loci | 2 GB |
-| `full_population` | 5-population IBS matrices | 6.8 GB |
-| `benchmarks` | Performance scaling tests | 500 MB |
 
 ## License
 
-MIT License - See LICENSE file for details.
+MIT License
 
 ## Citation
 
-If using this pipeline or data, please cite:
-- Human Pangenome Reference Consortium (2023)
-- This repository
+If using these tools, please cite this repository.

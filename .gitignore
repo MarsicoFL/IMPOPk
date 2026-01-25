@@ -148,3 +148,7 @@ archive/
 !experiments/**/results/*.md
 !reports/main/*.tex
 !reports/main/*.md
+
+# Local documentation
+CONTRIBUTING.md
+STRUCTURE.md
