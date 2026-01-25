@@ -18,6 +18,13 @@ A suite of Rust CLI tools for detecting IBD segments from whole-genome assemblie
 | [ibd-cli](src/ibd-cli/) | HMM-based IBD inference | [README](src/ibd-cli/README.md) |
 | [jacquard-cli](src/jacquard-cli/) | Jacquard delta coefficients | [README](src/jacquard-cli/README.md) |
 
+## Tutorials
+
+- [IBS Detection](docs/tutorials/ibs.md) - Window-based identity analysis
+- [IBD Inference](docs/tutorials/ibd.md) - HMM-based segment detection
+- [Jacquard Coefficients](docs/tutorials/jacquard_coeffs.md) - Relatedness estimation
+- [Full Pipeline](docs/tutorials/run_full.md) - End-to-end workflow
+
 ## Installation
 
 ### Requirements
@@ -96,18 +103,19 @@ The tools require:
 2. **Alignments**: PAF alignments to a reference genome
 3. **Sample list**: Text file with haplotype identifiers
 
-### Sample List Format
+### Included Sample Lists
 
-```
-HG00096#1
-HG00096#2
-HG00097#1
-HG00097#2
-```
+Population sample lists are included in [`data/samples/`](data/):
 
-Format: `{sample_id}#{haplotype}` (1 = hap1/maternal, 2 = hap2/paternal)
+| Population | Individuals | Haplotypes |
+|------------|-------------|------------|
+| AFR | 67 | 134 |
+| EUR | 30 | 60 |
+| EAS | 50 | 100 |
+| CSA | 36 | 72 |
+| AMR | 44 | 88 |
 
-### Example Data (HPRC)
+### Required External Data (HPRC)
 
 | File | Size | Download |
 |------|------|----------|
