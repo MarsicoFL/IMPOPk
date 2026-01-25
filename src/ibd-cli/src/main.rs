@@ -119,7 +119,7 @@ fn collect_identities(
         let mut cmd = Command::new("impg");
         cmd.arg("similarity")
             .arg("--sequence-files").arg(&args.sequence_files)
-            .arg("-p").arg(&args.align)
+            .arg("-a").arg(&args.align)
             .arg("-r").arg(&ref_region)
             .arg("--subset-sequence-list").arg(&args.subset_list)
             .arg("--force-large-region")
