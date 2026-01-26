@@ -13,12 +13,16 @@ struct Args {
     #[arg(long = "ibs")]
     ibs: PathBuf,
 
+    /// First haplotype of individual A (format: sample#haplotype, e.g. HG00096#1)
     #[arg(long = "hap-a1")]
     hap_a1: String,
+    /// Second haplotype of individual A (format: sample#haplotype, e.g. HG00096#2)
     #[arg(long = "hap-a2")]
     hap_a2: String,
+    /// First haplotype of individual B (format: sample#haplotype, e.g. HG00097#1)
     #[arg(long = "hap-b1")]
     hap_b1: String,
+    /// Second haplotype of individual B (format: sample#haplotype, e.g. HG00097#2)
     #[arg(long = "hap-b2")]
     hap_b2: String,
 }
@@ -147,6 +151,27 @@ fn main() -> Result<()> {
 }
 
 fn run(args: Args) -> Result<()> {
+    // Validate that all 4 haplotypes are distinct between groups A and B
+    let haps_a: HashSet<&str> = [args.hap_a1.as_str(), args.hap_a2.as_str()].into_iter().collect();
+    let haps_b: HashSet<&str> = [args.hap_b1.as_str(), args.hap_b2.as_str()].into_iter().collect();
+
+    // Check for duplicates within group A
+    if haps_a.len() != 2 {
+        bail!("hap-a1 and hap-a2 must be distinct (got '{}' and '{}')", args.hap_a1, args.hap_a2);
+    }
+    // Check for duplicates within group B
+    if haps_b.len() != 2 {
+        bail!("hap-b1 and hap-b2 must be distinct (got '{}' and '{}')", args.hap_b1, args.hap_b2);
+    }
+    // Check for overlap between groups A and B
+    let overlap: Vec<_> = haps_a.intersection(&haps_b).collect();
+    if !overlap.is_empty() {
+        bail!(
+            "haplotypes must be distinct between groups A and B; overlapping: {:?}",
+            overlap
+        );
+    }
+
     let haps = HaplotypeSet::new(args.hap_a1, args.hap_a2, args.hap_b1, args.hap_b2);
     let records = load_records(&args.ibs)?;
     if records.is_empty() {

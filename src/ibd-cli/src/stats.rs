@@ -10,16 +10,76 @@ pub struct GaussianParams {
 }
 
 impl GaussianParams {
-    pub fn new(mean: f64, std: f64) -> Self {
+    /// Creates a new GaussianParams with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `std <= 0`, as this would cause division by zero
+    /// in probability calculations.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hprc_ibd::stats::GaussianParams;
+    ///
+    /// let valid = GaussianParams::new(0.0, 1.0);
+    /// assert!(valid.is_ok());
+    ///
+    /// let invalid = GaussianParams::new(0.0, 0.0);
+    /// assert!(invalid.is_err());
+    ///
+    /// let negative = GaussianParams::new(0.0, -1.0);
+    /// assert!(negative.is_err());
+    /// ```
+    pub fn new(mean: f64, std: f64) -> Result<Self, String> {
+        if std <= 0.0 {
+            return Err(format!(
+                "GaussianParams: std must be positive, got {}",
+                std
+            ));
+        }
+        Ok(Self { mean, std })
+    }
+
+    /// Creates a new GaussianParams without validation.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that `std > 0`. Using a non-positive `std`
+    /// will cause division by zero or undefined behavior in `pdf()` and `log_pdf()`.
+    ///
+    /// This is useful for:
+    /// - Compile-time constants where the values are known to be valid
+    /// - Performance-critical code where validation has already been performed
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hprc_ibd::stats::GaussianParams;
+    ///
+    /// // Safe: std is clearly positive
+    /// let params = GaussianParams::new_unchecked(0.0, 1.0);
+    /// ```
+    pub const fn new_unchecked(mean: f64, std: f64) -> Self {
         Self { mean, std }
     }
 
     pub fn pdf(&self, x: f64) -> f64 {
+        debug_assert!(
+            self.std > 0.0,
+            "GaussianParams::pdf: std must be positive, got {}",
+            self.std
+        );
         let z = (x - self.mean) / self.std;
         (-0.5 * z * z).exp() / (self.std * (2.0 * PI).sqrt())
     }
 
     pub fn log_pdf(&self, x: f64) -> f64 {
+        debug_assert!(
+            self.std > 0.0,
+            "GaussianParams::log_pdf: std must be positive, got {}",
+            self.std
+        );
         let z = (x - self.mean) / self.std;
         -0.5 * z * z - self.std.ln() - 0.5 * (2.0 * PI).ln()
     }
@@ -132,10 +192,43 @@ mod tests {
 
     #[test]
     fn test_gaussian_pdf() {
-        let g = GaussianParams::new(0.0, 1.0);
+        let g = GaussianParams::new(0.0, 1.0).unwrap();
         let pdf_at_0 = g.pdf(0.0);
         let expected = 1.0 / (2.0 * PI).sqrt();
         assert!((pdf_at_0 - expected).abs() < 1e-10);
+    }
+
+    // === Validation tests for GaussianParams::new ===
+
+    #[test]
+    fn test_gaussian_new_valid() {
+        // Positive std should succeed
+        assert!(GaussianParams::new(0.0, 1.0).is_ok());
+        assert!(GaussianParams::new(5.0, 0.001).is_ok());
+        assert!(GaussianParams::new(-10.0, 100.0).is_ok());
+    }
+
+    #[test]
+    fn test_gaussian_new_zero_std_fails() {
+        // std = 0 should fail
+        let result = GaussianParams::new(0.0, 0.0);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("must be positive"));
+    }
+
+    #[test]
+    fn test_gaussian_new_negative_std_fails() {
+        // Negative std should fail
+        let result = GaussianParams::new(0.0, -1.0);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("must be positive"));
+    }
+
+    #[test]
+    fn test_gaussian_new_very_small_positive_std_succeeds() {
+        // Very small positive std should succeed
+        let result = GaussianParams::new(0.0, 1e-15);
+        assert!(result.is_ok());
     }
 
     #[test]
@@ -294,7 +387,7 @@ mod tests {
 
     #[test]
     fn test_gaussian_pdf_at_mean() {
-        let g = GaussianParams::new(5.0, 2.0);
+        let g = GaussianParams::new(5.0, 2.0).unwrap();
         let pdf_at_mean = g.pdf(5.0);
         // At mean, z = 0, so pdf = 1 / (std * sqrt(2*pi))
         let expected = 1.0 / (2.0 * (2.0 * PI).sqrt());
@@ -303,7 +396,7 @@ mod tests {
 
     #[test]
     fn test_gaussian_pdf_symmetry() {
-        let g = GaussianParams::new(0.0, 1.0);
+        let g = GaussianParams::new(0.0, 1.0).unwrap();
         // PDF should be symmetric around mean
         let pdf_plus_1 = g.pdf(1.0);
         let pdf_minus_1 = g.pdf(-1.0);
@@ -312,7 +405,7 @@ mod tests {
 
     #[test]
     fn test_gaussian_log_pdf_consistency() {
-        let g = GaussianParams::new(3.0, 0.5);
+        let g = GaussianParams::new(3.0, 0.5).unwrap();
         let x = 2.5;
         // log(pdf(x)) should equal log_pdf(x)
         let pdf_val = g.pdf(x);
@@ -323,7 +416,7 @@ mod tests {
     #[test]
     fn test_gaussian_narrow_std() {
         // Very narrow distribution
-        let g = GaussianParams::new(0.0, 0.001);
+        let g = GaussianParams::new(0.0, 0.001).unwrap();
         // PDF at mean should be very high
         let pdf_at_mean = g.pdf(0.0);
         assert!(pdf_at_mean > 100.0);
@@ -335,7 +428,7 @@ mod tests {
     #[test]
     fn test_gaussian_wide_std() {
         // Very wide distribution
-        let g = GaussianParams::new(0.0, 100.0);
+        let g = GaussianParams::new(0.0, 100.0).unwrap();
         // PDF should be relatively flat
         let pdf_at_0 = g.pdf(0.0);
         let pdf_at_50 = g.pdf(50.0);

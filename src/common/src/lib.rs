@@ -106,6 +106,12 @@ pub struct Region {
     pub end: u64,
 }
 
+impl std::fmt::Display for Region {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}-{}", self.chrom, self.start, self.end)
+    }
+}
+
 impl Region {
     /// Parse a region string in either "chr:start-end" or "chr" format.
     ///
@@ -189,6 +195,83 @@ impl Region {
     /// ```
     pub fn to_impg_ref(&self, ref_name: &str) -> String {
         format!("{}#0#{}:{}-{}", ref_name, self.chrom, self.start, self.end)
+    }
+}
+
+/// Column indices for parsing impg similarity output.
+///
+/// This structure maps column names to their indices in the TSV output
+/// from `impg similarity`. It allows flexible parsing regardless of column order.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use hprc_common::ColumnIndices;
+///
+/// let header = "chrom\tstart\tend\tgroup.a\tgroup.b\testimated.identity";
+/// let cols = ColumnIndices::from_header(header).unwrap();
+/// ```
+#[derive(Debug, Clone)]
+pub struct ColumnIndices {
+    /// Index of the "estimated.identity" column
+    pub estimated_identity: usize,
+    /// Index of the "chrom" column
+    pub chrom: usize,
+    /// Index of the "start" column
+    pub start: usize,
+    /// Index of the "end" column
+    pub end: usize,
+    /// Index of the "group.a" column
+    pub group_a: usize,
+    /// Index of the "group.b" column
+    pub group_b: usize,
+}
+
+impl ColumnIndices {
+    /// Parse column indices from a TSV header line.
+    ///
+    /// # Arguments
+    ///
+    /// * `header` - Tab-separated header line from impg similarity output
+    ///
+    /// # Returns
+    ///
+    /// A `Result<ColumnIndices>` containing the parsed indices or an error
+    /// if any required column is missing.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`HprcError::MissingColumn`] if a required column is not found.
+    pub fn from_header(header: &str) -> Result<Self> {
+        let columns: Vec<&str> = header.split('\t').collect();
+
+        let find_col = |name: &str| -> Result<usize> {
+            columns
+                .iter()
+                .position(|&c| c == name)
+                .ok_or_else(|| HprcError::MissingColumn(name.to_string()))
+        };
+
+        Ok(ColumnIndices {
+            estimated_identity: find_col("estimated.identity")?,
+            chrom: find_col("chrom")?,
+            start: find_col("start")?,
+            end: find_col("end")?,
+            group_a: find_col("group.a")?,
+            group_b: find_col("group.b")?,
+        })
+    }
+
+    /// Returns the maximum column index needed to parse a row.
+    ///
+    /// Useful for validating that a data row has enough columns.
+    pub fn max_index(&self) -> usize {
+        self.estimated_identity
+            .max(self.chrom)
+            .max(self.start)
+            .max(self.end)
+            .max(self.group_a)
+            .max(self.group_b)
     }
 }
 

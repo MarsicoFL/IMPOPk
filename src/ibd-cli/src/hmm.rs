@@ -42,14 +42,16 @@
 //! ];
 //!
 //! // Create HMM with population-specific parameters
+//! let window_size = 5000;  // 5kb windows
 //! let mut params = HmmParams::from_population(
 //!     Population::EUR,
 //!     50.0,    // expected IBD segment length in windows
 //!     0.0001,  // probability of entering IBD
+//!     window_size,
 //! );
 //!
 //! // Optionally refine emissions from observed data
-//! params.estimate_emissions_robust(&observations, Some(Population::EUR));
+//! params.estimate_emissions_robust(&observations, Some(Population::EUR), window_size);
 //!
 //! // Run Viterbi to get state sequence
 //! let states = viterbi(&observations, &params);
@@ -116,17 +118,22 @@ impl Population {
     /// The mean is 1 - π (expected identity), and std is derived from
     /// the Poisson variance of SNP counts in a window, with empirical
     /// correction for linkage disequilibrium.
-    pub fn non_ibd_emission(&self) -> GaussianParams {
+    ///
+    /// ## Parameters
+    ///
+    /// - `window_size`: The window size in base pairs used for identity calculations.
+    ///   This affects the variance of the emission distribution.
+    pub fn non_ibd_emission(&self, window_size: u64) -> GaussianParams {
         let pi = self.diversity();
         let mean = 1.0 - pi;
 
         // Variance: Poisson approximation with LD correction factor (~3x)
-        // For 5kb windows: std ≈ sqrt(π / 5000 * 3)
-        let window_size = 5000.0;
+        // std ≈ sqrt(π / window_size * 3)
         let ld_correction = 3.0;
-        let std = (pi / window_size * ld_correction).sqrt();
+        let std = (pi / window_size as f64 * ld_correction).sqrt();
 
-        GaussianParams { mean, std }
+        // SAFETY: std is always positive since pi > 0, window_size > 0, and sqrt of positive is positive
+        GaussianParams::new_unchecked(mean, std)
     }
 
     /// Parse population from string.
@@ -190,7 +197,7 @@ pub const IBD_EMISSION: GaussianParams = GaussianParams {
 /// use hprc_ibd::hmm::HmmParams;
 ///
 /// // Create parameters expecting 50-window IBD segments
-/// let params = HmmParams::from_expected_length(50.0, 0.0001);
+/// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
 ///
 /// // Check transition probabilities
 /// assert!(params.transition[1][1] > 0.9); // High probability to stay in IBD
@@ -217,6 +224,7 @@ impl HmmParams {
     ///   Higher values make the model expect longer segments.
     /// - `p_enter_ibd`: Probability of transitioning from non-IBD to IBD state.
     ///   Lower values make IBD calls more conservative.
+    /// - `window_size`: The window size in base pairs used for identity calculations.
     ///
     /// ## Transition Probability Calculation
     ///
@@ -244,14 +252,14 @@ impl HmmParams {
     /// use hprc_ibd::hmm::HmmParams;
     ///
     /// // Conservative settings: expect long segments, rare IBD transitions
-    /// let params = HmmParams::from_expected_length(100.0, 0.00001);
+    /// let params = HmmParams::from_expected_length(100.0, 0.00001, 5000);
     ///
     /// // Sensitive settings: expect shorter segments, easier IBD transitions
-    /// let params = HmmParams::from_expected_length(20.0, 0.001);
+    /// let params = HmmParams::from_expected_length(20.0, 0.001, 5000);
     /// ```
-    pub fn from_expected_length(expected_ibd_windows: f64, p_enter_ibd: f64) -> Self {
+    pub fn from_expected_length(expected_ibd_windows: f64, p_enter_ibd: f64, window_size: u64) -> Self {
         // Use Generic population for backwards compatibility
-        Self::from_population(Population::Generic, expected_ibd_windows, p_enter_ibd)
+        Self::from_population(Population::Generic, expected_ibd_windows, p_enter_ibd, window_size)
     }
 
     /// Create HMM parameters with population-specific background.
@@ -264,6 +272,7 @@ impl HmmParams {
     /// - `population`: The population for estimating non-IBD background
     /// - `expected_ibd_windows`: Expected number of consecutive windows in an IBD segment
     /// - `p_enter_ibd`: Probability of transitioning from non-IBD to IBD state
+    /// - `window_size`: The window size in base pairs used for identity calculations
     ///
     /// ## Population-Specific Background
     ///
@@ -277,17 +286,18 @@ impl HmmParams {
     /// ```rust
     /// use hprc_ibd::hmm::{HmmParams, Population};
     ///
-    /// // For European samples
-    /// let params = HmmParams::from_population(Population::EUR, 50.0, 0.0001);
+    /// // For European samples with 5kb windows
+    /// let params = HmmParams::from_population(Population::EUR, 50.0, 0.0001, 5000);
     /// assert!(params.emission[0].mean > 0.99);  // Biologically correct!
     ///
     /// // For inter-population comparison (AFR vs EAS)
-    /// let params = HmmParams::from_population(Population::InterPop, 50.0, 0.00001);
+    /// let params = HmmParams::from_population(Population::InterPop, 50.0, 0.00001, 5000);
     /// ```
     pub fn from_population(
         population: Population,
         expected_ibd_windows: f64,
         p_enter_ibd: f64,
+        window_size: u64,
     ) -> Self {
         assert!(
             p_enter_ibd > 0.0 && p_enter_ibd < 1.0,
@@ -299,8 +309,8 @@ impl HmmParams {
         let p_stay_ibd = p_stay_ibd.clamp(0.5, 0.9999);
         let p_exit_ibd = 1.0 - p_stay_ibd;
 
-        // Get population-specific non-IBD emission
-        let non_ibd_emission = population.non_ibd_emission();
+        // Get population-specific non-IBD emission with correct window size
+        let non_ibd_emission = population.non_ibd_emission(window_size);
 
         HmmParams {
             initial: [1.0 - p_enter_ibd, p_enter_ibd],
@@ -338,7 +348,7 @@ impl HmmParams {
     /// ```rust
     /// use hprc_ibd::hmm::HmmParams;
     ///
-    /// let mut params = HmmParams::from_expected_length(50.0, 0.0001);
+    /// let mut params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
     ///
     /// // Observations with clear two-cluster structure
     /// let observations = vec![
@@ -392,19 +402,21 @@ impl HmmParams {
                 if n_low > 0 {
                     let mean = sum_low / n_low as f64;
                     let var = (sq_sum_low / n_low as f64) - mean * mean;
-                    self.emission[0] = GaussianParams {
+                    // SAFETY: std is always positive due to .max(0.01)
+                    self.emission[0] = GaussianParams::new_unchecked(
                         mean,
-                        std: var.sqrt().max(0.01),
-                    };
+                        var.sqrt().max(0.01),
+                    );
                 }
 
                 if n_high > 0 {
                     let mean = sum_high / n_high as f64;
                     let var = (sq_sum_high / n_high as f64) - mean * mean;
-                    self.emission[1] = GaussianParams {
+                    // SAFETY: std is always positive due to .max(0.001)
+                    self.emission[1] = GaussianParams::new_unchecked(
                         mean,
-                        std: var.sqrt().max(0.001),
-                    };
+                        var.sqrt().max(0.001),
+                    );
                 }
             }
             None => {
@@ -436,6 +448,7 @@ impl HmmParams {
     ///
     /// - `observations`: Identity values from windowed analysis
     /// - `population_prior`: Optional population for prior parameters
+    /// - `window_size`: The window size in base pairs used for identity calculations
     ///
     /// ## Algorithm
     ///
@@ -450,16 +463,17 @@ impl HmmParams {
     /// ```rust
     /// use hprc_ibd::hmm::{HmmParams, Population};
     ///
-    /// let mut params = HmmParams::from_population(Population::EUR, 50.0, 0.0001);
+    /// let mut params = HmmParams::from_population(Population::EUR, 50.0, 0.0001, 5000);
     ///
     /// // Data with clear IBD signal
     /// let observations = vec![0.998, 0.997, 0.9995, 0.9998, 0.9996, 0.997];
-    /// params.estimate_emissions_robust(&observations, Some(Population::EUR));
+    /// params.estimate_emissions_robust(&observations, Some(Population::EUR), 5000);
     /// ```
     pub fn estimate_emissions_robust(
         &mut self,
         observations: &[f64],
         population_prior: Option<Population>,
+        window_size: u64,
     ) {
         if observations.len() < 10 {
             // Need sufficient data for robust estimation
@@ -468,7 +482,7 @@ impl HmmParams {
 
         // Get prior parameters
         let prior = population_prior.unwrap_or(Population::Generic);
-        let prior_non_ibd = prior.non_ibd_emission();
+        let prior_non_ibd = prior.non_ibd_emission(window_size);
 
         // Compute data statistics
         let n = observations.len() as f64;
@@ -480,16 +494,18 @@ impl HmmParams {
             // Check if data looks like IBD or non-IBD based on mean
             if mean > 0.9993 {
                 // Likely all IBD - keep prior for non-IBD
-                self.emission[1] = GaussianParams {
+                // SAFETY: std is always positive due to .max(0.0005)
+                self.emission[1] = GaussianParams::new_unchecked(
                     mean,
-                    std: variance.sqrt().max(0.0005),
-                };
+                    variance.sqrt().max(0.0005),
+                );
             } else {
                 // Likely all non-IBD - keep prior for IBD
-                self.emission[0] = GaussianParams {
+                // SAFETY: std is always positive due to .max(0.001)
+                self.emission[0] = GaussianParams::new_unchecked(
                     mean,
-                    std: variance.sqrt().max(0.001),
-                };
+                    variance.sqrt().max(0.001),
+                );
             }
             return;
         }
@@ -532,10 +548,11 @@ impl HmmParams {
                         0.9993,                       // Must be below IBD threshold
                     );
 
-                    self.emission[0] = GaussianParams {
-                        mean: bounded_mean,
-                        std: var_low.sqrt().clamp(0.0005, 0.005),
-                    };
+                    // SAFETY: std is always positive due to .clamp(0.0005, 0.005)
+                    self.emission[0] = GaussianParams::new_unchecked(
+                        bounded_mean,
+                        var_low.sqrt().clamp(0.0005, 0.005),
+                    );
                 }
 
                 // Update IBD (high cluster) with bounds
@@ -549,10 +566,11 @@ impl HmmParams {
                         1.0,     // Can't exceed 1.0
                     );
 
-                    self.emission[1] = GaussianParams {
-                        mean: bounded_mean,
-                        std: var_high.sqrt().clamp(0.0003, 0.002),
-                    };
+                    // SAFETY: std is always positive due to .clamp(0.0003, 0.002)
+                    self.emission[1] = GaussianParams::new_unchecked(
+                        bounded_mean,
+                        var_high.sqrt().clamp(0.0003, 0.002),
+                    );
                 }
             }
             // If separation too small, keep population-based defaults
@@ -608,7 +626,7 @@ impl HmmParams {
 /// use hprc_ibd::hmm::{HmmParams, viterbi};
 ///
 /// // For demonstration, use balanced priors (p_enter_ibd = 0.5)
-/// let params = HmmParams::from_expected_length(10.0, 0.5);
+/// let params = HmmParams::from_expected_length(10.0, 0.5, 5000);
 ///
 /// // Clear low identity observations -> all non-IBD
 /// let low_obs = vec![0.5, 0.5, 0.5];
@@ -754,7 +772,7 @@ mod tests {
 
     #[test]
     fn test_viterbi_simple() {
-        let params = HmmParams::from_expected_length(10.0, 0.001);
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
         let obs = vec![0.5, 0.6, 0.99, 0.995, 0.998, 0.5, 0.4];
         let states = viterbi(&obs, &params);
         assert_eq!(states.len(), 7);
@@ -773,36 +791,36 @@ mod tests {
     #[should_panic(expected = "p_enter_ibd must be in range (0, 1)")]
     fn test_p_enter_ibd_zero_panics() {
         // p_enter_ibd = 0 is invalid (must be > 0)
-        let _ = HmmParams::from_expected_length(10.0, 0.0);
+        let _ = HmmParams::from_expected_length(10.0, 0.0, 5000);
     }
 
     #[test]
     #[should_panic(expected = "p_enter_ibd must be in range (0, 1)")]
     fn test_p_enter_ibd_one_panics() {
         // p_enter_ibd = 1 is invalid (must be < 1)
-        let _ = HmmParams::from_expected_length(10.0, 1.0);
+        let _ = HmmParams::from_expected_length(10.0, 1.0, 5000);
     }
 
     #[test]
     #[should_panic(expected = "p_enter_ibd must be in range (0, 1)")]
     fn test_p_enter_ibd_negative_panics() {
         // p_enter_ibd < 0 is invalid
-        let _ = HmmParams::from_expected_length(10.0, -0.1);
+        let _ = HmmParams::from_expected_length(10.0, -0.1, 5000);
     }
 
     #[test]
     fn test_p_enter_ibd_valid_values() {
         // These should all succeed without panicking
-        let _ = HmmParams::from_expected_length(10.0, 0.001);
-        let _ = HmmParams::from_expected_length(10.0, 0.5);
-        let _ = HmmParams::from_expected_length(10.0, 0.999);
+        let _ = HmmParams::from_expected_length(10.0, 0.001, 5000);
+        let _ = HmmParams::from_expected_length(10.0, 0.5, 5000);
+        let _ = HmmParams::from_expected_length(10.0, 0.999, 5000);
     }
 
     // === Edge case tests for Viterbi algorithm ===
 
     #[test]
     fn test_viterbi_empty_observations() {
-        let params = HmmParams::from_expected_length(10.0, 0.001);
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
         let obs: Vec<f64> = vec![];
         let states = viterbi(&obs, &params);
         assert!(states.is_empty());
@@ -811,7 +829,7 @@ mod tests {
     #[test]
     fn test_viterbi_single_observation() {
         // Use higher p_enter_ibd for single observation test to reduce prior effect
-        let params = HmmParams::from_expected_length(10.0, 0.5);
+        let params = HmmParams::from_expected_length(10.0, 0.5, 5000);
 
         // Single very high identity observation (above IBD mean ~0.9997)
         let obs_high = vec![0.9999];
@@ -832,7 +850,7 @@ mod tests {
     fn test_viterbi_all_high_identity() {
         // All observations indicate IBD (very high identity ~0.9997-0.9999)
         // For human data, IBD mean is ~0.9997, so values must be above this
-        let params = HmmParams::from_expected_length(10.0, 0.001);
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
         let obs = vec![0.9998, 0.9999, 0.9999, 0.9998, 0.9997, 0.9999, 0.9999, 0.9998];
         let states = viterbi(&obs, &params);
         assert_eq!(states.len(), 8);
@@ -845,7 +863,7 @@ mod tests {
     #[test]
     fn test_viterbi_all_low_identity() {
         // All observations indicate non-IBD
-        let params = HmmParams::from_expected_length(10.0, 0.001);
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
         let obs = vec![0.3, 0.4, 0.5, 0.45, 0.35, 0.42, 0.38, 0.41];
         let states = viterbi(&obs, &params);
         assert_eq!(states.len(), 8);
@@ -859,7 +877,7 @@ mod tests {
     fn test_viterbi_clear_state_transitions() {
         // Clear transition from non-IBD to IBD and back
         // Use higher p_enter_ibd to allow transitions
-        let params = HmmParams::from_expected_length(5.0, 0.1);
+        let params = HmmParams::from_expected_length(5.0, 0.1, 5000);
         // Low (well below non-IBD), Low, Very High (IBD) x5, Low, Low
         // Need enough IBD observations to overcome transition cost
         let obs = vec![0.5, 0.5, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.5, 0.5];
@@ -883,7 +901,7 @@ mod tests {
     #[test]
     fn test_viterbi_boundary_identity_values() {
         // Test with values near the emission distribution boundaries
-        let params = HmmParams::from_expected_length(10.0, 0.001);
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
         // Values around the decision boundary
         let obs = vec![0.75, 0.80, 0.85, 0.90, 0.95];
         let states = viterbi(&obs, &params);
@@ -970,7 +988,7 @@ mod tests {
 
     #[test]
     fn test_estimate_emissions_few_observations() {
-        let mut params = HmmParams::from_expected_length(10.0, 0.001);
+        let mut params = HmmParams::from_expected_length(10.0, 0.001, 5000);
         let original_emission = params.emission.clone();
 
         // Less than 3 observations should not change emissions
@@ -981,7 +999,7 @@ mod tests {
 
     #[test]
     fn test_estimate_emissions_identical_values() {
-        let mut params = HmmParams::from_expected_length(10.0, 0.001);
+        let mut params = HmmParams::from_expected_length(10.0, 0.001, 5000);
         let original_emission = params.emission.clone();
 
         // All identical values (zero variance) should not change emissions
@@ -994,7 +1012,7 @@ mod tests {
 
     #[test]
     fn test_estimate_emissions_two_clusters() {
-        let mut params = HmmParams::from_expected_length(10.0, 0.001);
+        let mut params = HmmParams::from_expected_length(10.0, 0.001, 5000);
 
         // Clear two-cluster data
         let obs = vec![0.3, 0.35, 0.32, 0.31, 0.95, 0.96, 0.97, 0.98];
@@ -1008,7 +1026,7 @@ mod tests {
 
     #[test]
     fn test_hmm_params_transition_probabilities() {
-        let params = HmmParams::from_expected_length(10.0, 0.001);
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
 
         // Check initial probabilities sum to 1
         let init_sum = params.initial[0] + params.initial[1];
@@ -1024,12 +1042,12 @@ mod tests {
     #[test]
     fn test_hmm_params_expected_length_clamping() {
         // Very short expected length should be clamped
-        let params_short = HmmParams::from_expected_length(1.0, 0.001);
+        let params_short = HmmParams::from_expected_length(1.0, 0.001, 5000);
         // p_stay_ibd should be clamped to at least 0.5
         assert!(params_short.transition[1][1] >= 0.5);
 
         // Very long expected length
-        let params_long = HmmParams::from_expected_length(100000.0, 0.001);
+        let params_long = HmmParams::from_expected_length(100000.0, 0.001, 5000);
         // p_stay_ibd should be clamped to at most 0.9999
         assert!(params_long.transition[1][1] <= 0.9999);
     }

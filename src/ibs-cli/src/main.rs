@@ -1,10 +1,30 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
+use hprc_common::{ColumnIndices, Region};
 use rayon::prelude::*;
+
+fn validate_cutoff(val: &str) -> Result<f64, String> {
+    let v: f64 = val.parse().map_err(|_| format!("'{}' is not a valid number", val))?;
+    if (0.0..=1.0).contains(&v) {
+        Ok(v)
+    } else {
+        Err(format!("cutoff must be in [0.0, 1.0], got {}", v))
+    }
+}
+
+fn validate_positive_u64(val: &str) -> Result<u64, String> {
+    let v: u64 = val.parse().map_err(|_| format!("'{}' is not a valid number", val))?;
+    if v > 0 {
+        Ok(v)
+    } else {
+        Err("value must be > 0 (window_size=0 causes infinite loop)".to_string())
+    }
+}
 
 /// ibs: wrapper around `impg similarity` to obtain IBS segments.
 ///
@@ -36,8 +56,8 @@ struct Args {
     #[arg(long = "region", required = true)]
     region: String,
 
-    /// Window size in bp
-    #[arg(long = "size", required = true)]
+    /// Window size in bp (must be > 0; window_size=0 causes infinite loop)
+    #[arg(long = "size", required = true, value_parser = validate_positive_u64)]
     window_size: u64,
 
     /// Haplotypes to compare (e.g. ibs_example.txt)
@@ -48,8 +68,8 @@ struct Args {
     #[arg(long = "output", required = true)]
     output: String,
 
-    /// Cutoff on estimated.identity (default: 0.999 to account for sequencing errors)
-    #[arg(short = 'c', default_value = "0.999")]
+    /// Cutoff on estimated.identity (must be in [0.0, 1.0], default: 0.999 to account for sequencing errors)
+    #[arg(short = 'c', default_value = "0.999", value_parser = validate_cutoff)]
     cutoff: f64,
 
     /// Metric (only informational for now)
@@ -63,74 +83,6 @@ struct Args {
     /// Number of threads for parallel processing (default: auto-detect)
     #[arg(short = 't', long = "threads")]
     threads: Option<usize>,
-}
-
-/// Parsed region information
-struct Region {
-    chrom: String,
-    start: u64,
-    end: u64,
-}
-
-impl Region {
-    fn parse(region_str: &str, region_length: Option<u64>) -> Result<Self> {
-        if let Some(colon_pos) = region_str.find(':') {
-            // Format: chr1:1-248956422
-            let chrom = region_str[..colon_pos].to_string();
-            let rest = &region_str[colon_pos + 1..];
-            
-            let dash_pos = rest.find('-')
-                .context("Invalid region format: expected 'chrom:start-end'")?;
-            
-            let start: u64 = rest[..dash_pos].parse()
-                .context("Invalid start position in region")?;
-            let end: u64 = rest[dash_pos + 1..].parse()
-                .context("Invalid end position in region")?;
-            
-            Ok(Region { chrom, start, end })
-        } else {
-            // Format: chr1 (requires --region-length)
-            let end = region_length
-                .context(format!("-region '{}' needs --region-length", region_str))?;
-            
-            Ok(Region {
-                chrom: region_str.to_string(),
-                start: 1,
-                end,
-            })
-        }
-    }
-}
-
-/// Column indices from the similarity output header
-struct ColumnIndices {
-    estimated_identity: usize,
-    chrom: usize,
-    start: usize,
-    end: usize,
-    group_a: usize,
-    group_b: usize,
-}
-
-impl ColumnIndices {
-    fn from_header(header: &str) -> Result<Self> {
-        let columns: Vec<&str> = header.split('\t').collect();
-        
-        let find_col = |name: &str| -> Result<usize> {
-            columns.iter()
-                .position(|&c| c == name)
-                .context(format!("Missing required column: {}", name))
-        };
-        
-        Ok(ColumnIndices {
-            estimated_identity: find_col("estimated.identity")?,
-            chrom: find_col("chrom")?,
-            start: find_col("start")?,
-            end: find_col("end")?,
-            group_a: find_col("group.a")?,
-            group_b: find_col("group.b")?,
-        })
-    }
 }
 
 /// Filtered row from impg output
@@ -185,7 +137,8 @@ fn process_window(
         .context("impg produced no output")?
         .context("Failed to read header line")?;
 
-    let cols = ColumnIndices::from_header(&header_line)?;
+    let cols = ColumnIndices::from_header(&header_line)
+        .context("Failed to parse impg header")?;
 
     let ref_prefix = format!("{}#", args.ref_name);
     let mut results = Vec::new();
@@ -195,7 +148,7 @@ fn process_window(
         let line = line_result.context("Failed to read line from impg output")?;
         let fields: Vec<&str> = line.split('\t').collect();
 
-        if fields.len() <= cols.estimated_identity.max(cols.group_a).max(cols.group_b) {
+        if fields.len() <= cols.max_index() {
             continue; // Skip malformed lines
         }
 
@@ -249,6 +202,17 @@ fn process_window(
 
 fn run() -> Result<()> {
     let args = Args::parse();
+
+    // Validate input files exist
+    if !Path::new(&args.sequence_files).exists() {
+        bail!("sequence-files does not exist: {}", args.sequence_files);
+    }
+    if !Path::new(&args.align).exists() {
+        bail!("alignment file does not exist: {}", args.align);
+    }
+    if !Path::new(&args.subset_list).exists() {
+        bail!("subset-sequence-list does not exist: {}", args.subset_list);
+    }
 
     // Configure thread pool if --threads is specified
     if let Some(num_threads) = args.threads {

@@ -3,12 +3,41 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
+
+fn validate_probability(val: &str) -> Result<f64, String> {
+    let v: f64 = val.parse().map_err(|_| format!("'{}' is not a valid number", val))?;
+    if v > 0.0 && v < 1.0 {
+        Ok(v)
+    } else {
+        Err(format!("probability must be in (0.0, 1.0), got {}", v))
+    }
+}
+
+fn validate_positive_u64(val: &str) -> Result<u64, String> {
+    let v: u64 = val.parse().map_err(|_| format!("'{}' is not a valid number", val))?;
+    if v > 0 {
+        Ok(v)
+    } else {
+        Err("value must be > 0".to_string())
+    }
+}
+
+fn validate_positive_usize(val: &str) -> Result<usize, String> {
+    let v: usize = val.parse().map_err(|_| format!("'{}' is not a valid number", val))?;
+    if v > 0 {
+        Ok(v)
+    } else {
+        Err("value must be > 0".to_string())
+    }
+}
 use rayon::prelude::*;
 
+use hprc_common::ColumnIndices;
 use hprc_ibd::hmm::{extract_ibd_segments, viterbi, HmmParams, Population};
 use hprc_ibd::{Region, WindowIterator};
 
@@ -27,7 +56,8 @@ struct Args {
     #[arg(long = "region", required = true)]
     region: String,
 
-    #[arg(long = "size", required = true)]
+    /// Window size in bp (must be > 0)
+    #[arg(long = "size", required = true, value_parser = validate_positive_u64)]
     window_size: u64,
 
     #[arg(long = "subset-sequence-list", required = true)]
@@ -47,13 +77,14 @@ struct Args {
     min_len_bp: u64,
 
     /// Minimum number of consecutive windows for IBD segment (default: 400 = 2 Mb with 5kb windows)
-    #[arg(long = "min-windows", default_value = "400")]
+    #[arg(long = "min-windows", default_value = "400", value_parser = validate_positive_usize)]
     min_windows: usize,
 
     #[arg(long = "expected-seg-windows", default_value = "50")]
     expected_seg_windows: f64,
 
-    #[arg(long = "p-enter-ibd", default_value = "0.0001")]
+    /// Probability of entering IBD state (must be in (0.0, 1.0))
+    #[arg(long = "p-enter-ibd", default_value = "0.0001", value_parser = validate_probability)]
     p_enter_ibd: f64,
 
     /// Population for HMM parameters (AFR, EUR, EAS, CSA, AMR, InterPop, Generic)
@@ -75,32 +106,6 @@ struct WindowRecord {
 
 fn pair_key(a: &str, b: &str) -> (String, String) {
     if a <= b { (a.to_string(), b.to_string()) } else { (b.to_string(), a.to_string()) }
-}
-
-struct ColumnIndices {
-    estimated_identity: usize,
-    chrom: usize,
-    start: usize,
-    end: usize,
-    group_a: usize,
-    group_b: usize,
-}
-
-impl ColumnIndices {
-    fn from_header(header: &str) -> Result<Self> {
-        let columns: Vec<&str> = header.split('\t').collect();
-        let find_col = |name: &str| -> Result<usize> {
-            columns.iter().position(|&c| c == name).context(format!("Missing: {}", name))
-        };
-        Ok(ColumnIndices {
-            estimated_identity: find_col("estimated.identity")?,
-            chrom: find_col("chrom")?,
-            start: find_col("start")?,
-            end: find_col("end")?,
-            group_a: find_col("group.a")?,
-            group_b: find_col("group.b")?,
-        })
-    }
 }
 
 fn collect_identities(
@@ -131,7 +136,8 @@ fn collect_identities(
         let mut lines = reader.lines();
 
         let header = lines.next().context("No output")?.context("Failed to read header")?;
-        let cols = ColumnIndices::from_header(&header)?;
+        let cols = ColumnIndices::from_header(&header)
+            .context("Failed to parse impg header")?;
 
         if let Some(ref mut out) = ibs_output {
             if first_window {
@@ -142,7 +148,7 @@ fn collect_identities(
         for line_result in lines {
             let line = line_result?;
             let fields: Vec<&str> = line.split('\t').collect();
-            if fields.len() <= cols.estimated_identity.max(cols.group_a).max(cols.group_b) {
+            if fields.len() <= cols.max_index() {
                 continue;
             }
 
@@ -212,6 +218,7 @@ fn process_pair(
     min_windows: usize,
     min_len_bp: u64,
     population: Population,
+    window_size: u64,
 ) -> Vec<IbdSegment> {
     if records.len() < 3 {
         return Vec::new();
@@ -221,9 +228,9 @@ fn process_pair(
     let observations: Vec<f64> = records.iter().map(|r| r.identity).collect();
 
     // Use population-specific parameters for biologically correct HMM
-    let mut params = HmmParams::from_population(population, expected_seg_windows, p_enter_ibd);
+    let mut params = HmmParams::from_population(population, expected_seg_windows, p_enter_ibd, window_size);
     // Use robust estimation with population priors
-    params.estimate_emissions_robust(&observations, Some(population));
+    params.estimate_emissions_robust(&observations, Some(population), window_size);
 
     let states = viterbi(&observations, &params);
     let segments = extract_ibd_segments(&states);
@@ -283,6 +290,7 @@ fn call_ibd_segments(
                 args.min_windows,
                 args.min_len_bp,
                 population,
+                args.window_size,
             )
         })
         .collect()
@@ -290,6 +298,17 @@ fn call_ibd_segments(
 
 fn run() -> Result<()> {
     let args = Args::parse();
+
+    // Validate input files exist
+    if !Path::new(&args.sequence_files).exists() {
+        bail!("sequence-files does not exist: {}", args.sequence_files);
+    }
+    if !Path::new(&args.align).exists() {
+        bail!("alignment file does not exist: {}", args.align);
+    }
+    if !Path::new(&args.subset_list).exists() {
+        bail!("subset-sequence-list does not exist: {}", args.subset_list);
+    }
 
     // Parse population
     let population = Population::from_str(&args.population)

@@ -183,7 +183,7 @@ fn process_pair(
     let observations: Vec<f64> = records.iter().map(|r| r.identity).collect();
 
     // Create HMM parameters
-    let mut params = HmmParams::from_expected_length(args.expected_seg_windows, args.p_enter_ibd);
+    let mut params = HmmParams::from_expected_length(args.expected_seg_windows, args.p_enter_ibd, args.window_size);
     params.estimate_emissions(&observations);
 
     // Run Viterbi

@@ -49,12 +49,13 @@ use crate::stats::OnlineStats;
 ///
 /// - `chrom`: Chromosome name
 /// - `start`, `end`: Genomic coordinates (1-based, inclusive)
-/// - `hap_a`, `hap_b`: Haplotype identifiers
+/// - `hap_a`, `hap_b`: Haplotype identifiers (normalized: hap_a <= hap_b lexicographically)
 /// - `n_windows`: Number of analysis windows in the segment
 /// - `mean_identity`: Average sequence identity across the segment
 /// - `min_identity`: Lowest identity value observed in any window
 /// - `identity_sum`: Sum of identity values (for re-averaging after merge)
 /// - `n_called`: Number of windows with valid identity data
+/// - `start_idx`, `end_idx`: Window indices (for correct merge calculations)
 #[derive(Debug, Clone)]
 pub struct Segment {
     /// Chromosome name
@@ -63,9 +64,9 @@ pub struct Segment {
     pub start: u64,
     /// Segment end position (bp)
     pub end: u64,
-    /// First haplotype identifier
+    /// First haplotype identifier (normalized: hap_a <= hap_b)
     pub hap_a: String,
-    /// Second haplotype identifier
+    /// Second haplotype identifier (normalized: hap_a <= hap_b)
     pub hap_b: String,
     /// Number of windows in the segment
     pub n_windows: usize,
@@ -77,6 +78,10 @@ pub struct Segment {
     pub identity_sum: f64,
     /// Number of windows with data
     pub n_called: usize,
+    /// Start window index (inclusive)
+    pub start_idx: usize,
+    /// End window index (inclusive)
+    pub end_idx: usize,
 }
 
 impl Segment {
@@ -266,21 +271,41 @@ fn finalize_segment(
         return None;
     }
 
+    // Normalize haplotype order: ensure hap_a <= hap_b lexicographically
+    let (norm_hap_a, norm_hap_b) = normalize_haplotype_pair(hap_a, hap_b);
+
     Some(Segment {
         chrom: chrom.to_string(),
         start: start_bp,
         end: end_bp,
-        hap_a: hap_a.to_string(),
-        hap_b: hap_b.to_string(),
+        hap_a: norm_hap_a,
+        hap_b: norm_hap_b,
         n_windows,
         mean_identity: stats.mean(),
         min_identity: min_ident,
         identity_sum: stats.mean() * stats.count() as f64,
         n_called: stats.count(),
+        start_idx,
+        end_idx,
     })
 }
 
+/// Normalize haplotype pair so that hap_a <= hap_b lexicographically.
+/// This ensures that (A, B) and (B, A) are treated as the same pair.
+fn normalize_haplotype_pair(hap_a: &str, hap_b: &str) -> (String, String) {
+    if hap_a <= hap_b {
+        (hap_a.to_string(), hap_b.to_string())
+    } else {
+        (hap_b.to_string(), hap_a.to_string())
+    }
+}
+
 /// Merge overlapping segments
+///
+/// When two segments overlap, this function correctly handles the overlap by:
+/// 1. Computing n_windows based on the merged window index range (avoiding double-counting)
+/// 2. Estimating identity_sum and n_called proportionally for the overlap region
+/// 3. Haplotype pairs are already normalized (A-B == B-A) during segment creation
 pub fn merge_segments(segments: &mut Vec<Segment>) {
     if segments.len() < 2 {
         return;
@@ -303,14 +328,48 @@ pub fn merge_segments(segments: &mut Vec<Segment>) {
         let last = merged.last_mut().unwrap();
 
         // Only merge segments that belong to the same haplotype pair
+        // (haplotypes are already normalized, so A-B == B-A)
         let same_haplotypes = seg.hap_a == last.hap_a && seg.hap_b == last.hap_b;
 
-        if seg.chrom == last.chrom && same_haplotypes && seg.start <= last.end {
+        // Check for overlap using window indices
+        // Segments overlap if seg.start_idx <= last.end_idx
+        if seg.chrom == last.chrom && same_haplotypes && seg.start_idx <= last.end_idx {
+            // Calculate overlap in window indices
+            let overlap_start = seg.start_idx;
+            let overlap_end = last.end_idx.min(seg.end_idx);
+            let overlap_windows = if overlap_end >= overlap_start {
+                overlap_end - overlap_start + 1
+            } else {
+                0
+            };
+
+            // Calculate the contribution from seg, excluding the overlap
+            // We estimate the overlap's contribution proportionally
+            let seg_total_windows = seg.end_idx - seg.start_idx + 1;
+            let seg_non_overlap_windows = seg_total_windows.saturating_sub(overlap_windows);
+
+            // Estimate identity_sum and n_called for the non-overlapping part of seg
+            // Using proportional estimation based on the segment's average
+            let seg_non_overlap_fraction = if seg_total_windows > 0 {
+                seg_non_overlap_windows as f64 / seg_total_windows as f64
+            } else {
+                0.0
+            };
+
+            let seg_non_overlap_identity_sum = seg.identity_sum * seg_non_overlap_fraction;
+            let seg_non_overlap_n_called =
+                (seg.n_called as f64 * seg_non_overlap_fraction).round() as usize;
+
+            // Update the merged segment
+            let new_end_idx = last.end_idx.max(seg.end_idx);
             last.end = last.end.max(seg.end);
-            last.n_windows += seg.n_windows;
-            last.identity_sum += seg.identity_sum;
-            last.n_called += seg.n_called;
-            last.mean_identity = last.identity_sum / last.n_called as f64;
+            last.n_windows = new_end_idx - last.start_idx + 1;
+            last.end_idx = new_end_idx;
+            last.identity_sum += seg_non_overlap_identity_sum;
+            last.n_called += seg_non_overlap_n_called;
+            if last.n_called > 0 {
+                last.mean_identity = last.identity_sum / last.n_called as f64;
+            }
             last.min_identity = last.min_identity.min(seg.min_identity);
         } else {
             merged.push(seg.clone());
@@ -324,87 +383,67 @@ pub fn merge_segments(segments: &mut Vec<Segment>) {
 mod tests {
     use super::*;
 
+    /// Helper to create a test segment with all required fields
+    fn make_segment(
+        chrom: &str,
+        start: u64,
+        end: u64,
+        hap_a: &str,
+        hap_b: &str,
+        start_idx: usize,
+        end_idx: usize,
+        mean_identity: f64,
+        min_identity: f64,
+    ) -> Segment {
+        let n_windows = end_idx - start_idx + 1;
+        let n_called = n_windows;
+        Segment {
+            chrom: chrom.to_string(),
+            start,
+            end,
+            hap_a: hap_a.to_string(),
+            hap_b: hap_b.to_string(),
+            n_windows,
+            mean_identity,
+            min_identity,
+            identity_sum: mean_identity * n_called as f64,
+            n_called,
+            start_idx,
+            end_idx,
+        }
+    }
+
     #[test]
     fn test_segment_length() {
-        let seg = Segment {
-            chrom: "chr1".to_string(),
-            start: 1000,
-            end: 2000,
-            hap_a: "A".to_string(),
-            hap_b: "B".to_string(),
-            n_windows: 10,
-            mean_identity: 0.999,
-            min_identity: 0.998,
-            identity_sum: 9.99,
-            n_called: 10,
-        };
+        let seg = make_segment("chr1", 1000, 2000, "A", "B", 0, 9, 0.999, 0.998);
         assert_eq!(seg.length_bp(), 1001);
     }
 
     #[test]
     fn test_merge_segments_same_haplotypes() {
         // Overlapping segments with same haplotype pair should merge
+        // seg1: indices [0-10], seg2: indices [5-15] => overlap [5-10] = 6 windows
         let mut segments = vec![
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1000,
-                end: 2000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.999,
-                min_identity: 0.998,
-                identity_sum: 9.99,
-                n_called: 10,
-            },
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1500,
-                end: 2500,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.998,
-                min_identity: 0.997,
-                identity_sum: 9.98,
-                n_called: 10,
-            },
+            make_segment("chr1", 1000, 2000, "A", "B", 0, 10, 0.999, 0.998),
+            make_segment("chr1", 1500, 2500, "A", "B", 5, 15, 0.998, 0.997),
         ];
 
         merge_segments(&mut segments);
         assert_eq!(segments.len(), 1);
         assert_eq!(segments[0].start, 1000);
         assert_eq!(segments[0].end, 2500);
+        // n_windows should be 16 (indices 0-15), not 22 (11+11)
+        assert_eq!(segments[0].n_windows, 16);
+        assert_eq!(segments[0].start_idx, 0);
+        assert_eq!(segments[0].end_idx, 15);
     }
 
     #[test]
     fn test_merge_segments_different_haplotypes_not_merged() {
         // Overlapping segments with different haplotype pairs should NOT merge
         let mut segments = vec![
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1000,
-                end: 2000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.999,
-                min_identity: 0.998,
-                identity_sum: 9.99,
-                n_called: 10,
-            },
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1500,
-                end: 2500,
-                hap_a: "C".to_string(),  // Different haplotype pair
-                hap_b: "D".to_string(),
-                n_windows: 10,
-                mean_identity: 0.998,
-                min_identity: 0.997,
-                identity_sum: 9.98,
-                n_called: 10,
-            },
+            make_segment("chr1", 1000, 2000, "A", "B", 0, 10, 0.999, 0.998),
+            make_segment("chr1", 1500, 2500, "C", "D", 5, 15, 0.998, 0.997),
         ];
 
         merge_segments(&mut segments);
@@ -678,20 +717,7 @@ mod tests {
 
     #[test]
     fn test_merge_segments_single() {
-        let mut segments = vec![
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1000,
-                end: 2000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.999,
-                min_identity: 0.998,
-                identity_sum: 9.99,
-                n_called: 10,
-            },
-        ];
+        let mut segments = vec![make_segment("chr1", 1000, 2000, "A", "B", 0, 9, 0.999, 0.998)];
 
         merge_segments(&mut segments);
         assert_eq!(segments.len(), 1);
@@ -700,31 +726,10 @@ mod tests {
     #[test]
     fn test_merge_segments_non_overlapping() {
         // Non-overlapping segments should not merge
+        // seg1: indices [0-9], seg2: indices [20-29] => no overlap
         let mut segments = vec![
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1000,
-                end: 2000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.999,
-                min_identity: 0.998,
-                identity_sum: 9.99,
-                n_called: 10,
-            },
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 3000,
-                end: 4000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.998,
-                min_identity: 0.997,
-                identity_sum: 9.98,
-                n_called: 10,
-            },
+            make_segment("chr1", 1000, 2000, "A", "B", 0, 9, 0.999, 0.998),
+            make_segment("chr1", 3000, 4000, "A", "B", 20, 29, 0.998, 0.997),
         ];
 
         merge_segments(&mut segments);
@@ -733,67 +738,25 @@ mod tests {
 
     #[test]
     fn test_merge_segments_adjacent() {
-        // Adjacent segments (end == start - 1) should not merge
+        // Adjacent segments (end_idx + 1 == start_idx) should not merge
+        // seg1: indices [0-9], seg2: indices [11-20] => no overlap (gap at 10)
         let mut segments = vec![
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1000,
-                end: 2000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.999,
-                min_identity: 0.998,
-                identity_sum: 9.99,
-                n_called: 10,
-            },
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 2001,
-                end: 3000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.998,
-                min_identity: 0.997,
-                identity_sum: 9.98,
-                n_called: 10,
-            },
+            make_segment("chr1", 1000, 2000, "A", "B", 0, 9, 0.999, 0.998),
+            make_segment("chr1", 2001, 3000, "A", "B", 11, 20, 0.998, 0.997),
         ];
 
         merge_segments(&mut segments);
-        // Adjacent but not overlapping, so should remain separate
+        // Adjacent but not overlapping in window indices, so should remain separate
         assert_eq!(segments.len(), 2);
     }
 
     #[test]
     fn test_merge_segments_touching() {
-        // Segments where second starts at first's end should merge
+        // Segments where second start_idx == first end_idx should merge (1 window overlap)
+        // seg1: indices [0-9], seg2: indices [9-18] => overlap at index 9
         let mut segments = vec![
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1000,
-                end: 2000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.999,
-                min_identity: 0.998,
-                identity_sum: 9.99,
-                n_called: 10,
-            },
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 2000, // Starts at previous end
-                end: 3000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.998,
-                min_identity: 0.997,
-                identity_sum: 9.98,
-                n_called: 10,
-            },
+            make_segment("chr1", 1000, 2000, "A", "B", 0, 9, 0.999, 0.998),
+            make_segment("chr1", 2000, 3000, "A", "B", 9, 18, 0.998, 0.997),
         ];
 
         merge_segments(&mut segments);
@@ -801,36 +764,16 @@ mod tests {
         assert_eq!(segments.len(), 1);
         assert_eq!(segments[0].start, 1000);
         assert_eq!(segments[0].end, 3000);
+        // n_windows should be 19 (indices 0-18), not 20 (10+10)
+        assert_eq!(segments[0].n_windows, 19);
     }
 
     #[test]
     fn test_merge_segments_different_chromosomes() {
         // Segments on different chromosomes should not merge
         let mut segments = vec![
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1000,
-                end: 2000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.999,
-                min_identity: 0.998,
-                identity_sum: 9.99,
-                n_called: 10,
-            },
-            Segment {
-                chrom: "chr2".to_string(),
-                start: 1000,
-                end: 2000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.998,
-                min_identity: 0.997,
-                identity_sum: 9.98,
-                n_called: 10,
-            },
+            make_segment("chr1", 1000, 2000, "A", "B", 0, 9, 0.999, 0.998),
+            make_segment("chr2", 1000, 2000, "A", "B", 0, 9, 0.998, 0.997),
         ];
 
         merge_segments(&mut segments);
@@ -840,31 +783,11 @@ mod tests {
     #[test]
     fn test_merge_segments_unsorted_input() {
         // Segments in wrong order should be sorted and merged correctly
+        // After sorting: seg2 (start_idx=0) then seg1 (start_idx=5)
+        // seg2: indices [0-9], seg1: indices [5-14] => overlap [5-9] = 5 windows
         let mut segments = vec![
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1500,
-                end: 2500,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.998,
-                min_identity: 0.997,
-                identity_sum: 9.98,
-                n_called: 10,
-            },
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1000,
-                end: 2000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.999,
-                min_identity: 0.998,
-                identity_sum: 9.99,
-                n_called: 10,
-            },
+            make_segment("chr1", 1500, 2500, "A", "B", 5, 14, 0.998, 0.997),
+            make_segment("chr1", 1000, 2000, "A", "B", 0, 9, 0.999, 0.998),
         ];
 
         merge_segments(&mut segments);
@@ -872,92 +795,109 @@ mod tests {
         assert_eq!(segments.len(), 1);
         assert_eq!(segments[0].start, 1000);
         assert_eq!(segments[0].end, 2500);
+        // n_windows should be 15 (indices 0-14), not 20 (10+10)
+        assert_eq!(segments[0].n_windows, 15);
     }
 
     #[test]
     fn test_merge_segments_multiple_merges() {
-        // Multiple overlapping segments should all merge
+        // Multiple overlapping segments should all merge correctly
+        // seg1: indices [0-9], seg2: indices [5-14], seg3: indices [10-19]
+        // After first merge: [0-14], after second merge: [0-19]
         let mut segments = vec![
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1000,
-                end: 2000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.999,
-                min_identity: 0.999,
-                identity_sum: 9.99,
-                n_called: 10,
-            },
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 1500,
-                end: 2500,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.998,
-                min_identity: 0.998,
-                identity_sum: 9.98,
-                n_called: 10,
-            },
-            Segment {
-                chrom: "chr1".to_string(),
-                start: 2000,
-                end: 3000,
-                hap_a: "A".to_string(),
-                hap_b: "B".to_string(),
-                n_windows: 10,
-                mean_identity: 0.997,
-                min_identity: 0.997,
-                identity_sum: 9.97,
-                n_called: 10,
-            },
+            make_segment("chr1", 1000, 2000, "A", "B", 0, 9, 0.999, 0.999),
+            make_segment("chr1", 1500, 2500, "A", "B", 5, 14, 0.998, 0.998),
+            make_segment("chr1", 2000, 3000, "A", "B", 10, 19, 0.997, 0.997),
         ];
 
         merge_segments(&mut segments);
         assert_eq!(segments.len(), 1);
         assert_eq!(segments[0].start, 1000);
         assert_eq!(segments[0].end, 3000);
-        assert_eq!(segments[0].n_windows, 30);
+        // n_windows should be 20 (indices 0-19)
+        assert_eq!(segments[0].n_windows, 20);
         assert_eq!(segments[0].min_identity, 0.997);
+    }
+
+    // === Test for the specific bug: overlapping n_windows double-counting ===
+
+    #[test]
+    fn test_merge_segments_overlap_n_windows_correct() {
+        // This is the specific bug case mentioned in the task:
+        // seg1: indices [0-10] (n_windows=11), seg2: indices [5-15] (n_windows=11)
+        // After merge: should be 16 windows (indices 0-15), NOT 22 (11+11)
+        let mut segments = vec![
+            make_segment("chr1", 0, 10000, "A", "B", 0, 10, 0.999, 0.998),
+            make_segment("chr1", 5000, 15000, "A", "B", 5, 15, 0.998, 0.997),
+        ];
+
+        merge_segments(&mut segments);
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].n_windows, 16); // indices 0-15
+        assert_eq!(segments[0].start_idx, 0);
+        assert_eq!(segments[0].end_idx, 15);
+    }
+
+    #[test]
+    fn test_merge_segments_complete_overlap() {
+        // seg1 completely contains seg2
+        // seg1: indices [0-20], seg2: indices [5-15]
+        // After merge: should still be 21 windows (indices 0-20)
+        let mut segments = vec![
+            make_segment("chr1", 0, 20000, "A", "B", 0, 20, 0.999, 0.998),
+            make_segment("chr1", 5000, 15000, "A", "B", 5, 15, 0.998, 0.997),
+        ];
+
+        merge_segments(&mut segments);
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].n_windows, 21); // indices 0-20
+        assert_eq!(segments[0].end, 20000); // should keep the larger end
+    }
+
+    // === Test for haplotype normalization ===
+
+    #[test]
+    fn test_haplotype_normalization() {
+        // Verify that haplotypes are normalized (A <= B)
+        let (a, b) = normalize_haplotype_pair("Z", "A");
+        assert_eq!(a, "A");
+        assert_eq!(b, "Z");
+
+        let (a, b) = normalize_haplotype_pair("A", "Z");
+        assert_eq!(a, "A");
+        assert_eq!(b, "Z");
+    }
+
+    #[test]
+    fn test_merge_segments_reversed_haplotypes() {
+        // Segments with reversed haplotype order should be treated as same pair
+        // after normalization (done during segment creation via detect_segments_rle)
+        // Here we simulate segments that would be created with normalized haplotypes
+        let mut segments = vec![
+            make_segment("chr1", 1000, 2000, "A", "B", 0, 10, 0.999, 0.998),
+            // This segment would have been created as (B, A) but normalized to (A, B)
+            make_segment("chr1", 1500, 2500, "A", "B", 5, 15, 0.998, 0.997),
+        ];
+
+        merge_segments(&mut segments);
+        // Should merge because both are normalized to (A, B)
+        assert_eq!(segments.len(), 1);
     }
 
     // === Edge case tests for Segment ===
 
     #[test]
     fn test_segment_length_bp_same_start_end() {
-        let seg = Segment {
-            chrom: "chr1".to_string(),
-            start: 1000,
-            end: 1000,
-            hap_a: "A".to_string(),
-            hap_b: "B".to_string(),
-            n_windows: 1,
-            mean_identity: 0.999,
-            min_identity: 0.999,
-            identity_sum: 0.999,
-            n_called: 1,
-        };
+        let seg = make_segment("chr1", 1000, 1000, "A", "B", 0, 0, 0.999, 0.999);
         assert_eq!(seg.length_bp(), 1);
     }
 
     #[test]
     fn test_segment_length_bp_overflow_protection() {
         // Test saturating_sub behavior when start > end
-        let seg = Segment {
-            chrom: "chr1".to_string(),
-            start: 2000,
-            end: 1000, // Unusual: end < start
-            hap_a: "A".to_string(),
-            hap_b: "B".to_string(),
-            n_windows: 10,
-            mean_identity: 0.999,
-            min_identity: 0.998,
-            identity_sum: 9.99,
-            n_called: 10,
-        };
+        let mut seg = make_segment("chr1", 2000, 1000, "A", "B", 0, 9, 0.999, 0.998);
+        seg.start = 2000;
+        seg.end = 1000; // Unusual: end < start
         // Should not panic or overflow
         assert_eq!(seg.length_bp(), 1); // 0 + 1 due to saturating_sub
     }
@@ -975,41 +915,23 @@ mod tests {
             min_identity: 0.0,
             identity_sum: 0.0,
             n_called: 0,
+            start_idx: 0,
+            end_idx: 0,
         };
         assert_eq!(seg.fraction_called(), 0.0);
     }
 
     #[test]
     fn test_segment_fraction_called_all_called() {
-        let seg = Segment {
-            chrom: "chr1".to_string(),
-            start: 1000,
-            end: 2000,
-            hap_a: "A".to_string(),
-            hap_b: "B".to_string(),
-            n_windows: 10,
-            mean_identity: 0.999,
-            min_identity: 0.998,
-            identity_sum: 9.99,
-            n_called: 10,
-        };
+        let seg = make_segment("chr1", 1000, 2000, "A", "B", 0, 9, 0.999, 0.998);
         assert_eq!(seg.fraction_called(), 1.0);
     }
 
     #[test]
     fn test_segment_fraction_called_partial() {
-        let seg = Segment {
-            chrom: "chr1".to_string(),
-            start: 1000,
-            end: 2000,
-            hap_a: "A".to_string(),
-            hap_b: "B".to_string(),
-            n_windows: 10,
-            mean_identity: 0.999,
-            min_identity: 0.998,
-            identity_sum: 7.992,
-            n_called: 8,
-        };
+        let mut seg = make_segment("chr1", 1000, 2000, "A", "B", 0, 9, 0.999, 0.998);
+        seg.n_called = 8;
+        seg.identity_sum = 0.999 * 8.0;
         assert!((seg.fraction_called() - 0.8).abs() < 1e-10);
     }
 
