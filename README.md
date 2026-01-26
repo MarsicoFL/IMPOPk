@@ -59,7 +59,7 @@ ibs \
     --subset-sequence-list samples.txt \
     --region chr1:1-10000000 \
     --size 5000 \
-    -t 0.999 \
+    -c 0.999 \
     -m cosine \
     --output ibs_results.tsv
 ```
@@ -70,7 +70,7 @@ ibs \
 - `--subset-sequence-list`: File with haplotype IDs (one per line)
 - `--region`: Genomic region (chr:start-end)
 - `--size`: Window size in bp
-- `-t`: Identity threshold
+- `-c`: Identity cutoff threshold
 - `-m`: Similarity metric (cosine, jaccard)
 
 ### 2. IBD Inference
@@ -78,12 +78,12 @@ ibs \
 Infer IBD segments from IBS data using HMM:
 
 ```bash
-ibd-hmm inference \
+ibd \
     --input ibs_results.tsv \
     --output ibd_segments.json
 ```
 
-**Output:** JSON file with IBD segments including coordinates, identity, and posterior probabilities.
+**Output:** JSON file with IBD segments including coordinates and identity.
 
 ### 3. Jacquard Coefficients
 
@@ -91,7 +91,11 @@ Compute Jacquard delta coefficients:
 
 ```bash
 jacquard \
-    --input identity_data.tsv \
+    --ibs ibs_results.tsv \
+    --hap-a1 HG00097#1 \
+    --hap-a2 HG00097#2 \
+    --hap-b1 HG00099#1 \
+    --hap-b2 HG00099#2 \
     --output coefficients.json
 ```
 

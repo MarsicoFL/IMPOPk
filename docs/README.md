@@ -10,4 +10,3 @@ Step-by-step guides for using the HPRCv2-IBD tools:
 | [IBD Inference](tutorials/ibd.md) | HMM-based IBD segment detection |
 | [Jacquard Coefficients](tutorials/jacquard_coeffs.md) | Relatedness estimation |
 | [Full Pipeline](tutorials/run_full.md) | End-to-end analysis workflow |
-| [Pairwise IMPG](tutorials/run_pairwise_impg.md) | Running pairwise comparisons |

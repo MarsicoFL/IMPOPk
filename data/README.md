@@ -42,8 +42,8 @@ ibs --sequence-files assemblies/HPRC_r2.agc \
     -a alignments/hprc465vschm13.aln.paf.gz \
     --subset-sequence-list samples/EUR.txt \
     --region chr1:1-10000000 \
-    --size 5000 -t 0.999
+    --size 5000 -c 0.999
 
 # IBD inference
-ibd-hmm inference --input ibs_results.tsv --output ibd.json
+ibd --input ibs_results.tsv --output ibd.json
 ```

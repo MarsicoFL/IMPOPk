@@ -62,19 +62,19 @@ def load_data():
     base_path = Path('/home/franco/Escritorio/trabajadores/HPRCv2-IBD')
 
     # v2 corrected parameters (VALID)
-    with open(base_path / 'experiments/chr1_full/results/json/EUR_summary_v2.json') as f:
+    with open(base_path / 'experiments/phase1_exploratory/chr1_full/results/json/EUR_summary_v2.json') as f:
         eur_summary_v2 = json.load(f)
-    with open(base_path / 'experiments/chr1_full/results/json/AFR_summary_v2.json') as f:
+    with open(base_path / 'experiments/phase1_exploratory/chr1_full/results/json/AFR_summary_v2.json') as f:
         afr_summary_v2 = json.load(f)
 
     # IBD results (EUR valid, AFR invalid)
-    with open(base_path / 'experiments/chr1_full/results/json/EUR_ibd_results.json') as f:
+    with open(base_path / 'experiments/phase1_exploratory/chr1_full/results/json/EUR_ibd_results.json') as f:
         eur_results = json.load(f)
-    with open(base_path / 'experiments/chr1_full/results/json/AFR_ibd_results.json') as f:
+    with open(base_path / 'experiments/phase1_exploratory/chr1_full/results/json/AFR_ibd_results.json') as f:
         afr_results = json.load(f)
 
     # Selection scan (VALID)
-    with open(base_path / 'experiments/selection_scan/analysis/figures/expanded_statistics.json') as f:
+    with open(base_path / 'experiments/phase1_exploratory/selection_scan/analysis/figures/expanded_statistics.json') as f:
         selection_data = json.load(f)
 
     return {

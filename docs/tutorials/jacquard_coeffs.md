@@ -214,7 +214,7 @@ OPTIONS:
 ### Example 1: Basic Jacquard Calculation
 
 ```bash
-cd /path/to/HPRCv2-IBD/production/ibs-cli
+cd /path/to/HPRCv2-IBD
 
 ./target/release/jacquard \
   --ibs /results/ibs_windows.tsv \
@@ -238,10 +238,10 @@ cd /path/to/HPRCv2-IBD/production/ibs-cli
 ### Example 3: Shell Script Version
 
 ```bash
-cd production/ibs-cli/scripts
+cd bin/jacquard
 
 ./jacquard_coeffs.sh \
-  --ibs ../ibs_for_ibd.out \
+  --ibs /results/ibs_for_ibd.out \
   --hap-a1 HG01167#1 --hap-a2 HG01167#2 \
   --hap-b1 NA19682#1 --hap-b2 NA19682#2
 ```
@@ -451,4 +451,3 @@ The tool uses a union-find algorithm to cluster the four haplotypes based on obs
 - [IBS Tutorial](ibs.md) - Generating the input IBS windows
 - [IBD Tutorial](ibd.md) - HMM-based IBD segment detection
 - [Conceptual Framework](../paper_concepts/conceptual_framework.md) - IBS vs IBD distinction
-- [TESTING_GUIDE.md](../../TESTING_GUIDE.md) - Testing with toy fixtures

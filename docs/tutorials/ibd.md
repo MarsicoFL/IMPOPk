@@ -70,7 +70,7 @@ OPTIONS:
     --min-windows <N>             Minimum windows per segment [default: 400]
     --expected-seg-windows <N>    Expected IBD segment length in windows [default: 50]
     --p-enter-ibd <PROB>          Probability of entering IBD state [default: 0.0001]
-    --population <POP>            Population for HMM parameters (AFR, EUR, EAS, CSA, AMR, Generic) [default: Generic]
+    --population <POP>            Population for HMM parameters (AFR, EUR, EAS, CSA, AMR, InterPop, Generic) [default: Generic]
     -t, --threads <N>             Number of parallel threads [default: auto]
     -h, --help                    Print help information
 ```
@@ -155,7 +155,7 @@ The HMM uses Gaussian emission distributions that are **automatically estimated*
 ### Example 1: Basic IBD Detection
 
 ```bash
-cd /path/to/HPRCv2-IBD/production/ibs-cli
+cd /path/to/HPRCv2-IBD
 
 ./target/release/ibd \
   --sequence-files /data/HPRC_r2_assemblies_0.6.1.agc \
@@ -163,7 +163,7 @@ cd /path/to/HPRCv2-IBD/production/ibs-cli
   -r CHM13 \
   --region chr20:1-10000000 \
   --size 5000 \
-  --subset-sequence-list sample_lists/ibs_example.txt \
+  --subset-sequence-list data/samples/EUR.txt \
   --output /tmp/ibd_segments.tsv
 ```
 
@@ -176,7 +176,7 @@ cd /path/to/HPRCv2-IBD/production/ibs-cli
   -r CHM13 \
   --region chr20:1-50000000 \
   --size 5000 \
-  --subset-sequence-list sample_lists/HPRCv2_AFRsubset.txt \
+  --subset-sequence-list data/samples/AFR.txt \
   --output /results/ibd_segments.tsv \
   --ibs-output /results/ibs_windows.tsv
 ```
@@ -190,7 +190,7 @@ cd /path/to/HPRCv2-IBD/production/ibs-cli
   -r CHM13 \
   --region chr1:1-100000000 \
   --size 5000 \
-  --subset-sequence-list sample_lists/ibs_example.txt \
+  --subset-sequence-list data/samples/EUR.txt \
   --output /tmp/ibd_sensitive.tsv \
   --expected-seg-windows 20 \
   --min-windows 3 \
@@ -206,7 +206,7 @@ cd /path/to/HPRCv2-IBD/production/ibs-cli
   -r CHM13 \
   --region chr1:1-100000000 \
   --size 5000 \
-  --subset-sequence-list sample_lists/HPRCv2_EURsubset.txt \
+  --subset-sequence-list data/samples/EUR.txt \
   --output /tmp/ibd_conservative.tsv \
   --expected-seg-windows 100 \
   --min-windows 10 \
@@ -354,4 +354,3 @@ This adaptive approach handles different identity distributions across datasets.
 - [IBS Tutorial](ibs.md) - Understanding the input data
 - [Jacquard Tutorial](jacquard_coeffs.md) - Computing diploid identity states
 - [Conceptual Framework](../paper_concepts/conceptual_framework.md) - Theoretical background on binary IBD
-- [TESTING_GUIDE.md](../../TESTING_GUIDE.md) - Testing the IBD pipeline

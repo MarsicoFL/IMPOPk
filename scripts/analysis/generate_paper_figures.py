@@ -6,7 +6,6 @@ Focus on genomic position plots and improved selection interpretation.
 
 import json
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from pathlib import Path

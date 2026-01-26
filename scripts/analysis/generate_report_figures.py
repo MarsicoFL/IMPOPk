@@ -72,7 +72,7 @@ def load_all_data(project_root):
     data = {}
 
     # Chr1 data (filtered v2)
-    chr1_dir = project_root / 'experiments/chr1_full/results/json'
+    chr1_dir = project_root / 'experiments/phase1_exploratory/chr1_full/results/json'
     if chr1_dir.exists():
         for f in ['EUR_summary_v2.json', 'AFR_summary_v2.json', 'EUR_ibd_results.json']:
             path = chr1_dir / f
@@ -81,7 +81,7 @@ def load_all_data(project_root):
                 data[key] = json.loads(path.read_text())
 
     # Chr2 filtered data (valid for all populations)
-    chr2_dir = project_root / 'experiments/chr2_50Mb_filtered/results/json'
+    chr2_dir = project_root / 'experiments/phase1_exploratory/chr2_50Mb_filtered/results/json'
     if chr2_dir.exists():
         for pop in ['AFR', 'EUR', 'EAS']:
             path = chr2_dir / f'{pop}_chr2_full_results.json'
@@ -89,7 +89,7 @@ def load_all_data(project_root):
                 data[f'chr2_{pop.lower()}'] = json.loads(path.read_text())
 
     # Selection scan
-    selection_file = project_root / 'experiments/selection_scan/analysis/figures/expanded_statistics.json'
+    selection_file = project_root / 'experiments/phase1_exploratory/selection_scan/analysis/figures/expanded_statistics.json'
     if selection_file.exists():
         data['selection'] = json.loads(selection_file.read_text())
 

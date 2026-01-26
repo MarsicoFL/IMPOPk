@@ -86,10 +86,10 @@ The `scripts/ibs.sh` script accepts the same arguments with slightly different s
 ### Example 1: Basic IBS Detection (Small Region)
 
 ```bash
-cd /path/to/HPRCv2-IBD/production/ibs-cli
+cd /path/to/HPRCv2-IBD
 
 # Build the binary
-cargo build --release
+cargo build --release --bin ibs
 
 # Run on a 1MB region with 5kb windows
 ./target/release/ibs \
@@ -98,7 +98,7 @@ cargo build --release
   -r CHM13 \
   --region chr20:1-1000000 \
   --size 5000 \
-  --subset-sequence-list sample_lists/ibs_example.txt \
+  --subset-sequence-list data/samples/EUR.txt \
   --output /tmp/ibs_chr20_1mb.tsv
 ```
 
@@ -113,7 +113,7 @@ cargo build --release
   --region chr20 \
   --region-length 64444167 \
   --size 5000 \
-  --subset-sequence-list sample_lists/HPRCv2_AFRsubset.txt \
+  --subset-sequence-list data/samples/AFR.txt \
   --output /results/ibs_chr20_full.tsv
 ```
 
@@ -127,7 +127,7 @@ cargo build --release
   -r CHM13 \
   --region chr1:1-5000000 \
   --size 10000 \
-  --subset-sequence-list sample_lists/ibs_example.txt \
+  --subset-sequence-list data/samples/EUR.txt \
   --output /tmp/ibs_relaxed.tsv \
   -c 0.995
 ```
@@ -135,15 +135,15 @@ cargo build --release
 ### Example 4: Using the Shell Script
 
 ```bash
-cd production/ibs-cli/scripts
+cd bin/ibs
 
 ./ibs.sh \
-  --sequence-files ../data/human/HPRC_r2_assemblies_0.6.1.agc \
-  -a ../data/human/hprc465vschm13.aln.paf.gz \
+  --sequence-files /data/HPRC_r2_assemblies_0.6.1.agc \
+  -a /data/hprc465vschm13.aln.paf.gz \
   -r CHM13 \
   -region chr20:1-15000000 \
   -size 5000 \
-  --subset-sequence-list ../sample_lists/ibs_example.txt \
+  --subset-sequence-list ../../data/samples/EUR.txt \
   --output /tmp/ibs_chr20.tsv
 ```
 
@@ -251,7 +251,7 @@ impg similarity \
   --sequence-files /data/file.agc \
   -a /data/file.paf.gz \
   -r "CHM13#0#chr20:1-5000" \
-  --subset-sequence-list sample_lists/ibs_example.txt \
+  --subset-sequence-list data/samples/EUR.txt \
   --force-large-region | head
 ```
 
@@ -290,6 +290,5 @@ See the [IBD tutorial](ibd.md) and [Jacquard tutorial](jacquard_coeffs.md) for d
 
 ## See Also
 
-- [TESTING_GUIDE.md](../../TESTING_GUIDE.md) - Complete testing procedures
 - [run_full.sh tutorial](run_full.md) - Parallel processing for large regions
 - [Conceptual Framework](../paper_concepts/conceptual_framework.md) - Theoretical background
