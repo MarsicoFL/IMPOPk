@@ -16,7 +16,7 @@
 //!
 //! ## Modules
 //!
-//! - [`hmm`]: Hidden Markov Model for IBD state inference with Viterbi decoding
+//! - [`hmm`]: Hidden Markov Model for IBD state inference with Viterbi and forward-backward
 //! - [`stats`]: Statistical utilities including Gaussian distributions, k-means
 //!   clustering, and online statistics computation
 //! - [`segment`]: Segment detection using run-length encoding and segment merging

@@ -595,6 +595,426 @@ impl HmmParams {
     }
 }
 
+/// Forward algorithm for computing forward probabilities (alpha).
+///
+/// The forward algorithm computes P(observations[0..t], state[t] = s) for each
+/// position t and state s. This is used as part of the forward-backward algorithm
+/// for computing posterior state probabilities.
+///
+/// ## Algorithm
+///
+/// For each position t, computes:
+/// ```text
+/// alpha[t][s] = P(obs[0..t], state[t]=s)
+///             = sum_{prev} alpha[t-1][prev] * P(prev->s) * P(obs[t]|s)
+/// ```
+///
+/// All computations are performed in log-space for numerical stability.
+///
+/// ## Arguments
+///
+/// - `observations`: Sequence of identity values (one per window)
+/// - `params`: HMM parameters (transition and emission distributions)
+///
+/// ## Returns
+///
+/// Tuple of:
+/// - `alpha`: Vector of log forward probabilities, one [f64; 2] per observation
+/// - `log_likelihood`: Total log-likelihood P(observations)
+///
+/// ## Example
+///
+/// ```rust
+/// use hprc_ibd::hmm::{HmmParams, forward};
+///
+/// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
+/// let obs = vec![0.998, 0.999, 0.9995, 0.9998];
+/// let (alpha, log_likelihood) = forward(&obs, &params);
+/// assert_eq!(alpha.len(), 4);
+/// ```
+pub fn forward(observations: &[f64], params: &HmmParams) -> (Vec<[f64; 2]>, f64) {
+    let n = observations.len();
+    if n == 0 {
+        return (vec![], 0.0);
+    }
+
+    let log_initial: [f64; 2] = [params.initial[0].ln(), params.initial[1].ln()];
+    let log_trans: [[f64; 2]; 2] = [
+        [params.transition[0][0].ln(), params.transition[0][1].ln()],
+        [params.transition[1][0].ln(), params.transition[1][1].ln()],
+    ];
+
+    // Precompute log emissions
+    let mut log_emit: Vec<[f64; 2]> = Vec::with_capacity(n);
+    for &obs in observations {
+        log_emit.push([
+            params.emission[0].log_pdf(obs),
+            params.emission[1].log_pdf(obs),
+        ]);
+    }
+
+    let mut alpha: Vec<[f64; 2]> = Vec::with_capacity(n);
+
+    // Initialization
+    alpha.push([
+        log_initial[0] + log_emit[0][0],
+        log_initial[1] + log_emit[0][1],
+    ]);
+
+    // Forward pass
+    for t in 1..n {
+        let mut at = [0.0f64; 2];
+        for s in 0..2 {
+            // Log-sum-exp over previous states
+            let log_probs = [
+                alpha[t - 1][0] + log_trans[0][s],
+                alpha[t - 1][1] + log_trans[1][s],
+            ];
+            let max_log = log_probs[0].max(log_probs[1]);
+            at[s] = max_log + ((log_probs[0] - max_log).exp() + (log_probs[1] - max_log).exp()).ln();
+            at[s] += log_emit[t][s];
+        }
+        alpha.push(at);
+    }
+
+    // Total log-likelihood: log-sum-exp of final alpha
+    let max_log = alpha[n - 1][0].max(alpha[n - 1][1]);
+    let log_likelihood = max_log
+        + ((alpha[n - 1][0] - max_log).exp() + (alpha[n - 1][1] - max_log).exp()).ln();
+
+    (alpha, log_likelihood)
+}
+
+/// Backward algorithm for computing backward probabilities (beta).
+///
+/// The backward algorithm computes P(observations[t+1..n] | state[t] = s) for each
+/// position t and state s. Combined with forward probabilities, this gives
+/// posterior state probabilities.
+///
+/// ## Algorithm
+///
+/// For each position t (from n-1 down to 0), computes:
+/// ```text
+/// beta[t][s] = P(obs[t+1..n] | state[t]=s)
+///            = sum_{next} P(s->next) * P(obs[t+1]|next) * beta[t+1][next]
+/// ```
+///
+/// All computations are performed in log-space for numerical stability.
+///
+/// ## Arguments
+///
+/// - `observations`: Sequence of identity values (one per window)
+/// - `params`: HMM parameters (transition and emission distributions)
+///
+/// ## Returns
+///
+/// Vector of log backward probabilities, one [f64; 2] per observation.
+///
+/// ## Example
+///
+/// ```rust
+/// use hprc_ibd::hmm::{HmmParams, backward};
+///
+/// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
+/// let obs = vec![0.998, 0.999, 0.9995, 0.9998];
+/// let beta = backward(&obs, &params);
+/// assert_eq!(beta.len(), 4);
+/// ```
+pub fn backward(observations: &[f64], params: &HmmParams) -> Vec<[f64; 2]> {
+    let n = observations.len();
+    if n == 0 {
+        return vec![];
+    }
+
+    let log_trans: [[f64; 2]; 2] = [
+        [params.transition[0][0].ln(), params.transition[0][1].ln()],
+        [params.transition[1][0].ln(), params.transition[1][1].ln()],
+    ];
+
+    // Precompute log emissions
+    let mut log_emit: Vec<[f64; 2]> = Vec::with_capacity(n);
+    for &obs in observations {
+        log_emit.push([
+            params.emission[0].log_pdf(obs),
+            params.emission[1].log_pdf(obs),
+        ]);
+    }
+
+    let mut beta: Vec<[f64; 2]> = vec![[0.0; 2]; n];
+
+    // Initialization: beta[n-1] = 0 in log space (prob = 1)
+    beta[n - 1] = [0.0, 0.0];
+
+    // Backward pass
+    for t in (0..n - 1).rev() {
+        for s in 0..2 {
+            // Log-sum-exp over next states
+            let log_probs = [
+                log_trans[s][0] + log_emit[t + 1][0] + beta[t + 1][0],
+                log_trans[s][1] + log_emit[t + 1][1] + beta[t + 1][1],
+            ];
+            let max_log = log_probs[0].max(log_probs[1]);
+            beta[t][s] = max_log + ((log_probs[0] - max_log).exp() + (log_probs[1] - max_log).exp()).ln();
+        }
+    }
+
+    beta
+}
+
+/// Forward-backward algorithm to compute posterior state probabilities.
+///
+/// Computes P(state[t] = IBD | all observations) for each position t.
+/// This gives a probabilistic estimate of IBD at each window, unlike Viterbi
+/// which gives a single best path.
+///
+/// ## Algorithm
+///
+/// ```text
+/// gamma[t][s] = P(state[t]=s | all obs)
+///             = alpha[t][s] * beta[t][s] / P(all obs)
+///
+/// P(IBD at t) = gamma[t][1]
+/// ```
+///
+/// ## Arguments
+///
+/// - `observations`: Sequence of identity values (one per window)
+/// - `params`: HMM parameters (transition and emission distributions)
+///
+/// ## Returns
+///
+/// Tuple of:
+/// - `posterior_ibd`: P(IBD) for each position
+/// - `log_likelihood`: Total log-likelihood P(observations)
+///
+/// ## Example
+///
+/// ```rust
+/// use hprc_ibd::hmm::{HmmParams, forward_backward};
+///
+/// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
+/// let obs = vec![0.998, 0.997, 0.9998, 0.9999, 0.9997, 0.998];
+/// let (posteriors, log_lik) = forward_backward(&obs, &params);
+///
+/// // posteriors[i] is P(IBD at window i | all data)
+/// for (i, &p) in posteriors.iter().enumerate() {
+///     println!("Window {}: P(IBD) = {:.4}", i, p);
+/// }
+/// ```
+///
+/// ## Use Cases
+///
+/// - **Confidence scores**: Use posteriors to assess confidence in IBD calls
+/// - **Segment filtering**: Only keep segments where mean posterior > threshold
+/// - **Soft boundaries**: Identify uncertain segment boundaries
+pub fn forward_backward(observations: &[f64], params: &HmmParams) -> (Vec<f64>, f64) {
+    let n = observations.len();
+    if n == 0 {
+        return (vec![], 0.0);
+    }
+
+    let (alpha, log_likelihood) = forward(observations, params);
+    let beta = backward(observations, params);
+
+    // Compute posterior P(IBD | all observations)
+    let mut posterior_ibd = Vec::with_capacity(n);
+    for t in 0..n {
+        // log_gamma[s] = alpha[t][s] + beta[t][s] - log_likelihood
+        let log_gamma_0 = alpha[t][0] + beta[t][0] - log_likelihood;
+        let log_gamma_1 = alpha[t][1] + beta[t][1] - log_likelihood;
+
+        // P(IBD) = exp(log_gamma_1) / (exp(log_gamma_0) + exp(log_gamma_1))
+        // Use log-sum-exp for numerical stability
+        let max_log = log_gamma_0.max(log_gamma_1);
+        let log_sum = max_log + ((log_gamma_0 - max_log).exp() + (log_gamma_1 - max_log).exp()).ln();
+        let p_ibd = (log_gamma_1 - log_sum).exp();
+
+        posterior_ibd.push(p_ibd);
+    }
+
+    (posterior_ibd, log_likelihood)
+}
+
+/// Result of IBD inference including posteriors.
+#[derive(Debug, Clone)]
+pub struct IbdInferenceResult {
+    /// Viterbi state sequence (0=non-IBD, 1=IBD)
+    pub states: Vec<usize>,
+    /// Posterior P(IBD) for each window
+    pub posteriors: Vec<f64>,
+    /// Total log-likelihood of observations
+    pub log_likelihood: f64,
+}
+
+/// Complete IBD inference: Viterbi states + forward-backward posteriors.
+///
+/// This is the recommended entry point for IBD detection, as it provides
+/// both the MAP state sequence (Viterbi) and posterior probabilities
+/// (forward-backward) in a single call.
+///
+/// ## Arguments
+///
+/// - `observations`: Sequence of identity values (one per window)
+/// - `params`: HMM parameters
+///
+/// ## Returns
+///
+/// `IbdInferenceResult` containing states, posteriors, and log-likelihood.
+///
+/// ## Example
+///
+/// ```rust
+/// use hprc_ibd::hmm::{HmmParams, infer_ibd};
+///
+/// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
+/// let obs = vec![0.998, 0.997, 0.9998, 0.9999, 0.9997, 0.998];
+///
+/// let result = infer_ibd(&obs, &params);
+///
+/// println!("Log-likelihood: {:.2}", result.log_likelihood);
+/// for (i, (&state, &post)) in result.states.iter().zip(result.posteriors.iter()).enumerate() {
+///     println!("Window {}: state={}, P(IBD)={:.4}", i, state, post);
+/// }
+/// ```
+pub fn infer_ibd(observations: &[f64], params: &HmmParams) -> IbdInferenceResult {
+    let states = viterbi(observations, params);
+    let (posteriors, log_likelihood) = forward_backward(observations, params);
+
+    IbdInferenceResult {
+        states,
+        posteriors,
+        log_likelihood,
+    }
+}
+
+/// IBD segment with posterior statistics.
+#[derive(Debug, Clone)]
+pub struct IbdSegmentWithPosterior {
+    /// Start window index (inclusive)
+    pub start_idx: usize,
+    /// End window index (inclusive)
+    pub end_idx: usize,
+    /// Number of windows in segment
+    pub n_windows: usize,
+    /// Mean posterior P(IBD) in segment
+    pub mean_posterior: f64,
+    /// Minimum posterior P(IBD) in segment
+    pub min_posterior: f64,
+    /// Maximum posterior P(IBD) in segment
+    pub max_posterior: f64,
+}
+
+/// Extract IBD segments with posterior-based filtering.
+///
+/// Like `extract_ibd_segments`, but uses posterior probabilities to filter
+/// segments and provides posterior statistics for each segment.
+///
+/// ## Arguments
+///
+/// - `states`: Viterbi state sequence (0=non-IBD, 1=IBD)
+/// - `posteriors`: Posterior P(IBD) for each window (from forward-backward)
+/// - `min_windows`: Minimum segment length in windows
+/// - `min_mean_posterior`: Minimum mean P(IBD) for segment to be kept
+///
+/// ## Returns
+///
+/// Vector of `IbdSegmentWithPosterior` for segments passing filters.
+///
+/// ## Example
+///
+/// ```rust
+/// use hprc_ibd::hmm::{HmmParams, infer_ibd, extract_ibd_segments_with_posteriors};
+///
+/// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
+/// let obs = vec![0.998, 0.9998, 0.9999, 0.9997, 0.9998, 0.998];
+///
+/// let result = infer_ibd(&obs, &params);
+/// let segments = extract_ibd_segments_with_posteriors(
+///     &result.states,
+///     &result.posteriors,
+///     2,    // min 2 windows
+///     0.8,  // min 80% mean posterior
+/// );
+///
+/// for seg in &segments {
+///     println!("IBD {}-{}: {} windows, mean P(IBD)={:.3}",
+///         seg.start_idx, seg.end_idx, seg.n_windows, seg.mean_posterior);
+/// }
+/// ```
+pub fn extract_ibd_segments_with_posteriors(
+    states: &[usize],
+    posteriors: &[f64],
+    min_windows: usize,
+    min_mean_posterior: f64,
+) -> Vec<IbdSegmentWithPosterior> {
+    let mut segments = Vec::new();
+    let n = states.len();
+
+    if n == 0 || posteriors.len() != n {
+        return segments;
+    }
+
+    let mut in_ibd = false;
+    let mut start_idx = 0;
+
+    for (i, &state) in states.iter().enumerate() {
+        if state == 1 && !in_ibd {
+            in_ibd = true;
+            start_idx = i;
+        } else if state == 0 && in_ibd {
+            in_ibd = false;
+            let end_idx = i - 1;
+            let n_windows = end_idx - start_idx + 1;
+
+            if n_windows >= min_windows {
+                let seg_posteriors = &posteriors[start_idx..=end_idx];
+                let mean_post: f64 = seg_posteriors.iter().sum::<f64>() / n_windows as f64;
+
+                if mean_post >= min_mean_posterior {
+                    let min_post = seg_posteriors.iter().cloned().fold(f64::INFINITY, f64::min);
+                    let max_post = seg_posteriors.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+
+                    segments.push(IbdSegmentWithPosterior {
+                        start_idx,
+                        end_idx,
+                        n_windows,
+                        mean_posterior: mean_post,
+                        min_posterior: min_post,
+                        max_posterior: max_post,
+                    });
+                }
+            }
+        }
+    }
+
+    // Handle segment at end
+    if in_ibd {
+        let end_idx = n - 1;
+        let n_windows = end_idx - start_idx + 1;
+
+        if n_windows >= min_windows {
+            let seg_posteriors = &posteriors[start_idx..=end_idx];
+            let mean_post: f64 = seg_posteriors.iter().sum::<f64>() / n_windows as f64;
+
+            if mean_post >= min_mean_posterior {
+                let min_post = seg_posteriors.iter().cloned().fold(f64::INFINITY, f64::min);
+                let max_post = seg_posteriors.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+
+                segments.push(IbdSegmentWithPosterior {
+                    start_idx,
+                    end_idx,
+                    n_windows,
+                    mean_posterior: mean_post,
+                    min_posterior: min_post,
+                    max_posterior: max_post,
+                });
+            }
+        }
+    }
+
+    segments
+}
+
 /// Find the most likely state sequence using the Viterbi algorithm.
 ///
 /// The Viterbi algorithm is a dynamic programming algorithm that finds the
@@ -1050,5 +1470,182 @@ mod tests {
         let params_long = HmmParams::from_expected_length(100000.0, 0.001, 5000);
         // p_stay_ibd should be clamped to at most 0.9999
         assert!(params_long.transition[1][1] <= 0.9999);
+    }
+
+    // === Forward-backward algorithm tests ===
+
+    #[test]
+    fn test_forward_empty() {
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
+        let (alpha, log_lik) = forward(&[], &params);
+        assert!(alpha.is_empty());
+        assert_eq!(log_lik, 0.0);
+    }
+
+    #[test]
+    fn test_forward_single_observation() {
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
+        let obs = vec![0.5];
+        let (alpha, log_lik) = forward(&obs, &params);
+        assert_eq!(alpha.len(), 1);
+        assert!(log_lik.is_finite());
+    }
+
+    #[test]
+    fn test_forward_multiple_observations() {
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
+        let obs = vec![0.998, 0.999, 0.9995, 0.9998];
+        let (alpha, log_lik) = forward(&obs, &params);
+        assert_eq!(alpha.len(), 4);
+        assert!(log_lik.is_finite());
+        // Log-likelihood can be positive when using narrow Gaussians with
+        // observations close to the mean (PDF > 1 is possible for narrow distributions)
+    }
+
+    #[test]
+    fn test_backward_empty() {
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
+        let beta = backward(&[], &params);
+        assert!(beta.is_empty());
+    }
+
+    #[test]
+    fn test_backward_single_observation() {
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
+        let obs = vec![0.5];
+        let beta = backward(&obs, &params);
+        assert_eq!(beta.len(), 1);
+        // For single observation, beta should be [0, 0] (log(1))
+        assert_eq!(beta[0], [0.0, 0.0]);
+    }
+
+    #[test]
+    fn test_backward_multiple_observations() {
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
+        let obs = vec![0.998, 0.999, 0.9995, 0.9998];
+        let beta = backward(&obs, &params);
+        assert_eq!(beta.len(), 4);
+        // Last beta should be [0, 0]
+        assert_eq!(beta[3], [0.0, 0.0]);
+    }
+
+    #[test]
+    fn test_forward_backward_empty() {
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
+        let (posteriors, log_lik) = forward_backward(&[], &params);
+        assert!(posteriors.is_empty());
+        assert_eq!(log_lik, 0.0);
+    }
+
+    #[test]
+    fn test_forward_backward_posteriors_sum_to_one() {
+        // Posteriors P(IBD) + P(non-IBD) should sum to ~1 at each position
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
+        let obs = vec![0.998, 0.999, 0.9995, 0.9998, 0.997];
+        let (posteriors, _) = forward_backward(&obs, &params);
+
+        for (i, &p_ibd) in posteriors.iter().enumerate() {
+            assert!(p_ibd >= 0.0, "P(IBD) should be >= 0 at position {}", i);
+            assert!(p_ibd <= 1.0, "P(IBD) should be <= 1 at position {}", i);
+        }
+    }
+
+    #[test]
+    fn test_forward_backward_high_identity_high_posterior() {
+        // Very high identity observations should have high P(IBD)
+        let params = HmmParams::from_expected_length(10.0, 0.1, 5000);  // Higher p_enter for easier detection
+        let obs = vec![0.9998, 0.9999, 0.9999, 0.9998, 0.9999];
+        let (posteriors, _) = forward_backward(&obs, &params);
+
+        // Middle observations should have high posterior
+        assert!(posteriors[2] > 0.5, "Middle position should have P(IBD) > 0.5, got {}", posteriors[2]);
+    }
+
+    #[test]
+    fn test_forward_backward_low_identity_low_posterior() {
+        // Low identity observations should have low P(IBD)
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
+        let obs = vec![0.5, 0.6, 0.55, 0.45, 0.5];
+        let (posteriors, _) = forward_backward(&obs, &params);
+
+        // All should have low posterior
+        for (i, &p) in posteriors.iter().enumerate() {
+            assert!(p < 0.5, "Position {} should have P(IBD) < 0.5, got {}", i, p);
+        }
+    }
+
+    #[test]
+    fn test_infer_ibd_complete() {
+        let params = HmmParams::from_expected_length(10.0, 0.001, 5000);
+        let obs = vec![0.998, 0.999, 0.9998, 0.9999, 0.997, 0.996];
+
+        let result = infer_ibd(&obs, &params);
+
+        assert_eq!(result.states.len(), 6);
+        assert_eq!(result.posteriors.len(), 6);
+        assert!(result.log_likelihood.is_finite());
+    }
+
+    #[test]
+    fn test_extract_segments_with_posteriors_empty() {
+        let segments = extract_ibd_segments_with_posteriors(&[], &[], 1, 0.5);
+        assert!(segments.is_empty());
+    }
+
+    #[test]
+    fn test_extract_segments_with_posteriors_filter_by_length() {
+        let states = vec![0, 0, 1, 1, 0, 0, 1, 0, 0];
+        let posteriors = vec![0.1, 0.1, 0.9, 0.9, 0.1, 0.1, 0.9, 0.1, 0.1];
+
+        // Min 2 windows - should get first segment, not second
+        let segments = extract_ibd_segments_with_posteriors(&states, &posteriors, 2, 0.5);
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].start_idx, 2);
+        assert_eq!(segments[0].end_idx, 3);
+        assert_eq!(segments[0].n_windows, 2);
+    }
+
+    #[test]
+    fn test_extract_segments_with_posteriors_filter_by_posterior() {
+        let states = vec![0, 1, 1, 1, 0, 1, 1, 1, 0];
+        let posteriors = vec![0.1, 0.9, 0.9, 0.9, 0.1, 0.4, 0.5, 0.3, 0.1];
+
+        // Min 0.8 mean posterior - should only get first segment
+        let segments = extract_ibd_segments_with_posteriors(&states, &posteriors, 1, 0.8);
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].start_idx, 1);
+        assert_eq!(segments[0].n_windows, 3);
+        assert!((segments[0].mean_posterior - 0.9).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_extract_segments_with_posteriors_stats() {
+        let states = vec![1, 1, 1, 1, 1];
+        let posteriors = vec![0.8, 0.9, 0.95, 0.85, 0.7];
+
+        let segments = extract_ibd_segments_with_posteriors(&states, &posteriors, 1, 0.5);
+        assert_eq!(segments.len(), 1);
+
+        let seg = &segments[0];
+        assert_eq!(seg.n_windows, 5);
+        assert!((seg.mean_posterior - 0.84).abs() < 0.01);  // (0.8+0.9+0.95+0.85+0.7)/5 = 0.84
+        assert!((seg.min_posterior - 0.7).abs() < 0.01);
+        assert!((seg.max_posterior - 0.95).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_forward_backward_consistent_with_viterbi() {
+        // High posterior regions should generally align with Viterbi IBD calls
+        let params = HmmParams::from_expected_length(5.0, 0.1, 5000);
+        let obs = vec![0.5, 0.5, 0.9999, 0.9999, 0.9999, 0.5, 0.5];
+
+        let result = infer_ibd(&obs, &params);
+
+        // Where Viterbi says IBD (state=1), posterior should be high
+        for (i, (&state, &post)) in result.states.iter().zip(result.posteriors.iter()).enumerate() {
+            if state == 1 {
+                assert!(post > 0.5, "Position {} has state=1 but low posterior {}", i, post);
+            }
+        }
     }
 }
