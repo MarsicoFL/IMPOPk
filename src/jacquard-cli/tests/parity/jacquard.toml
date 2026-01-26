@@ -1,6 +1,6 @@
 name = "jacquard"
 workdir = "."
-script = "./scripts/jacquard_coeffs.sh"
+script = "../../bin/jacquard/jacquard_coeffs.sh"
 rust_bin = "jacquard"
 
 [[tests]]

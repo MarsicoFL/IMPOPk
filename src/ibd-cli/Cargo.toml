@@ -31,9 +31,3 @@ hprc-common = { path = "../common" }
 assert_cmd = "2.0"
 tempfile = "3.8"
 toml = "0.5"
-
-[profile.release]
-lto = true
-codegen-units = 1
-strip = true
-opt-level = 3
