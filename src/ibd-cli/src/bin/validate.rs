@@ -28,11 +28,11 @@ struct Args {
     #[arg(long = "states-output")]
     states_output: Option<PathBuf>,
 
-    /// Minimum segment length in bp
+    /// Minimum segment length in bp (default: 5kb for validation; use 2Mb for production)
     #[arg(long = "min-len-bp", default_value = "5000")]
     min_len_bp: u64,
 
-    /// Minimum windows per segment
+    /// Minimum windows per segment (default: 3 for validation; use 400 for production with 5kb windows)
     #[arg(long = "min-windows", default_value = "3")]
     min_windows: usize,
 
@@ -118,11 +118,33 @@ fn read_ibs_file(path: &PathBuf) -> Result<HashMap<(String, String), Vec<IbsReco
             (group_b, group_a)
         };
 
+        let start: u64 = match fields[col_start].parse() {
+            Ok(v) => v,
+            Err(_) => {
+                eprintln!("WARNING: invalid start '{}', skipping", fields[col_start]);
+                continue;
+            }
+        };
+        let end: u64 = match fields[col_end].parse() {
+            Ok(v) => v,
+            Err(_) => {
+                eprintln!("WARNING: invalid end '{}', skipping", fields[col_end]);
+                continue;
+            }
+        };
+        let identity: f64 = match fields[col_identity].parse() {
+            Ok(v) => v,
+            Err(_) => {
+                eprintln!("WARNING: invalid identity '{}', skipping", fields[col_identity]);
+                continue;
+            }
+        };
+
         let record = IbsRecord {
             chrom: fields[col_chrom].to_string(),
-            start: fields[col_start].parse().unwrap_or(0),
-            end: fields[col_end].parse().unwrap_or(0),
-            identity: fields[col_identity].parse().unwrap_or(0.0),
+            start,
+            end,
+            identity,
         };
 
         pair_data.entry(key).or_default().push(record);

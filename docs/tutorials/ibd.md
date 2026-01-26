@@ -66,10 +66,12 @@ OPTIONS:
     --output <FILE>               Output IBD segments TSV (required)
     --ibs-output <FILE>           Optional: save intermediate IBS windows
     --region-length <BP>          Required if --region omits coordinates
-    --min-len-bp <BP>             Minimum IBD segment length [default: 5000]
-    --min-windows <N>             Minimum windows per segment [default: 3]
+    --min-len-bp <BP>             Minimum IBD segment length [default: 2000000]
+    --min-windows <N>             Minimum windows per segment [default: 400]
     --expected-seg-windows <N>    Expected IBD segment length in windows [default: 50]
     --p-enter-ibd <PROB>          Probability of entering IBD state [default: 0.0001]
+    --population <POP>            Population for HMM parameters (AFR, EUR, EAS, CSA, AMR, Generic) [default: Generic]
+    -t, --threads <N>             Number of parallel threads [default: auto]
     -h, --help                    Print help information
 ```
 
@@ -113,8 +115,10 @@ The HMM uses Gaussian emission distributions that are **automatically estimated*
 
 | Parameter | CLI Flag | Default | Description |
 |-----------|----------|---------|-------------|
-| `min_len_bp` | `--min-len-bp` | 5000 | Minimum segment length in base pairs |
-| `min_windows` | `--min-windows` | 3 | Minimum number of windows |
+| `min_len_bp` | `--min-len-bp` | 2000000 | Minimum segment length in base pairs (2 Mb) |
+| `min_windows` | `--min-windows` | 400 | Minimum number of windows |
+
+**Note**: The defaults are conservative (2 Mb minimum) to reduce false positives. For exploratory analysis or detecting shorter IBD segments, use lower values like `--min-len-bp 100000 --min-windows 20`.
 
 ---
 
@@ -124,9 +128,9 @@ The HMM uses Gaussian emission distributions that are **automatically estimated*
 
 | Expected IBD | Recommended Settings | Rationale |
 |--------------|---------------------|-----------|
-| Short (recent admixture) | `--expected-seg-windows 20 --min-windows 3` | More sensitive to short segments |
-| Medium (typical) | `--expected-seg-windows 50 --min-windows 5` | Balanced default |
-| Long (isolated populations) | `--expected-seg-windows 200 --min-windows 10` | Stricter, fewer false positives |
+| Short (<500 kb) | `--min-len-bp 100000 --min-windows 20 --expected-seg-windows 20` | More sensitive to short segments |
+| Medium (500 kb - 2 Mb) | `--min-len-bp 500000 --min-windows 100 --expected-seg-windows 50` | Balanced |
+| Long (>2 Mb, default) | `--min-len-bp 2000000 --min-windows 400 --expected-seg-windows 50` | Conservative, fewer false positives |
 
 ### For Different Population Contexts
 

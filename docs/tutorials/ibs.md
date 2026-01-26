@@ -58,6 +58,7 @@ OPTIONS:
     -c <FLOAT>                    Identity cutoff [default: 0.999]
     -m <METRIC>                   Metric name (informational) [default: cosin]
     --region-length <BP>          Required if --region omits coordinates
+    -t, --threads <N>             Number of parallel threads [default: auto]
     -h, --help                    Print help information
     -V, --version                 Print version information
 ```
@@ -248,7 +249,7 @@ ERROR: Region 'chr1' requires --region-length
 # Check if impg produces output directly
 impg similarity \
   --sequence-files /data/file.agc \
-  -p /data/file.paf.gz \
+  -a /data/file.paf.gz \
   -r "CHM13#0#chr20:1-5000" \
   --subset-sequence-list sample_lists/ibs_example.txt \
   --force-large-region | head

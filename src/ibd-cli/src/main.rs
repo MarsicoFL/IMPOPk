@@ -159,8 +159,20 @@ fn collect_identities(
             if group_a > group_b { continue; }
 
             let chrom = fields[cols.chrom].to_string();
-            let start: u64 = fields[cols.start].parse().unwrap_or(0);
-            let end: u64 = fields[cols.end].parse().unwrap_or(0);
+            let start: u64 = match fields[cols.start].parse() {
+                Ok(v) => v,
+                Err(_) => {
+                    eprintln!("WARNING: invalid start coordinate '{}', skipping line", fields[cols.start]);
+                    continue;
+                }
+            };
+            let end: u64 = match fields[cols.end].parse() {
+                Ok(v) => v,
+                Err(_) => {
+                    eprintln!("WARNING: invalid end coordinate '{}', skipping line", fields[cols.end]);
+                    continue;
+                }
+            };
 
             if let Some(ref mut out) = ibs_output {
                 writeln!(out, "{}\t{}\t{}\t{}\t{}\t{}", chrom, start, end, group_a, group_b, identity)?;
