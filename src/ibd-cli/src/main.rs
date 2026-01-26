@@ -38,7 +38,7 @@ fn validate_positive_usize(val: &str) -> Result<usize, String> {
 use rayon::prelude::*;
 
 use hprc_common::ColumnIndices;
-use hprc_ibd::hmm::{extract_ibd_segments, viterbi, HmmParams, Population};
+use hprc_ibd::hmm::{infer_ibd, extract_ibd_segments_with_posteriors, HmmParams, Population};
 use hprc_ibd::{Region, WindowIterator};
 
 #[derive(Parser, Debug)]
@@ -94,6 +94,16 @@ struct Args {
     /// Number of threads for parallel HMM processing (default: auto-detect)
     #[arg(short = 't', long = "threads")]
     threads: Option<usize>,
+
+    /// Minimum mean posterior P(IBD) for segment to be reported (0.0-1.0)
+    /// Uses forward-backward algorithm for posterior computation
+    #[arg(long = "posterior-threshold", default_value = "0.0")]
+    posterior_threshold: f64,
+
+    /// Output file for per-window posteriors (optional)
+    /// Format: chrom, start, end, group.a, group.b, identity, posterior
+    #[arg(long = "output-posteriors")]
+    output_posteriors: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -206,9 +216,30 @@ struct IbdSegment {
     hap_b: String,
     n_windows: usize,
     mean_identity: f64,
+    mean_posterior: f64,
+    min_posterior: f64,
+    max_posterior: f64,
 }
 
-/// Process a single haplotype pair and return IBD segments
+/// Per-window posterior for optional output
+#[derive(Debug, Clone)]
+struct WindowPosterior {
+    chrom: String,
+    start: u64,
+    end: u64,
+    hap_a: String,
+    hap_b: String,
+    identity: f64,
+    posterior: f64,
+}
+
+/// Result from processing a haplotype pair
+struct PairResult {
+    segments: Vec<IbdSegment>,
+    posteriors: Vec<WindowPosterior>,
+}
+
+/// Process a single haplotype pair and return IBD segments with posteriors
 fn process_pair(
     hap_a: String,
     hap_b: String,
@@ -217,11 +248,16 @@ fn process_pair(
     p_enter_ibd: f64,
     min_windows: usize,
     min_len_bp: u64,
+    posterior_threshold: f64,
     population: Population,
     window_size: u64,
-) -> Vec<IbdSegment> {
+    collect_posteriors: bool,
+) -> PairResult {
     if records.len() < 3 {
-        return Vec::new();
+        return PairResult {
+            segments: Vec::new(),
+            posteriors: Vec::new(),
+        };
     }
 
     records.sort_by_key(|r| r.start);
@@ -232,17 +268,21 @@ fn process_pair(
     // Use robust estimation with population priors
     params.estimate_emissions_robust(&observations, Some(population), window_size);
 
-    let states = viterbi(&observations, &params);
-    let segments = extract_ibd_segments(&states);
+    // Run complete inference: Viterbi + forward-backward
+    let inference = infer_ibd(&observations, &params);
 
-    let mut results = Vec::new();
-    for (start_idx, end_idx, n_windows) in segments {
-        if n_windows < min_windows {
-            continue;
-        }
+    // Extract segments with posterior filtering
+    let hmm_segments = extract_ibd_segments_with_posteriors(
+        &inference.states,
+        &inference.posteriors,
+        min_windows,
+        posterior_threshold,
+    );
 
-        let start_bp = records[start_idx].start;
-        let end_bp = records[end_idx].end;
+    let mut segments = Vec::new();
+    for seg in hmm_segments {
+        let start_bp = records[seg.start_idx].start;
+        let end_bp = records[seg.end_idx].end;
         let length_bp = end_bp.saturating_sub(start_bp);
 
         if length_bp < min_len_bp {
@@ -250,20 +290,49 @@ fn process_pair(
         }
 
         let mean_identity: f64 =
-            observations[start_idx..=end_idx].iter().sum::<f64>() / n_windows as f64;
+            observations[seg.start_idx..=seg.end_idx].iter().sum::<f64>() / seg.n_windows as f64;
 
-        results.push(IbdSegment {
-            chrom: records[start_idx].chrom.clone(),
+        segments.push(IbdSegment {
+            chrom: records[seg.start_idx].chrom.clone(),
             start_bp,
             end_bp,
             hap_a: hap_a.clone(),
             hap_b: hap_b.clone(),
-            n_windows,
+            n_windows: seg.n_windows,
             mean_identity,
+            mean_posterior: seg.mean_posterior,
+            min_posterior: seg.min_posterior,
+            max_posterior: seg.max_posterior,
         });
     }
 
-    results
+    // Collect per-window posteriors if requested
+    let posteriors = if collect_posteriors {
+        records
+            .iter()
+            .zip(inference.posteriors.iter())
+            .zip(observations.iter())
+            .map(|((rec, &post), &ident)| WindowPosterior {
+                chrom: rec.chrom.clone(),
+                start: rec.start,
+                end: rec.end,
+                hap_a: hap_a.clone(),
+                hap_b: hap_b.clone(),
+                identity: ident,
+                posterior: post,
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    PairResult { segments, posteriors }
+}
+
+/// Result from processing all pairs
+struct AllPairsResult {
+    segments: Vec<IbdSegment>,
+    posteriors: Vec<WindowPosterior>,
 }
 
 /// Process all haplotype pairs in parallel and return IBD segments
@@ -271,16 +340,20 @@ fn call_ibd_segments(
     pair_data: HashMap<(String, String), Vec<WindowRecord>>,
     args: &Args,
     population: Population,
-) -> Vec<IbdSegment> {
+    collect_posteriors: bool,
+) -> AllPairsResult {
     eprintln!("Running HMM on {} pairs in parallel with population {:?}...", pair_data.len(), population);
+    if args.posterior_threshold > 0.0 {
+        eprintln!("Filtering segments with mean P(IBD) >= {:.2}", args.posterior_threshold);
+    }
 
     // Convert HashMap to Vec for parallel iteration
     let pairs: Vec<_> = pair_data.into_iter().collect();
 
     // Process pairs in parallel
-    pairs
+    let results: Vec<PairResult> = pairs
         .into_par_iter()
-        .flat_map(|((hap_a, hap_b), records)| {
+        .map(|((hap_a, hap_b), records)| {
             process_pair(
                 hap_a,
                 hap_b,
@@ -289,11 +362,26 @@ fn call_ibd_segments(
                 args.p_enter_ibd,
                 args.min_windows,
                 args.min_len_bp,
+                args.posterior_threshold,
                 population,
                 args.window_size,
+                collect_posteriors,
             )
         })
-        .collect()
+        .collect();
+
+    // Flatten results
+    let mut all_segments = Vec::new();
+    let mut all_posteriors = Vec::new();
+    for result in results {
+        all_segments.extend(result.segments);
+        all_posteriors.extend(result.posteriors);
+    }
+
+    AllPairsResult {
+        segments: all_segments,
+        posteriors: all_posteriors,
+    }
 }
 
 fn run() -> Result<()> {
@@ -344,23 +432,41 @@ fn run() -> Result<()> {
     eprintln!("Collected data for {} pairs", pair_data.len());
 
     // Process pairs in parallel using rayon with population-specific HMM
-    let segments = call_ibd_segments(pair_data, &args, population);
+    let collect_posteriors = args.output_posteriors.is_some();
+    let result = call_ibd_segments(pair_data, &args, population, collect_posteriors);
 
-    // Write results to output file
+    // Write IBD segments to output file
     let output_file = File::create(&args.output)?;
     let mut output = BufWriter::new(output_file);
 
-    writeln!(output, "chrom\tstart\tend\tgroup.a\tgroup.b\tn_windows\tmean_identity")?;
-    for seg in &segments {
+    writeln!(output, "chrom\tstart\tend\tgroup.a\tgroup.b\tn_windows\tmean_identity\tmean_posterior\tmin_posterior\tmax_posterior")?;
+    for seg in &result.segments {
         writeln!(
             output,
-            "{}\t{}\t{}\t{}\t{}\t{}\t{:.6}",
-            seg.chrom, seg.start_bp, seg.end_bp, seg.hap_a, seg.hap_b, seg.n_windows, seg.mean_identity
+            "{}\t{}\t{}\t{}\t{}\t{}\t{:.6}\t{:.4}\t{:.4}\t{:.4}",
+            seg.chrom, seg.start_bp, seg.end_bp, seg.hap_a, seg.hap_b,
+            seg.n_windows, seg.mean_identity, seg.mean_posterior, seg.min_posterior, seg.max_posterior
         )?;
     }
-
     output.flush()?;
-    eprintln!("IBD complete: {} segments written to {}", segments.len(), args.output);
+    eprintln!("IBD complete: {} segments written to {}", result.segments.len(), args.output);
+
+    // Write per-window posteriors if requested
+    if let Some(ref posteriors_path) = args.output_posteriors {
+        let posteriors_file = File::create(posteriors_path)?;
+        let mut posteriors_out = BufWriter::new(posteriors_file);
+
+        writeln!(posteriors_out, "chrom\tstart\tend\tgroup.a\tgroup.b\tidentity\tposterior")?;
+        for wp in &result.posteriors {
+            writeln!(
+                posteriors_out,
+                "{}\t{}\t{}\t{}\t{}\t{:.6}\t{:.4}",
+                wp.chrom, wp.start, wp.end, wp.hap_a, wp.hap_b, wp.identity, wp.posterior
+            )?;
+        }
+        posteriors_out.flush()?;
+        eprintln!("Per-window posteriors written to {}", posteriors_path);
+    }
 
     Ok(())
 }

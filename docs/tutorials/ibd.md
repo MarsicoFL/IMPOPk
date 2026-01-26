@@ -4,9 +4,10 @@
 
 The IBD (Identity-By-Descent) detection pipeline uses a Hidden Markov Model (HMM) to identify genomic segments where two haplotypes share recent common ancestry. Unlike simple IBS detection, the HMM integrates evidence across consecutive windows to distinguish true IBD from sporadic sequence similarity.
 
-This tutorial covers:
-- **Rust binary**: `cargo run --bin ibd` (recommended for production)
-- **Shell script**: `scripts/ibd.sh` (R-based HMM implementation)
+The Rust binary includes:
+- **Viterbi algorithm**: Finds the most likely state sequence (MAP estimate)
+- **Forward-backward algorithm**: Computes posterior P(IBD|data) for each window
+- **Posterior-based filtering**: Filter segments by confidence
 
 ---
 
@@ -15,9 +16,9 @@ This tutorial covers:
 The IBD pipeline:
 1. Collects sequence identity observations across sliding windows (same as IBS)
 2. Groups observations by haplotype pair
-3. Estimates HMM emission parameters using k-means clustering
-4. Runs the Viterbi algorithm to find the most likely state sequence
-5. Extracts contiguous IBD segments meeting length/quality thresholds
+3. Estimates HMM emission parameters using k-means clustering with population priors
+4. Runs Viterbi for state sequence AND forward-backward for posteriors
+5. Extracts IBD segments filtered by length, windows, and posterior threshold
 
 ### The Two-State HMM Model
 
@@ -25,10 +26,10 @@ The HMM uses two hidden states:
 
 | State | Name | Description | Typical Identity |
 |-------|------|-------------|------------------|
-| 0 | Non-IBD | Haplotypes do NOT share recent ancestry | ~0.5 (random) |
-| 1 | IBD | Haplotypes DO share recent common ancestry | ~0.999 (identical) |
+| 0 | Non-IBD | Haplotypes do NOT share recent ancestry | ~0.999 (population-specific) |
+| 1 | IBD | Haplotypes DO share recent common ancestry | ~0.9997 (sequencing error rate) |
 
-**Key insight**: True IBD segments show sustained high identity across many consecutive windows, while sporadic IBS appears as isolated high-identity windows.
+**Key insight**: In humans, both IBD and non-IBD have very high identity (~0.999). The difference is only ~0.05-0.1%. The HMM accumulates evidence over many windows to distinguish them.
 
 ---
 
@@ -39,7 +40,6 @@ The HMM uses two hidden states:
 |------|---------|--------------|
 | **impg** | Pangenome similarity queries | `cargo install impg` |
 | **Rust toolchain** | Building the binary | [rustup.rs](https://rustup.rs) |
-| **Rscript** (optional) | For shell script HMM | `apt install r-base` |
 
 ### Required Data Files
 Same as IBS pipeline: AGC archive, PAF alignment, subset list.
@@ -70,7 +70,10 @@ OPTIONS:
     --min-windows <N>             Minimum windows per segment [default: 400]
     --expected-seg-windows <N>    Expected IBD segment length in windows [default: 50]
     --p-enter-ibd <PROB>          Probability of entering IBD state [default: 0.0001]
-    --population <POP>            Population for HMM parameters (AFR, EUR, EAS, CSA, AMR, InterPop, Generic) [default: Generic]
+    --population <POP>            Population for HMM parameters [default: Generic]
+                                  Options: AFR, EUR, EAS, CSA, AMR, InterPop, Generic
+    --posterior-threshold <PROB>  Minimum mean P(IBD) for segment [default: 0.0]
+    --output-posteriors <FILE>    Output per-window posteriors (optional)
     -t, --threads <N>             Number of parallel threads [default: auto]
     -h, --help                    Print help information
 ```
@@ -78,6 +81,22 @@ OPTIONS:
 ---
 
 ## HMM Parameters Explained
+
+### Population-Specific Parameters
+
+The non-IBD emission depends on nucleotide diversity (pi):
+
+| Population | Pi | Non-IBD Mean | Description |
+|------------|-----|--------------|-------------|
+| AFR | 0.00125 | 0.99875 | African (highest diversity) |
+| EUR | 0.00085 | 0.99915 | European |
+| EAS | 0.00080 | 0.99920 | East Asian |
+| CSA | 0.00095 | 0.99905 | Central/South Asian |
+| AMR | 0.00100 | 0.99900 | American (admixed) |
+| InterPop | 0.00110 | 0.99890 | Cross-population comparison |
+| Generic | 0.00100 | 0.99900 | Default |
+
+**Why it matters**: Using the correct population ensures the HMM correctly distinguishes IBD from background similarity.
 
 ### Transition Parameters
 
@@ -88,28 +107,30 @@ OPTIONS:
 
 **How they affect the model**:
 
-- **expected_seg_windows**: Controls how "sticky" the IBD state is. Higher values mean the model expects longer IBD segments and is less likely to break segments on single low-identity windows.
-
+- **expected_seg_windows**: Controls how "sticky" the IBD state is.
   ```
   p_stay_ibd = 1 - 1/expected_seg_windows
 
   Example:
-    expected_seg_windows = 50  ->  p_stay_ibd = 0.98 (98% chance to stay in IBD)
-    expected_seg_windows = 10  ->  p_stay_ibd = 0.90 (90% chance to stay in IBD)
+    expected_seg_windows = 50  ->  p_stay_ibd = 0.98 (98% stay in IBD)
+    expected_seg_windows = 10  ->  p_stay_ibd = 0.90 (90% stay in IBD)
   ```
 
-- **p_enter_ibd**: Controls how easily the model enters the IBD state. Lower values make it harder to call new IBD segments (more conservative).
+- **p_enter_ibd**: Controls how easily the model enters IBD. Lower = more conservative.
 
-### Emission Parameters
+### Posterior Filtering (NEW)
 
-The HMM uses Gaussian emission distributions that are **automatically estimated** from the data using k-means clustering:
+| Parameter | CLI Flag | Default | Description |
+|-----------|----------|---------|-------------|
+| `posterior_threshold` | `--posterior-threshold` | 0.0 | Minimum mean P(IBD) for segment |
 
-| State | Typical Mean | Typical Std | Description |
-|-------|--------------|-------------|-------------|
-| Non-IBD | ~0.5 | ~0.2 | Background random similarity |
-| IBD | ~0.99 | ~0.01 | High identity from shared ancestry |
+The forward-backward algorithm computes P(IBD|all data) for each window. Segments are filtered by their mean posterior.
 
-**Adaptive estimation**: The model automatically clusters observed identities into two groups, handling datasets with different overall identity distributions.
+**Recommended values**:
+- `0.0`: No filtering (report all Viterbi-detected segments)
+- `0.5`: Moderate confidence
+- `0.8`: High confidence
+- `0.9`: Very high confidence
 
 ### Segment Filtering Parameters
 
@@ -118,36 +139,6 @@ The HMM uses Gaussian emission distributions that are **automatically estimated*
 | `min_len_bp` | `--min-len-bp` | 2000000 | Minimum segment length in base pairs (2 Mb) |
 | `min_windows` | `--min-windows` | 400 | Minimum number of windows |
 
-**Note**: The defaults are conservative (2 Mb minimum) to reduce false positives. For exploratory analysis or detecting shorter IBD segments, use lower values like `--min-len-bp 100000 --min-windows 20`.
-
----
-
-## Parameter Tuning Guide
-
-### For Different IBD Lengths
-
-| Expected IBD | Recommended Settings | Rationale |
-|--------------|---------------------|-----------|
-| Short (<500 kb) | `--min-len-bp 100000 --min-windows 20 --expected-seg-windows 20` | More sensitive to short segments |
-| Medium (500 kb - 2 Mb) | `--min-len-bp 500000 --min-windows 100 --expected-seg-windows 50` | Balanced |
-| Long (>2 Mb, default) | `--min-len-bp 2000000 --min-windows 400 --expected-seg-windows 50` | Conservative, fewer false positives |
-
-### For Different Population Contexts
-
-| Context | Recommended Settings | Rationale |
-|---------|---------------------|-----------|
-| Closely related samples | `--p-enter-ibd 0.001` | Higher prior for IBD |
-| Diverse populations | `--p-enter-ibd 0.0001` | Conservative default |
-| Outgroup comparisons | `--p-enter-ibd 0.00001` | Very conservative |
-
-### For Different Window Sizes
-
-| Window Size | Segment Windows | Rationale |
-|-------------|-----------------|-----------|
-| 1 kb | 100-200 | More windows for same physical length |
-| 5 kb | 20-50 | Typical setting |
-| 10 kb | 10-25 | Fewer windows needed |
-
 ---
 
 ## Usage Examples
@@ -155,8 +146,6 @@ The HMM uses Gaussian emission distributions that are **automatically estimated*
 ### Example 1: Basic IBD Detection
 
 ```bash
-cd /path/to/HPRCv2-IBD
-
 ./target/release/ibd \
   --sequence-files /data/HPRC_r2_assemblies_0.6.1.agc \
   -a /data/hprc465vschm13.aln.paf.gz \
@@ -164,10 +153,27 @@ cd /path/to/HPRCv2-IBD
   --region chr20:1-10000000 \
   --size 5000 \
   --subset-sequence-list data/samples/EUR.txt \
+  --population EUR \
   --output /tmp/ibd_segments.tsv
 ```
 
-### Example 2: Save Intermediate IBS Data
+### Example 2: High-Confidence Detection with Posteriors
+
+```bash
+./target/release/ibd \
+  --sequence-files /data/HPRC_r2_assemblies_0.6.1.agc \
+  -a /data/hprc465vschm13.aln.paf.gz \
+  -r CHM13 \
+  --region chr1:1-50000000 \
+  --size 5000 \
+  --subset-sequence-list data/samples/AFR.txt \
+  --population AFR \
+  --output /results/ibd_high_conf.tsv \
+  --posterior-threshold 0.8 \
+  --output-posteriors /results/posteriors.tsv
+```
+
+### Example 3: Save All Intermediate Data
 
 ```bash
 ./target/release/ibd \
@@ -176,12 +182,14 @@ cd /path/to/HPRCv2-IBD
   -r CHM13 \
   --region chr20:1-50000000 \
   --size 5000 \
-  --subset-sequence-list data/samples/AFR.txt \
+  --subset-sequence-list data/samples/EUR.txt \
+  --population EUR \
   --output /results/ibd_segments.tsv \
-  --ibs-output /results/ibs_windows.tsv
+  --ibs-output /results/ibs_windows.tsv \
+  --output-posteriors /results/posteriors.tsv
 ```
 
-### Example 3: Sensitive Detection (Short Segments)
+### Example 4: Sensitive Detection (Short Segments)
 
 ```bash
 ./target/release/ibd \
@@ -191,13 +199,14 @@ cd /path/to/HPRCv2-IBD
   --region chr1:1-100000000 \
   --size 5000 \
   --subset-sequence-list data/samples/EUR.txt \
+  --population EUR \
   --output /tmp/ibd_sensitive.tsv \
   --expected-seg-windows 20 \
   --min-windows 3 \
   --min-len-bp 10000
 ```
 
-### Example 4: Conservative Detection (Reduce False Positives)
+### Example 5: Conservative Detection (Reduce False Positives)
 
 ```bash
 ./target/release/ibd \
@@ -207,18 +216,20 @@ cd /path/to/HPRCv2-IBD
   --region chr1:1-100000000 \
   --size 5000 \
   --subset-sequence-list data/samples/EUR.txt \
+  --population EUR \
   --output /tmp/ibd_conservative.tsv \
   --expected-seg-windows 100 \
   --min-windows 10 \
   --min-len-bp 50000 \
-  --p-enter-ibd 0.00001
+  --p-enter-ibd 0.00001 \
+  --posterior-threshold 0.9
 ```
 
 ---
 
 ## Output Format
 
-The output is a tab-separated file:
+### IBD Segments Output
 
 | Column | Description |
 |--------|-------------|
@@ -229,96 +240,63 @@ The output is a tab-separated file:
 | `group.b` | Second haplotype identifier |
 | `n_windows` | Number of windows in segment |
 | `mean_identity` | Average sequence identity across segment |
+| `mean_posterior` | Mean P(IBD) across segment (from forward-backward) |
+| `min_posterior` | Minimum P(IBD) in segment |
+| `max_posterior` | Maximum P(IBD) in segment |
 
-### Example Output
-
+**Example**:
 ```
-chrom	start	end	group.a	group.b	n_windows	mean_identity
-chr20	5001	75000	HG01167#1	NA19682#1	15	0.999200
-chr20	150001	325000	HG01167#1	NA19682#2	35	0.998900
-chr20	500001	650000	HG01167#2	NA19682#1	30	0.999500
+chrom	start	end	group.a	group.b	n_windows	mean_identity	mean_posterior	min_posterior	max_posterior
+chr20	5001	75000	HG01167#1	NA19682#1	15	0.999200	0.9523	0.8901	0.9812
+chr20	150001	325000	HG01167#1	NA19682#2	35	0.998900	0.8845	0.7234	0.9567
 ```
 
-### Interpreting IBD Output
+### Posteriors Output (--output-posteriors)
 
-| Metric | Interpretation |
-|--------|----------------|
-| `n_windows` | Confidence indicator - more windows = more evidence |
-| `mean_identity` | Quality indicator - higher = stronger signal |
-| Segment length | Long segments (>1 Mb) suggest recent common ancestry |
-| Multiple segments | May indicate same IBD block split by recombination or gaps |
+| Column | Description |
+|--------|-------------|
+| `chrom` | Chromosome name |
+| `start` | Window start position |
+| `end` | Window end position |
+| `group.a` | First haplotype identifier |
+| `group.b` | Second haplotype identifier |
+| `identity` | Sequence identity for this window |
+| `posterior` | P(IBD) for this window given all data |
+
+**Example**:
+```
+chrom	start	end	group.a	group.b	identity	posterior
+chr20	1	5000	HG01167#1	NA19682#1	0.998734	0.1234
+chr20	5001	10000	HG01167#1	NA19682#1	0.999812	0.8923
+```
 
 ---
 
-## Output Interpretation Examples
+## Interpreting Results
 
-### Case 1: Strong IBD Signal
-```
-chr20	1000000	5000000	SampleA#1	SampleB#1	800	0.9995
-```
-- **Length**: 4 Mb (very long)
-- **Windows**: 800 (strong evidence)
-- **Identity**: 99.95% (excellent)
-- **Interpretation**: High-confidence IBD, likely close relatives or recent shared ancestry
+### Using Posterior Values
 
-### Case 2: Moderate IBD Signal
-```
-chr20	1000000	1100000	SampleA#1	SampleC#2	20	0.9980
-```
-- **Length**: 100 kb (moderate)
-- **Windows**: 20 (sufficient)
-- **Identity**: 99.80% (good)
-- **Interpretation**: Probable IBD, may need validation
+| Mean Posterior | Interpretation |
+|----------------|----------------|
+| > 0.95 | Very high confidence IBD |
+| 0.8 - 0.95 | High confidence IBD |
+| 0.5 - 0.8 | Moderate confidence, may need validation |
+| < 0.5 | Low confidence, likely false positive |
 
-### Case 3: Borderline Signal
-```
-chr20	1000000	1025000	SampleA#1	SampleD#1	5	0.9950
-```
-- **Length**: 25 kb (short)
-- **Windows**: 5 (minimum)
-- **Identity**: 99.50% (marginal)
-- **Interpretation**: Possible false positive, consider increasing thresholds
+### Example Analysis
 
----
-
-## Troubleshooting
-
-### No IBD Segments Detected
-
-**Possible causes**:
-1. Samples are not closely related
-2. Parameters too conservative
-3. Insufficient data coverage
-
-**Solutions**:
 ```bash
-# Lower thresholds
---min-windows 2 --min-len-bp 5000 --p-enter-ibd 0.001
+# Filter for high-confidence segments
+awk -F'\t' 'NR==1 || $8 > 0.9' ibd_segments.tsv > high_conf_segments.tsv
 
-# Check intermediate IBS data
---ibs-output debug_ibs.tsv
-# Then examine: do high-identity windows exist?
-```
-
-### Too Many Short Segments
-
-**Possible cause**: expected_seg_windows too low, causing fragmentation
-
-**Solution**:
-```bash
-# Increase expected segment length
---expected-seg-windows 100 --min-windows 10
-```
-
-### Segments Breaking at Low-Identity Windows
-
-**Possible cause**: Single dropout windows breaking true IBD segments
-
-**Solution**:
-```bash
-# The HMM already handles this via state persistence
-# Ensure expected-seg-windows is high enough
---expected-seg-windows 50  # or higher
+# Count segments by confidence tier
+awk -F'\t' 'NR>1 {
+  if ($8 > 0.95) tier="very_high";
+  else if ($8 > 0.8) tier="high";
+  else if ($8 > 0.5) tier="moderate";
+  else tier="low";
+  print tier
+}' ibd_segments.tsv | sort | uniq -c
 ```
 
 ---
@@ -327,25 +305,53 @@ chr20	1000000	1025000	SampleA#1	SampleD#1	5	0.9950
 
 ### Viterbi Algorithm
 
-The Viterbi algorithm finds the most likely sequence of hidden states given the observations:
-
+Finds the most likely state sequence:
 ```
-For each window t:
-    delta[t][s] = max over previous states of:
-        delta[t-1][prev] + log(transition[prev->s]) + log(emission[s](identity[t]))
+delta[t][s] = max over prev of:
+    delta[t-1][prev] + log(transition[prev->s]) + log(emission[s](obs[t]))
 ```
 
-The final state sequence is obtained by backtracking through the computed path.
+### Forward-Backward Algorithm
 
-### Emission Estimation via K-means
+Computes posterior P(state=IBD | all observations):
+```
+P(IBD at t | all obs) = alpha[t][IBD] * beta[t][IBD] / P(all obs)
 
-Before running Viterbi, the emission parameters are estimated:
+Where:
+  alpha[t][s] = P(obs[0..t], state[t]=s)     [forward]
+  beta[t][s]  = P(obs[t+1..n] | state[t]=s)  [backward]
+```
 
-1. Cluster all observed identities into 2 groups using k-means
-2. Compute mean and standard deviation for each cluster
-3. Assign lower cluster to non-IBD state, higher to IBD state
+**Key difference**:
+- Viterbi: Best single path (global decoding)
+- Forward-backward: Probability at each position (marginal decoding)
 
-This adaptive approach handles different identity distributions across datasets.
+Both are computed for comprehensive analysis.
+
+---
+
+## Troubleshooting
+
+### No IBD Segments Detected
+
+**Check**:
+1. Are samples related? Use `--posterior-threshold 0` to see all candidates
+2. Are parameters too conservative? Try `--min-windows 2 --min-len-bp 5000`
+3. Check intermediate IBS data: `--ibs-output debug.tsv`
+
+### Too Many Low-Confidence Segments
+
+**Solution**: Use posterior filtering
+```bash
+--posterior-threshold 0.8
+```
+
+### Segments Breaking at Low-Identity Windows
+
+**Solution**: Increase expected segment length
+```bash
+--expected-seg-windows 100
+```
 
 ---
 
@@ -353,4 +359,3 @@ This adaptive approach handles different identity distributions across datasets.
 
 - [IBS Tutorial](ibs.md) - Understanding the input data
 - [Jacquard Tutorial](jacquard_coeffs.md) - Computing diploid identity states
-- [Conceptual Framework](../paper_concepts/conceptual_framework.md) - Theoretical background on binary IBD

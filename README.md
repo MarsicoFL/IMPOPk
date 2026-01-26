@@ -7,7 +7,7 @@ Identity-by-Descent (IBD) detection from pangenome assemblies using haplotype-le
 A suite of Rust CLI tools for detecting IBD segments from whole-genome assemblies:
 
 - **IBS Detection**: Sliding window identity-by-state computation from pangenome alignments
-- **IBD Inference**: Hidden Markov Model (Viterbi) to distinguish true IBD from background IBS
+- **IBD Inference**: Hidden Markov Model (Viterbi + forward-backward) to distinguish true IBD from background IBS
 - **Jacquard Coefficients**: Delta coefficient estimation for relatedness analysis
 
 ## Tools
@@ -38,13 +38,11 @@ A suite of Rust CLI tools for detecting IBD segments from whole-genome assemblie
 git clone https://github.com/MarsicoFL/HPRCv2-IBD.git
 cd HPRCv2-IBD
 
-# Build all tools
-cd src/ibs-cli && cargo build --release
-cd ../ibd-cli && cargo build --release
-cd ../jacquard-cli && cargo build --release
+# Build all tools (workspace build)
+cargo build --release
 ```
 
-Binaries will be in `src/*/target/release/`.
+Binaries will be in `target/release/` (`ibs`, `ibd`, `jacquard`).
 
 ## Usage
 
@@ -75,15 +73,27 @@ ibs \
 
 ### 2. IBD Inference
 
-Infer IBD segments from IBS data using HMM:
+Infer IBD segments using HMM (Viterbi + forward-backward):
 
 ```bash
 ibd \
-    --input ibs_results.tsv \
-    --output ibd_segments.json
+    --sequence-files assemblies.agc \
+    -a alignments.paf.gz \
+    -r CHM13 \
+    --region chr1:1-10000000 \
+    --size 5000 \
+    --subset-sequence-list samples.txt \
+    --population EUR \
+    --output ibd_segments.tsv \
+    --posterior-threshold 0.8
 ```
 
-**Output:** JSON file with IBD segments including coordinates and identity.
+**Parameters:**
+- `--population`: Population for HMM calibration (AFR, EUR, EAS, CSA, AMR, InterPop, Generic)
+- `--posterior-threshold`: Minimum mean P(IBD) for segment (uses forward-backward)
+- `--output-posteriors`: Optional file for per-window P(IBD) values
+
+**Output:** TSV with segments including coordinates, identity, and posterior statistics.
 
 ### 3. Jacquard Coefficients
 
