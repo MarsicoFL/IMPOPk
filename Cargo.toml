@@ -5,6 +5,7 @@ members = [
     "src/ibd-cli",
     "src/ibs-cli",
     "src/jacquard-cli",
+    "src/ancestry-cli",
 ]
 
 [workspace.package]

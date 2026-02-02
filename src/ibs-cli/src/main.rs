@@ -73,7 +73,7 @@ struct Args {
     cutoff: f64,
 
     /// Metric (only informational for now)
-    #[arg(short = 'm', default_value = "cosin")]
+    #[arg(short = 'm', default_value = "cosine")]
     metric: String,
 
     /// Total length of REGION if you use -region chr1 (without coordinates)
