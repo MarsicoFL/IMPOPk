@@ -23,6 +23,7 @@ A suite of Rust CLI tools for detecting IBD segments from whole-genome assemblie
 - [IBS Detection](docs/tutorials/ibs.md) - Window-based identity analysis
 - [IBD Inference](docs/tutorials/ibd.md) - HMM-based segment detection
 - [Jacquard Coefficients](docs/tutorials/jacquard_coeffs.md) - Relatedness estimation
+- [Haplotype Relatedness](docs/tutorials/ancestry_relatedness.md) - Determine which reference haplotype each segment matches
 - [Full Pipeline](docs/tutorials/run_full.md) - End-to-end workflow
 
 ## Installation

@@ -96,10 +96,68 @@ This analyzes:
 - **References**: HG00099 and HG00097 (4 haplotypes)
 - **Region**: chr1:50-60 Mb (10 Mb test region)
 
-Results appear in `tutorial_relatedness/results/`:
-- `relatedness.tsv` - Segments with assigned reference haplotype
-- `relatedness_painting.png` - Chromosome painting visualization
-- `relatedness_stats.png` - Summary statistics
+Results appear in `tutorial_relatedness/results/`.
+
+### Expected Output
+
+The script will show progress and finish with a summary:
+
+```
+============================================================
+RELATEDNESS ANALYSIS SUMMARY
+============================================================
+
+Total segments: 5
+Total length: 5.83 Mb
+Query samples: 2
+Reference haplotypes: 4
+
+--- Segments by reference haplotype ---
+  HG00097#1: 1 segments, 1.78 Mb
+  HG00097#2: 1 segments, 1.06 Mb
+  HG00099#1: 2 segments, 2.03 Mb
+  HG00099#2: 1 segments, 0.95 Mb
+
+--- Per query sample ---
+
+  HG00344#1 (0.84 Mb total):
+    HG00099#1: 0.84 Mb (100.0%)
+
+  HG00344#2 (4.99 Mb total):
+    HG00097#1: 1.78 Mb (35.8%)
+    HG00099#1: 1.18 Mb (23.7%)
+    HG00097#2: 1.06 Mb (21.3%)
+    HG00099#2: 0.95 Mb (19.1%)
+```
+
+### Expected Output Files
+
+| File | Description |
+|------|-------------|
+| `relatedness.tsv` | Segments with assigned reference haplotype |
+| `relatedness_painting.png` | Chromosome painting visualization |
+| `relatedness_stats.png` | Segment counts and lengths by reference |
+| `relatedness_proportions.png` | Proportions per query haplotype |
+| `posteriors.tsv` | Per-window posterior probabilities |
+| `similarities.tsv` | Raw pairwise similarities |
+
+### Expected relatedness.tsv
+
+```
+chrom          start      end        sample     ancestry   n_windows  mean_similarity  mean_posterior  discriminability
+CHM13#0#chr1   50000001   51785000   HG00344#2  HG00097#1  357        0.9997           0.748           0.001
+CHM13#0#chr1   53515001   54470000   HG00344#2  HG00099#2  191        0.9993           0.843           0.002
+CHM13#0#chr1   57475001   58660000   HG00344#2  HG00099#1  237        0.9991           0.915           0.003
+CHM13#0#chr1   58935001   60000000   HG00344#2  HG00097#2  213        0.9991           0.836           0.004
+CHM13#0#chr1   54915001   55760000   HG00344#1  HG00099#1  169        0.9985           0.832           0.002
+```
+
+### Interpretation
+
+- **HG00344#1** shows 100% similarity to HG00099#1 in the detected segment
+- **HG00344#2** has segments matching all 4 reference haplotypes, with HG00097#1 being the most common (36%)
+- The `mean_posterior` values (0.75-0.91) indicate moderate to high confidence
+- Low `discriminability` values (<0.005) suggest references have similar overall similarity, which is expected for unrelated EUR individuals
 
 ---
 
