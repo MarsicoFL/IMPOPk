@@ -2,6 +2,8 @@
 
 Determine which reference haplotype each genomic segment of a query individual is most similar to. Useful for relatedness and pedigree analysis.
 
+**Runtime**: ~12-15 minutes for 10 Mb region (8 threads)
+
 ---
 
 ## Table of Contents
@@ -21,8 +23,8 @@ Determine which reference haplotype each genomic segment of a query individual i
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
 
-# Verify
-rustc --version   # Should be 1.70+
+# Verify (requires Rust 1.56+)
+rustc --version
 ```
 
 ### 2. Install impg
@@ -57,8 +59,19 @@ git clone https://github.com/MarsicoFL/HPRCv2-IBD.git
 cd HPRCv2-IBD
 cargo build --release
 
-# Verify
+# Verify all tools are built
 ./target/release/ancestry --help
+./target/release/ibs --help
+./target/release/ibd --help
+```
+
+### 6. Verify installation (quick test)
+
+```bash
+# This should complete without errors
+./target/release/ancestry --help | head -5
+which impg parallel python3
+python3 -c "import pandas, matplotlib, numpy; print('OK')"
 ```
 
 ---
@@ -189,6 +202,36 @@ You need:
 Optional but recommended:
 - **IMPG index** - Create with `impg index your.paf.gz` (speeds up queries)
 
+### Understanding the Populations File
+
+The `populations.tsv` file defines how reference haplotypes are grouped. The format is:
+
+```
+population_name<TAB>haplotype_id
+```
+
+**For relatedness/pedigree analysis** (this tutorial), each reference haplotype is its own "population":
+
+```
+SAMPLE_B#1	SAMPLE_B#1
+SAMPLE_B#2	SAMPLE_B#2
+SAMPLE_C#1	SAMPLE_C#1
+SAMPLE_C#2	SAMPLE_C#2
+```
+
+This lets you determine which specific haplotype each query segment matches.
+
+**For ancestry analysis** (e.g., species admixture), group haplotypes by population:
+
+```
+species_A	species_A#HAP1
+species_A	species_A#HAP2
+species_B	species_B#HAP1
+species_B	species_B#HAP2
+```
+
+This reports ancestry at the population level, averaging across haplotypes.
+
 ### Step 1: Identify your reference format
 
 Check your PAF file to find the reference sequence names:
@@ -211,7 +254,7 @@ Create a working directory:
 mkdir -p my_analysis/{samples,results}
 ```
 
-Create query file (the individual to analyze):
+**Query file** (the individual to analyze):
 
 ```bash
 cat > my_analysis/samples/query.txt << 'EOF'
@@ -220,7 +263,7 @@ SAMPLE_A#2
 EOF
 ```
 
-Create references file (potential relatives):
+**References file** (potential relatives or ancestral populations):
 
 ```bash
 cat > my_analysis/samples/references.txt << 'EOF'
@@ -231,13 +274,13 @@ SAMPLE_C#2
 EOF
 ```
 
-Combine all samples:
+**All samples** (combined for impg):
 
 ```bash
 cat my_analysis/samples/query.txt my_analysis/samples/references.txt > my_analysis/samples/all.txt
 ```
 
-Create populations file (each reference haplotype as its own "population"):
+**Populations file** (for haplotype-level relatedness):
 
 ```bash
 cat > my_analysis/samples/populations.tsv << 'EOF'
@@ -265,6 +308,17 @@ impg similarity \
 If you get "Sequence not found", check the reference format from Step 1.
 
 ### Step 4: Run the analysis
+
+**Option A: Use the provided script** (recommended)
+
+Copy and adapt the tutorial script:
+
+```bash
+cp bin/run_impg_ped.sh my_analysis/run.sh
+# Edit the script to point to your data files and set your region
+```
+
+**Option B: Run manually**
 
 Set your parameters:
 

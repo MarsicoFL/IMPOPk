@@ -1,7 +1,7 @@
 [package]
 name = "hprc-ibd"
 version = "0.2.0"
-edition = "2024"
+edition = "2021"
 authors = ["Franco Marsico"]
 description = "IBD (Identity-By-Descent) segment detection using HMM for HPRC pangenome data"
 license = "MIT"

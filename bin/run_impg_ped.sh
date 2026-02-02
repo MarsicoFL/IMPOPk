@@ -14,6 +14,8 @@ set -euo pipefail
 #   Query: HG00344 (both haplotypes)
 #   References: HG00099 and HG00097 (both haplotypes each = 4 reference haplotypes)
 #   Region: chr1:50,000,001-60,000,000 (10 Mb)
+#
+# Runtime: ~12-15 minutes for 10 Mb region (8 threads)
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,6 +39,39 @@ log() {
     echo "[$(date '+%H:%M:%S')] $*"
 }
 
+# =============================================================================
+# Check dependencies
+# =============================================================================
+check_dependency() {
+    if ! command -v "$1" &> /dev/null; then
+        echo "ERROR: Required tool '$1' not found."
+        echo "Please install it before running this script."
+        case "$1" in
+            impg)
+                echo "  Install with: cargo install impg";;
+            parallel)
+                echo "  Install with: sudo apt install parallel (Ubuntu) or brew install parallel (macOS)";;
+            python3)
+                echo "  Install Python 3 from your package manager";;
+            bc)
+                echo "  Install with: sudo apt install bc (Ubuntu) or brew install bc (macOS)";;
+        esac
+        exit 1
+    fi
+}
+
+check_dependency impg
+check_dependency parallel
+check_dependency python3
+check_dependency bc
+
+# Check Python packages
+if ! python3 -c "import pandas, matplotlib, numpy" 2>/dev/null; then
+    echo "ERROR: Missing Python packages. Install with:"
+    echo "  pip install pandas matplotlib numpy"
+    exit 1
+fi
+
 log "=============================================="
 log "Haplotype Relatedness Analysis"
 log "=============================================="
@@ -44,6 +79,7 @@ log "Region: $REGION ($(echo "scale=1; $REGION_LEN / 1000000" | bc) Mb)"
 log "Window size: $WINDOW_SIZE bp"
 log "Parallel jobs: $JOBS"
 log "Working directory: $WORKDIR"
+log "Estimated runtime: ~12-15 minutes"
 log ""
 
 # Create working directory structure
