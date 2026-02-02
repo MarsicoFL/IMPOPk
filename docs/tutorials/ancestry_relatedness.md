@@ -1,76 +1,40 @@
-# Haplotype Relatedness Analysis Tutorial
+# Haplotype Relatedness Analysis
 
-This tutorial demonstrates how to use the ancestry HMM model to determine **which reference haplotype each genomic segment of a query individual is most similar to**. This is a form of relatedness analysis that sits between traditional IBD detection and population-level ancestry inference.
+Determine which reference haplotype each genomic segment of a query individual is most similar to. Useful for relatedness and pedigree analysis.
 
-## Use Case
+---
 
-Given:
-- A **query individual** (both haplotypes)
-- Multiple **reference haplotypes** from related or potentially related individuals
+## Table of Contents
 
-The model determines, for each genomic window, which reference haplotype the query is most similar to. This can reveal:
-- Shared haplotype segments between individuals
-- Patterns of inheritance
-- Potential relatedness
+1. [Installation](#installation)
+2. [Reproducible Example (HPRC)](#reproducible-example-hprc)
+3. [Using Your Own Data](#using-your-own-data)
+4. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Installation
 
-### Step 1: Install Rust
-
-If you don't have Rust installed:
+### 1. Install Rust
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
+
+# Verify
+rustc --version   # Should be 1.70+
 ```
 
-Verify installation:
-
-```bash
-rustc --version  # Should be 1.70+
-cargo --version
-```
-
-### Step 2: Clone and Build HPRCv2-IBD
-
-```bash
-git clone https://github.com/MarsicoFL/HPRCv2-IBD.git
-cd HPRCv2-IBD
-
-# Build all tools (including ancestry)
-cargo build --release
-
-# Verify the ancestry binary was built
-./target/release/ancestry --help
-```
-
-The `ancestry` binary will be at `./target/release/ancestry`.
-
-### Step 3: Install impg
-
-`impg` is the pangenome similarity tool required for computing pairwise similarities.
+### 2. Install impg
 
 ```bash
 cargo install impg
 
-# Verify installation
+# Verify
 impg --version
 ```
 
-Alternatively, build from source:
-
-```bash
-git clone https://github.com/ekg/impg.git
-cd impg
-cargo build --release
-# Binary at ./target/release/impg
-```
-
-### Step 4: Install GNU Parallel
-
-For parallel window processing:
+### 3. Install GNU Parallel
 
 ```bash
 # Ubuntu/Debian
@@ -78,189 +42,184 @@ sudo apt install parallel
 
 # macOS
 brew install parallel
-
-# Verify
-parallel --version
 ```
 
-### Step 5: Install Python Dependencies
+### 4. Install Python packages
 
 ```bash
 pip install pandas matplotlib numpy
 ```
 
-### Step 6: Download HPRC Data
+### 5. Clone and build this repository
 
-Create data directories and download required files:
+```bash
+git clone https://github.com/MarsicoFL/HPRCv2-IBD.git
+cd HPRCv2-IBD
+cargo build --release
+
+# Verify
+./target/release/ancestry --help
+```
+
+---
+
+## Reproducible Example (HPRC)
+
+This example analyzes relatedness between three EUR individuals from the Human Pangenome Reference Consortium (HPRC).
+
+### Download HPRC Data
 
 ```bash
 cd HPRCv2-IBD
 mkdir -p data/assemblies data/alignments
 
-# Download AGC file (3.1 GB) - compressed assemblies
+# AGC file (3.1 GB) - compressed genome assemblies
 wget -P data/assemblies/ \
   https://s3-us-west-2.amazonaws.com/human-pangenomics/submissions/B4174A5F-F20E-4DCF-8470-F8A907B640BC--HPRCv2_0.6.1_pr_agc_submission/HPRC_r2_assemblies_0.6.1.agc
 
-# Download PAF alignment file (5.3 GB)
+# PAF file (5.3 GB) - alignments to CHM13 reference
 wget -P data/alignments/ \
   https://garrisonlab.s3.amazonaws.com/hprcv2/pafs/hprc465vschm13.aln.paf.gz
 
-# Download IMPG index (315 MB) - speeds up queries
+# IMPG index (315 MB) - speeds up queries
 wget -P data/alignments/ \
   https://garrisonlab.s3.amazonaws.com/hprcv2/impg/hprc465vschm13.aln.paf.gz.impg
 ```
 
-Verify the data structure:
+### Run the Example
 
 ```bash
-ls -lh data/assemblies/
-# HPRC_r2_assemblies_0.6.1.agc (3.1G)
-
-ls -lh data/alignments/
-# hprc465vschm13.aln.paf.gz (5.3G)
-# hprc465vschm13.aln.paf.gz.impg (315M)
-```
-
----
-
-## Quick Start
-
-Once everything is installed, run the example analysis:
-
-```bash
-cd HPRCv2-IBD
 ./bin/run_impg_ped.sh
 ```
 
-This will:
-1. Create sample files for HG00344 (query) vs HG00099/HG00097 (references)
-2. Compute pairwise similarities for chr1:50-60Mb
-3. Run HMM inference
-4. Generate plots
+This analyzes:
+- **Query**: HG00344 (both haplotypes)
+- **References**: HG00099 and HG00097 (4 haplotypes)
+- **Region**: chr1:50-60 Mb (10 Mb test region)
 
-Results will be in `tutorial_relatedness/results/`.
+Results appear in `tutorial_relatedness/results/`:
+- `relatedness.tsv` - Segments with assigned reference haplotype
+- `relatedness_painting.png` - Chromosome painting visualization
+- `relatedness_stats.png` - Summary statistics
 
 ---
 
-## Example Setup
+## Using Your Own Data
 
-We'll analyze:
-- **Query**: HG00344 (EUR ancestry) - both haplotypes
-- **References**: HG00099 and HG00097 (EUR ancestry) - 4 haplotypes total
-- **Region**: chr1:50,000,001-60,000,000 (10 Mb)
-- **Window size**: 5,000 bp
+### Requirements
 
-### Important: Reference Format
+You need:
+1. **AGC file** (`your.agc`) - Compressed assemblies
+2. **PAF file** (`your.paf.gz`) - Alignments to a reference
+3. **IMPG index** (`your.paf.gz.impg`) - Optional but recommended
 
-In HPRC data, the reference chromosome format is `CHM13#0#chr1`, not just `chr1`. This is critical for `impg` queries.
+### Step 1: Identify your reference format
 
-### Create Sample Files
+Check your PAF file to find the reference sequence names:
 
 ```bash
-mkdir -p tutorial_relatedness/{samples,results}
-
-# Query haplotypes (the individual to analyze)
-cat > tutorial_relatedness/samples/query.txt << 'EOF'
-HG00344#1
-HG00344#2
-EOF
-
-# Reference haplotypes (potential relatives)
-cat > tutorial_relatedness/samples/references.txt << 'EOF'
-HG00099#1
-HG00099#2
-HG00097#1
-HG00097#2
-EOF
-
-# All samples combined (for impg)
-cat tutorial_relatedness/samples/query.txt \
-    tutorial_relatedness/samples/references.txt \
-    > tutorial_relatedness/samples/all.txt
-
-# Populations file (each haplotype as its own "population")
-# Format: population_name<TAB>haplotype_id
-cat > tutorial_relatedness/samples/populations.tsv << 'EOF'
-HG00099#1	HG00099#1
-HG00099#2	HG00099#2
-HG00097#1	HG00097#1
-HG00097#2	HG00097#2
-EOF
+zcat your.paf.gz | head -5 | cut -f6
 ```
 
----
+Example outputs:
+- HPRC human data: `CHM13#0#chr1`
+- Custom data: `reference#chr1` or just `chr1`
 
-## Pipeline Overview
+**Important**: Use the exact format shown when running `impg`.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  STEP 1: Pairwise Similarity Calculation                    │
-│  Tool: impg similarity                                      │
-│  Output: All pairwise similarities per window              │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│  STEP 2: Extract Query vs Reference Matrix                  │
-│  Tool: Python script                                        │
-│  Output: Matrix of query haplotypes vs reference haplotypes│
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│  STEP 3: HMM Inference                                      │
-│  Tool: ancestry                                            │
-│  Output: Most likely reference for each segment            │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│  STEP 4: Visualization                                      │
-│  Tool: Python script                                       │
-│  Output: Chromosome painting + statistics                  │
-└─────────────────────────────────────────────────────────────┘
-```
+### Step 2: Create sample files
 
----
-
-## Step-by-Step Guide
-
-### Step 1: Generate Pairwise Similarities
-
-Calculate sequence similarity between all pairs of haplotypes for each genomic window.
+Create a working directory:
 
 ```bash
-# Configuration
-AGC="data/assemblies/HPRC_r2_assemblies_0.6.1.agc"
-PAF="data/alignments/hprc465vschm13.aln.paf.gz"
-SAMPLES="tutorial_relatedness/samples/all.txt"
-OUTDIR="tutorial_relatedness/results"
+mkdir -p my_analysis/{samples,results}
+```
 
-# IMPORTANT: Use CHM13#0#chr1 format for HPRC data
-CHROM="CHM13#0#chr1"
-START=50000001
-END=60000000
+Create query file (the individual to analyze):
+
+```bash
+cat > my_analysis/samples/query.txt << 'EOF'
+SAMPLE_A#1
+SAMPLE_A#2
+EOF
+```
+
+Create references file (potential relatives):
+
+```bash
+cat > my_analysis/samples/references.txt << 'EOF'
+SAMPLE_B#1
+SAMPLE_B#2
+SAMPLE_C#1
+SAMPLE_C#2
+EOF
+```
+
+Combine all samples:
+
+```bash
+cat my_analysis/samples/query.txt my_analysis/samples/references.txt > my_analysis/samples/all.txt
+```
+
+Create populations file (each reference haplotype as its own "population"):
+
+```bash
+cat > my_analysis/samples/populations.tsv << 'EOF'
+SAMPLE_B#1	SAMPLE_B#1
+SAMPLE_B#2	SAMPLE_B#2
+SAMPLE_C#1	SAMPLE_C#1
+SAMPLE_C#2	SAMPLE_C#2
+EOF
+```
+
+### Step 3: Test impg works with your data
+
+Test a single region to verify the format:
+
+```bash
+impg similarity \
+    --sequence-files your.agc \
+    -a your.paf.gz \
+    -r "YOUR_REFERENCE:1-10000" \
+    --subset-sequence-list my_analysis/samples/all.txt \
+    --force-large-region \
+    -t 1
+```
+
+If you get "Sequence not found", check the reference format from Step 1.
+
+### Step 4: Run the analysis
+
+Set your parameters:
+
+```bash
+# Data files
+AGC="your.agc"
+PAF="your.paf.gz"
+
+# Reference format (from Step 1)
+REFERENCE="YOUR_REFERENCE"   # e.g., "CHM13#0#chr1" or "ref#chr1"
+
+# Region to analyze
+CHROM="chr1"                 # Chromosome name in your reference
+START=1
+END=10000000                 # 10 Mb
+
+# Processing
 WINDOW_SIZE=5000
 JOBS=8
 
-# Test a single window first
-impg similarity \
-    --sequence-files "$AGC" \
-    -a "$PAF" \
-    -r "${CHROM}:${START}-$((START + WINDOW_SIZE - 1))" \
-    --subset-sequence-list "$SAMPLES" \
-    --force-large-region \
-    -t 1
-
-# If that works, proceed with parallel processing...
+WORKDIR="my_analysis"
 ```
 
-Generate all windows in parallel:
+Generate similarities:
 
 ```bash
 TMPDIR=$(mktemp -d)
+OUTDIR="$WORKDIR/results"
+mkdir -p "$OUTDIR"
 
-# Generate window coordinates
+# Generate windows
 pos=$START
 idx=0
 while [[ $pos -le $END ]]; do
@@ -280,8 +239,8 @@ idx=\$1; start=\$2; end=\$3
 impg similarity \\
     --sequence-files "$AGC" \\
     -a "$PAF" \\
-    -r "${CHROM}:\${start}-\${end}" \\
-    --subset-sequence-list "$SAMPLES" \\
+    -r "${REFERENCE}:\${start}-\${end}" \\
+    --subset-sequence-list "$WORKDIR/samples/all.txt" \\
     --force-large-region \\
     -t 1 -v 0 2>/dev/null | tail -n +2 > "$TMPDIR/w_\${idx}.tsv"
 SCRIPT
@@ -297,35 +256,23 @@ cat "$TMPDIR/windows.txt" | parallel -j $JOBS --colsep ' ' "$TMPDIR/process.sh" 
 for f in "$TMPDIR"/w_*.tsv; do
     [[ -s "$f" ]] && cat "$f" >> "$OUTDIR/similarities.tsv"
 done
-
 rm -rf "$TMPDIR"
+
 echo "Similarities: $(wc -l < $OUTDIR/similarities.tsv) lines"
 ```
 
-### Step 2: Extract Query vs Reference Matrix
-
-Use the provided script:
-
-```bash
-python3 bin/extract_query_vs_ref_similarities.py \
-    "$OUTDIR/similarities.tsv" \
-    -o "$OUTDIR/query_vs_ref.tsv" \
-    --queries tutorial_relatedness/samples/query.txt \
-    --references tutorial_relatedness/samples/references.txt
-```
-
-### Step 3: Run HMM Inference
+Run HMM inference:
 
 ```bash
 ./target/release/ancestry \
     --sequence-files "$AGC" \
     -a "$PAF" \
-    -r "CHM13#0" \
-    --region "chr1:${START}-${END}" \
+    -r "${REFERENCE%#*}" \
+    --region "${CHROM}:${START}-${END}" \
     --region-length $((END - START + 1)) \
     --window-size $WINDOW_SIZE \
-    --query-samples tutorial_relatedness/samples/query.txt \
-    --populations tutorial_relatedness/samples/populations.tsv \
+    --query-samples "$WORKDIR/samples/query.txt" \
+    --populations "$WORKDIR/samples/populations.tsv" \
     -o "$OUTDIR/relatedness.tsv" \
     --similarity-file "$OUTDIR/similarities.tsv" \
     --estimate-params \
@@ -335,136 +282,103 @@ python3 bin/extract_query_vs_ref_similarities.py \
     -t $JOBS
 ```
 
-**Key parameters:**
-
-| Parameter | Description |
-|-----------|-------------|
-| `-r "CHM13#0"` | Reference prefix (coordinates are relative to this) |
-| `--region "chr1:..."` | Region to analyze (chromosome:start-end) |
-| `--populations` | TSV file defining reference "populations" (haplotypes) |
-| `--estimate-params` | Automatically estimate HMM parameters from data |
-| `--smooth-min-windows 3` | Merge segments shorter than 3 windows |
-| `--min-posterior 0.7` | Only report segments with posterior >= 0.7 |
-
-**Output format (relatedness.tsv):**
-
-```
-chrom   start     end       sample     ancestry   mean_posterior  n_windows  discriminability
-chr1    50000001  50125000  HG00344#1  HG00099#1  0.92           25         0.0045
-chr1    50125001  50350000  HG00344#1  HG00097#2  0.88           45         0.0038
-```
-
-### Step 4: Visualization
+Generate plots:
 
 ```bash
 python3 bin/plot_relatedness.py \
     "$OUTDIR/relatedness.tsv" \
-    -o "$OUTDIR/relatedness" \
-    --title "Haplotype Relatedness: HG00344 vs HG00099/HG00097 (chr1:50-60Mb)"
+    -o "$OUTDIR/relatedness"
 ```
 
-This generates:
-- `relatedness_painting.png` - Chromosome painting
-- `relatedness_stats.png` - Summary statistics
+### Output Files
 
----
+| File | Description |
+|------|-------------|
+| `similarities.tsv` | Pairwise similarities per window |
+| `relatedness.tsv` | Segments with best-matching reference haplotype |
+| `posteriors.tsv` | Per-window posterior probabilities |
+| `relatedness_painting.png` | Chromosome painting |
+| `relatedness_stats.png` | Summary statistics |
 
-## Output Interpretation
+### Output Format
 
-### Chromosome Painting
+`relatedness.tsv` columns:
 
-Each horizontal bar represents a query haplotype (HG00344#1 and HG00344#2). Colors indicate which reference haplotype that segment is most similar to.
+```
+chrom   start     end       sample     ancestry   mean_posterior  n_windows  discriminability
+chr1    1         500000    SAMPLE_A#1 SAMPLE_B#1 0.92           100        0.045
+chr1    500001    1200000   SAMPLE_A#1 SAMPLE_C#2 0.88           140        0.038
+```
 
-### Discriminability
-
-The `discriminability` column indicates confidence:
-- **High (>0.05)**: Clear winner among references
-- **Low (<0.05)**: Multiple references have similar similarity (ambiguous)
+- **ancestry**: Which reference haplotype this segment matches best
+- **mean_posterior**: Confidence (0-1)
+- **discriminability**: Difference between best and second-best match
 
 ---
 
 ## Troubleshooting
 
-### "Sequence 'chr1' not found in index"
+### "Sequence 'X' not found in index"
 
-Use the full reference format: `CHM13#0#chr1` instead of `chr1`.
+Your reference format is wrong. Check your PAF file:
 
 ```bash
-# Wrong
-impg similarity -r "chr1:1-10000" ...
-
-# Correct
-impg similarity -r "CHM13#0#chr1:1-10000" ...
+zcat your.paf.gz | head -1 | cut -f6
 ```
+
+Use that exact format.
 
 ### "Using default Glossophaga populations"
 
-You need to provide a `--populations` file. Without it, the tool uses bat species as default.
+You forgot `--populations`. The tool defaults to bat species without it.
 
 ```bash
-# Create populations file
-cat > populations.tsv << 'EOF'
-HG00099#1	HG00099#1
-HG00099#2	HG00099#2
-EOF
-
-# Use it
-ancestry --populations populations.tsv ...
+ancestry --populations my_analysis/samples/populations.tsv ...
 ```
 
-### Empty similarities file
+### Empty results
 
-Check that:
-1. Sample IDs match what's in the AGC (e.g., `HG00344#1` not `HG00344_1`)
-2. Region format is correct (`CHM13#0#chr1:start-end`)
-3. Samples exist in the alignment file
+1. Check sample IDs match your AGC:
+   ```bash
+   # List samples in AGC (if you have agc tool)
+   agc listset your.agc | grep "SAMPLE"
+   ```
 
-Test with:
-```bash
-impg similarity --sequence-files $AGC -a $PAF -r "CHM13#0#chr1:50000001-50005000" -t 1
-```
+2. Test impg manually:
+   ```bash
+   impg similarity --sequence-files your.agc -a your.paf.gz \
+       -r "YOUR_REF:1-10000" -t 1
+   ```
 
-### impg not found
+### impg is slow
 
-```bash
-# Check if installed
-which impg
-
-# If not, install
-cargo install impg
-```
+- Use fewer parallel jobs if memory is limited
+- Create an IMPG index:
+  ```bash
+  impg index your.paf.gz
+  ```
 
 ---
 
-## Extending the Analysis
+## Parameters Reference
 
-### Different Samples
+### ancestry
 
-Edit the sample files:
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--window-size` | 5000 | Window size in bp |
+| `--populations` | (required) | TSV file: population_name, haplotype_id |
+| `--estimate-params` | off | Auto-estimate HMM parameters |
+| `--smooth-min-windows` | 0 | Merge short segments |
+| `--min-posterior` | 0.0 | Minimum confidence to report |
+| `-t` | 4 | Number of threads |
 
-```bash
-# Your query
-echo "YOUR_SAMPLE#1" > samples/query.txt
-echo "YOUR_SAMPLE#2" >> samples/query.txt
+### impg similarity
 
-# References
-echo "REF1#1" > samples/references.txt
-echo "REF1#2" >> samples/references.txt
-
-# Update populations.tsv accordingly
-```
-
-### Full Chromosome
-
-```bash
-CHROM="CHM13#0#chr1"
-START=1
-END=248387328  # Full chr1 length
-```
-
-### Available EUR Samples
-
-See `data/samples/EUR.txt` for the list of European ancestry samples in HPRC:
-```
-HG00097, HG00099, HG00126, HG00128, HG00133, HG00140, HG00146, ...
-```
+| Parameter | Description |
+|-----------|-------------|
+| `--sequence-files` | AGC file |
+| `-a` | PAF alignment file |
+| `-r` | Region (reference:start-end) |
+| `--subset-sequence-list` | File with sample IDs to include |
+| `--force-large-region` | Allow regions > 100kb |
