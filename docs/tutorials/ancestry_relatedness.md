@@ -107,27 +107,30 @@ The script will show progress and finish with a summary:
 RELATEDNESS ANALYSIS SUMMARY
 ============================================================
 
-Total segments: 5
-Total length: 5.83 Mb
+Total segments: 12
+Total length: 14.81 Mb
 Query samples: 2
 Reference haplotypes: 4
 
 --- Segments by reference haplotype ---
-  HG00097#1: 1 segments, 1.78 Mb
-  HG00097#2: 1 segments, 1.06 Mb
-  HG00099#1: 2 segments, 2.03 Mb
-  HG00099#2: 1 segments, 0.95 Mb
+  HG00097#1: 3 segments, 5.11 Mb
+  HG00097#2: 3 segments, 2.95 Mb
+  HG00099#1: 3 segments, 3.82 Mb
+  HG00099#2: 3 segments, 2.92 Mb
 
 --- Per query sample ---
 
-  HG00344#1 (0.84 Mb total):
-    HG00099#1: 0.84 Mb (100.0%)
+  HG00344#1 (8.93 Mb total):
+    HG00097#1: 3.33 Mb (37.3%)
+    HG00099#1: 2.63 Mb (29.5%)
+    HG00099#2: 1.69 Mb (19.0%)
+    HG00097#2: 1.27 Mb (14.3%)
 
-  HG00344#2 (4.99 Mb total):
-    HG00097#1: 1.78 Mb (35.8%)
-    HG00099#1: 1.18 Mb (23.7%)
-    HG00097#2: 1.06 Mb (21.3%)
-    HG00099#2: 0.95 Mb (19.1%)
+  HG00344#2 (5.87 Mb total):
+    HG00097#1: 1.78 Mb (30.4%)
+    HG00097#2: 1.67 Mb (28.5%)
+    HG00099#2: 1.23 Mb (20.9%)
+    HG00099#1: 1.18 Mb (20.2%)
 ```
 
 ### Expected Output Files
@@ -147,9 +150,16 @@ Reference haplotypes: 4
 chrom          start      end        sample     ancestry   n_windows  mean_similarity  mean_posterior  discriminability
 CHM13#0#chr1   50000001   51785000   HG00344#2  HG00097#1  357        0.9997           0.748           0.001
 CHM13#0#chr1   53515001   54470000   HG00344#2  HG00099#2  191        0.9993           0.843           0.002
+CHM13#0#chr1   54470001   55080000   HG00344#2  HG00097#2  122        0.9992           0.694           0.003
 CHM13#0#chr1   57475001   58660000   HG00344#2  HG00099#1  237        0.9991           0.915           0.003
+CHM13#0#chr1   58660001   58935000   HG00344#2  HG00099#2  55         0.9988           0.693           0.002
 CHM13#0#chr1   58935001   60000000   HG00344#2  HG00097#2  213        0.9991           0.836           0.004
+CHM13#0#chr1   50000001   51790000   HG00344#1  HG00099#1  358        0.9992           0.668           0.002
+CHM13#0#chr1   51790001   53640000   HG00344#1  HG00097#1  370        0.9995           0.585           0.002
+CHM13#0#chr1   53640001   54915000   HG00344#1  HG00097#2  255        0.9991           0.538           0.003
 CHM13#0#chr1   54915001   55760000   HG00344#1  HG00099#1  169        0.9985           0.832           0.002
+CHM13#0#chr1   55760001   57240000   HG00344#1  HG00097#1  296        0.9989           0.598           0.004
+CHM13#0#chr1   57240001   58935000   HG00344#1  HG00099#2  339        0.9989           0.566           0.003
 ```
 
 ### Expected Plot
@@ -160,10 +170,11 @@ The chromosome painting shows which reference haplotype each genomic segment is 
 
 ### Interpretation
 
-- **HG00344#1** shows 100% similarity to HG00099#1 in the detected segment
-- **HG00344#2** has segments matching all 4 reference haplotypes, with HG00097#1 being the most common (36%)
-- The `mean_posterior` values (0.75-0.91) indicate moderate to high confidence
+- **HG00344#1** has segments matching all 4 reference haplotypes, with HG00097#1 being the most common (37%)
+- **HG00344#2** also has segments matching all 4 references, with HG00097#1 being most common (30%)
+- The `mean_posterior` values (0.54-0.91) show variable confidence - higher posteriors indicate clearer assignments
 - Low `discriminability` values (<0.005) suggest references have similar overall similarity, which is expected for unrelated EUR individuals
+- With threshold 0.5, we paint ~74% of the region (14.81 Mb out of 20 Mb across both haplotypes)
 
 ---
 
@@ -342,7 +353,7 @@ Run HMM inference:
     --similarity-file "$OUTDIR/similarities.tsv" \
     --estimate-params \
     --smooth-min-windows 3 \
-    --min-posterior 0.7 \
+    --min-posterior 0.5 \
     --posteriors-output "$OUTDIR/posteriors.tsv" \
     -t $JOBS
 ```
@@ -435,7 +446,7 @@ ancestry --populations my_analysis/samples/populations.tsv ...
 | `--populations` | (required) | TSV file: population_name, haplotype_id |
 | `--estimate-params` | off | Auto-estimate HMM parameters |
 | `--smooth-min-windows` | 0 | Merge short segments |
-| `--min-posterior` | 0.0 | Minimum confidence to report |
+| `--min-posterior` | 0.0 | Minimum confidence to report (recommend 0.5) |
 | `-t` | 4 | Number of threads |
 
 ### impg similarity

@@ -233,7 +233,7 @@ $ANCESTRY_BIN \
     --similarity-file "$SIM_FILE" \
     --estimate-params \
     --smooth-min-windows 3 \
-    --min-posterior 0.7 \
+    --min-posterior 0.5 \
     --posteriors-output "$POSTERIORS_FILE" \
     -t "$JOBS"
 
