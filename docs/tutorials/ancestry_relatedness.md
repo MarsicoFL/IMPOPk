@@ -81,9 +81,8 @@ wget -P data/assemblies/ \
 wget -P data/alignments/ \
   https://garrisonlab.s3.amazonaws.com/hprcv2/pafs/hprc465vschm13.aln.paf.gz
 
-# IMPG index (315 MB) - speeds up queries
-wget -P data/alignments/ \
-  https://garrisonlab.s3.amazonaws.com/hprcv2/impg/hprc465vschm13.aln.paf.gz.impg
+# Optional: Create IMPG index (speeds up queries significantly)
+impg index data/alignments/hprc465vschm13.aln.paf.gz
 ```
 
 ### Run the Example
@@ -109,9 +108,11 @@ Results appear in `tutorial_relatedness/results/`:
 ### Requirements
 
 You need:
-1. **AGC file** (`your.agc`) - Compressed assemblies
-2. **PAF file** (`your.paf.gz`) - Alignments to a reference
-3. **IMPG index** (`your.paf.gz.impg`) - Optional but recommended
+1. **AGC file** (`your.agc`) - Compressed assemblies ([AGC format](https://github.com/refresh-bio/agc))
+2. **PAF file** (`your.paf.gz`) - Alignments to a reference genome
+
+Optional but recommended:
+- **IMPG index** - Create with `impg index your.paf.gz` (speeds up queries)
 
 ### Step 1: Identify your reference format
 

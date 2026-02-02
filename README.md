@@ -135,7 +135,8 @@ Population sample lists are included in [`data/samples/`](data/):
 |------|------|----------|
 | HPRC_r2_assemblies_0.6.1.agc | 3.1 GB | [Link](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=submissions/B4174A5F-F20E-4DCF-8470-F8A907B640BC--HPRCv2_0.6.1_pr_agc_submission/) |
 | hprc465vschm13.aln.paf.gz | 5.3 GB | [Link](https://garrisonlab.s3.amazonaws.com/hprcv2/pafs/hprc465vschm13.aln.paf.gz) |
-| hprc465vschm13.aln.paf.gz.impg | 315 MB | [Link](https://garrisonlab.s3.amazonaws.com/hprcv2/impg/hprc465vschm13.aln.paf.gz.impg) |
+
+Optional: Create IMPG index with `impg index hprc465vschm13.aln.paf.gz`
 
 ## License
 
