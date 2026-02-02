@@ -152,6 +152,12 @@ CHM13#0#chr1   58935001   60000000   HG00344#2  HG00097#2  213        0.9991    
 CHM13#0#chr1   54915001   55760000   HG00344#1  HG00099#1  169        0.9985           0.832           0.002
 ```
 
+### Expected Plot
+
+![Chromosome Painting](images/relatedness_painting.png)
+
+The chromosome painting shows which reference haplotype each genomic segment is most similar to. Each row is a query haplotype, and colors represent different reference haplotypes.
+
 ### Interpretation
 
 - **HG00344#1** shows 100% similarity to HG00099#1 in the detected segment
