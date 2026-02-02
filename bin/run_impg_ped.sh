@@ -27,7 +27,7 @@ JOBS=8
 WINDOW_SIZE=5000
 
 # Region of interest
-CHROM="chr1"
+CHROM="CHM13#0#chr1"
 START=50000001
 END=60000000
 REGION="${CHROM}:${START}-${END}"
@@ -72,6 +72,7 @@ SAMPLES_REF="$WORKDIR/samples/references.txt"
 SAMPLES_ALL="$WORKDIR/samples/all.txt"
 
 # Create sample files if they don't exist
+SAMPLES_POP="$WORKDIR/samples/populations.tsv"
 if [[ ! -f "$SAMPLES_QUERY" ]]; then
     log "Creating default sample files..."
     cat > "$SAMPLES_QUERY" << 'EOF'
@@ -85,6 +86,13 @@ HG00097#1
 HG00097#2
 EOF
     cat "$SAMPLES_QUERY" "$SAMPLES_REF" > "$SAMPLES_ALL"
+    # Create populations file (each haplotype as its own "population")
+    cat > "$SAMPLES_POP" << 'EOF'
+HG00099#1	HG00099#1
+HG00099#2	HG00099#2
+HG00097#1	HG00097#1
+HG00097#2	HG00097#2
+EOF
     log "  Query: HG00344 (2 haplotypes)"
     log "  References: HG00099, HG00097 (4 haplotypes)"
 fi
@@ -215,11 +223,12 @@ log "=============================================="
 $ANCESTRY_BIN \
     --sequence-files "$AGC" \
     -a "$PAF" \
-    -r "chm13#chr1" \
-    --region "${CHROM#chr}:${START}-${END}" \
+    -r "CHM13#0" \
+    --region "chr1:${START}-${END}" \
     --region-length "$REGION_LEN" \
     --window-size "$WINDOW_SIZE" \
     --query-samples "$SAMPLES_QUERY" \
+    --populations "$SAMPLES_POP" \
     -o "$ANCESTRY_FILE" \
     --similarity-file "$SIM_FILE" \
     --estimate-params \
