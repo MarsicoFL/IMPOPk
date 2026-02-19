@@ -1,4 +1,4 @@
-# HPRCv2-IBD
+# impopₖ
 
 Identity-by-Descent (IBD) detection from pangenome assemblies using haplotype-level identity analysis.
 
