@@ -25,7 +25,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 WORKDIR="${1:-$PROJECT_ROOT/tutorial_relatedness}"
 
 # Configuration
-JOBS=8
+JOBS=1
 WINDOW_SIZE=5000
 
 # Region of interest
@@ -61,7 +61,7 @@ check_dependency() {
 }
 
 check_dependency impg
-check_dependency parallel
+# check_dependency parallel
 check_dependency python3
 check_dependency bc
 
@@ -160,7 +160,7 @@ log "=============================================="
 if [[ -f "$SIM_FILE" ]] && [[ $(wc -l < "$SIM_FILE") -gt 100 ]]; then
     log "Using existing similarities file ($(wc -l < "$SIM_FILE") lines)"
 else
-    log "Running impg similarity in parallel..."
+    log "Running impg similarity ..."
 
     TMPDIR=$(mktemp -d)
     log "Temp dir: $TMPDIR"
@@ -212,8 +212,10 @@ SCRIPT
 
     START_TIME=$(date +%s)
 
-    cat "$WINDOWS_FILE" | parallel -j "$JOBS" --colsep ' ' "$TMPDIR/process.sh" {1} {2} {3}
-
+    # cat "$WINDOWS_FILE" | parallel -j "$JOBS" --colsep ' ' "$TMPDIR/process.sh" {1} {2} {3}
+    while read -r idx pos_s pos_e; do
+        "$TMPDIR/process.sh" "$idx" "$pos_s" "$pos_e"
+    done < "$WINDOWS_FILE"
     END_TIME=$(date +%s)
     ELAPSED=$((END_TIME - START_TIME))
     log "Similarity computation completed in ${ELAPSED}s"
