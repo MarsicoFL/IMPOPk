@@ -6,7 +6,7 @@ IBD detection and local ancestry inference from pangenome assemblies, without VC
 
 A suite of Rust CLI tools that compute haplotype identity directly from pangenome alignments (PAF) and use Hidden Markov Models to infer IBD segments and local ancestry. Alternative to VCF-based methods (hap-ibd, RFMix).
 
-- **IBS Detection**: Pairwise identity computation from PAF alignments (>100x faster than impg)
+- **IBS Detection**: Pairwise identity computation from PAF alignments (>1,000x faster than impg)
 - **IBD Inference**: 2-state HMM (Viterbi + forward-backward + Baum-Welch) for IBD segment detection
 - **Local Ancestry**: N-state HMM with softmax emissions, pairwise contrast, auto-configuration
 - **Jacquard Coefficients**: Delta coefficient estimation for relatedness analysis

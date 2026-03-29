@@ -20,7 +20,7 @@ install: ## Install binaries to ~/.cargo/bin
 
 clean: ## Clean build artifacts (Rust + LaTeX)
 	cargo clean
-	cd paper && rm -f *.aux *.log *.out *.toc *.bbl *.blg *.fls *.synctex.gz *.fdb_latexmk 2>/dev/null || true
+	[ -d paper ] && cd paper && rm -f *.aux *.log *.out *.toc *.bbl *.blg *.fls *.synctex.gz *.fdb_latexmk 2>/dev/null || true
 
 download-data: ## Download all required external data
 	bash scripts/download_all.sh
@@ -30,11 +30,6 @@ download-data-dry: ## Show what would be downloaded
 
 verify-data: ## Verify downloaded data checksums
 	bash scripts/verify_checksums.sh
-
-paper: ## Compile the LaTeX paper (requires pdflatex + bibtex)
-	@command -v pdflatex >/dev/null 2>&1 || { echo "Error: pdflatex not found. Install texlive: sudo apt-get install texlive-full"; exit 1; }
-	@command -v bibtex >/dev/null 2>&1 || { echo "Error: bibtex not found. Install texlive: sudo apt-get install texlive-full"; exit 1; }
-	cd paper && pdflatex HPRCv2_IBD_paper.tex && bibtex HPRCv2_IBD_paper && pdflatex HPRCv2_IBD_paper.tex && pdflatex HPRCv2_IBD_paper.tex
 
 docker: ## Build Docker image
 	docker build -t impopk .

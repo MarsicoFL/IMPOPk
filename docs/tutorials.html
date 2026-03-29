@@ -529,7 +529,7 @@ ibs-from-paf \
     <text x="130" y="93" text-anchor="middle" fill="#8b949e" font-size="9">~0.999</text>
     <circle cx="370" cy="80" r="45" fill="none" stroke="#3fb950" stroke-width="2.5"/>
     <text x="370" y="75" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="700">IBD</text>
-    <text x="370" y="93" text-anchor="middle" fill="#8b949e" font-size="9">~0.9995</text>
+    <text x="370" y="93" text-anchor="middle" fill="#8b949e" font-size="9">~0.9997</text>
     <!-- Transitions -->
     <path d="M175,65 Q250,20 325,65" fill="none" stroke="#f0883e" stroke-width="1.5" marker-end="url(#arr)"/>
     <text x="250" y="35" text-anchor="middle" fill="#f0883e" font-size="9">P(enter) = 0.0001</text>
@@ -557,18 +557,18 @@ ibs-from-paf \
     <!-- Non-IBD distribution (wider, centered ~0.997) -->
     <path d="M120,168 Q200,165 260,140 Q300,80 330,40 Q350,80 380,140 Q420,165 480,168" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
     <path d="M120,168 Q200,165 260,140 Q300,80 330,40 Q350,80 380,140 Q420,165 480,168 Z" fill="#58a6ff" fill-opacity="0.1"/>
-    <!-- IBD distribution (narrower, centered ~0.9995) -->
+    <!-- IBD distribution (narrower, centered ~0.9997) -->
     <path d="M440,168 Q470,155 490,110 Q500,50 510,30 Q520,50 530,110 Q550,155 570,168" fill="none" stroke="#3fb950" stroke-width="2.5"/>
     <path d="M440,168 Q470,155 490,110 Q500,50 510,30 Q520,50 530,110 Q550,155 570,168 Z" fill="#3fb950" fill-opacity="0.1"/>
     <rect x="100" y="22" width="12" height="12" rx="2" fill="#58a6ff" fill-opacity="0.5"/>
     <text x="118" y="32" fill="#c9d1d9" font-size="11">Non-IBD pairs (~0.999)</text>
     <rect x="300" y="22" width="12" height="12" rx="2" fill="#3fb950" fill-opacity="0.5"/>
-    <text x="318" y="32" fill="#c9d1d9" font-size="11">IBD pairs (~0.9995)</text>
+    <text x="318" y="32" fill="#c9d1d9" font-size="11">IBD pairs (~0.9997)</text>
     <line x1="360" y1="155" x2="460" y2="155" stroke="#f0883e" stroke-width="1.5" stroke-dasharray="4,3"/>
     <text x="410" y="150" fill="#f0883e" font-size="9" text-anchor="middle">identity gap ~0.0007</text>
   </svg>
 </div>
-<p>The identity gap (~0.002) between IBD and non-IBD pairs is the signal the HMM uses. Baum-Welch estimates these emission distributions from the data.</p>
+<p>The identity gap (~0.0007) between IBD and non-IBD pairs is the signal the HMM uses. Baum-Welch estimates these emission distributions from the data.</p>
 
 <h2>Recommended Workflow</h2>
 <div class="pipeline">

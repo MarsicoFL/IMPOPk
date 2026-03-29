@@ -48,7 +48,7 @@ Each state emits identity values $o_t \in [0,1]$ according to a Gaussian distrib
 
 $$P(o_t \mid s_t = s) = \mathcal{N}(o_t; \mu_s, \sigma_s^2)$$
 
-The non-IBD mean derives from coalescent theory: $\mu_0 = 1 - \theta$, where $\theta = 4\mu N_e$ is the population-scaled nucleotide diversity. Population-specific $\pi$ values range from 0.00080 (EAS) to 0.00125 (AFR), yielding expected non-IBD identity of 0.99875 to 0.99920. The IBD mean is $\mu_1 = 0.9997$ with $\sigma_1 = 0.0005$, reflecting only sequencing and assembly errors.
+The non-IBD mean derives from coalescent theory: $\mu_0 = 1 - \theta$, where $\pi \approx 4\mu N_e$ is the population-scaled nucleotide diversity. Population-specific $\pi$ values range from 0.00080 (EAS) to 0.00125 (AFR), yielding expected non-IBD identity of 0.99875 to 0.99920. The IBD mean is $\mu_1 = 0.9997$ with $\sigma_1 = 0.0005$, reflecting only sequencing and assembly errors.
 
 | Population | $\pi$ (SNPs/bp) | E[identity | non-IBD] | SNR |
 |------------|------------------|-------------------------|-----|
