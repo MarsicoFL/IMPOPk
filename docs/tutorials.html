@@ -846,10 +846,10 @@ ibs-from-paf \
     <line x1="250" y1="80" x2="250" y2="120" stroke="#30363d"/>
     <line x1="100" y1="120" x2="400" y2="120" stroke="#30363d"/>
     <g transform="translate(60,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12879</text></g>
-    <g transform="translate(140,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12880</text></g>
-    <g transform="translate(220,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12881</text></g>
-    <g transform="translate(300,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12882</text></g>
-    <g transform="translate(380,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12883</text></g>
+    <g transform="translate(140,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12881</text></g>
+    <g transform="translate(220,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12882</text></g>
+    <g transform="translate(300,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12885</text></g>
+    <g transform="translate(380,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12886</text></g>
     <!-- Vertical connections -->
     <line x1="95" y1="120" x2="95" y2="130" stroke="#30363d"/>
     <line x1="175" y1="120" x2="175" y2="130" stroke="#30363d"/>
@@ -874,25 +874,43 @@ aws s3 ls --no-sign-request s3://platinum-pedigree-data/
 #   truthset_v1.2/  - Benchmark variant truthsets</code></pre>
 <div class="info-box">
   <div class="label">Open Access</div>
-  <p>All individuals used in this tutorial (NA12878, NA12891, NA12892, NA12879&ndash;NA12886) are open-access. Five other family members (NA12883, NA12884, NA12887, 200103, 200105) require <a href="https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs003793.v1.p1">dbGaP access</a>.</p>
+  <p>Open-access individuals with assemblies: NA12877, NA12878, NA12879, NA12881, NA12882, NA12885, NA12886, NA12889, NA12890, NA12891, NA12892. Five family members (NA12883, NA12884, NA12887, 200103, 200105) require <a href="https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs003793.v1.p1">dbGaP access</a>.</p>
 </div>
 
 <h2>Workflow</h2>
-<pre><code># 1. Compute similarities (18 haplotypes: 8 grandparent + 10 offspring)
-ibs-from-paf \
-    -a data/alignments/hprc465vschm13.aln.paf.gz \
-    -r CHM13 --region chr12:1-133000000 --size 5000 \
-    --subset-sequence-list platinum_subset.txt \
-    --output platinum_similarities_chr12.tsv
 
-# 2. Run 4-state founder painting
+<h3>Step 0: Align Platinum assemblies to CHM13</h3>
+<p>The Platinum Pedigree samples are NOT in HPRC. You must align their assemblies to CHM13 first:</p>
+<pre><code># Download Platinum assemblies from S3
+for sample in NA12891 NA12892 NA12889 NA12890 NA12879 NA12881 NA12882 NA12885 NA12886; do
+    aws s3 cp --no-sign-request \
+        s3://platinum-pedigree-data/assemblies/${sample}/ ./${sample}/ --recursive
+done
+
+# Align each assembly to CHM13 reference
+for fa in */assembly/*.fa.gz; do
+    minimap2 -cx asm5 --eqx -t 8 chm13.fa "$fa"
+done > platinum.paf</code></pre>
+
+<h3>Step 1: Compute similarities</h3>
+<pre><code># platinum_subset.txt: one haplotype per line (e.g., NA12891#1)
+# 18 haplotypes: 4 grandparents x 2 haps + 5 offspring x 2 haps
+ibs-from-paf \
+    -a platinum.paf \
+    -r CHM13 --region chr1:1-248387328 --size 5000 \
+    --subset-sequence-list platinum_subset.txt \
+    --output platinum_similarities.tsv</code></pre>
+
+<h3>Step 2: Run 4-state founder painting</h3>
+<pre><code># grandparents.tsv: maps each grandparent haplotype to a "founder" label
+# Format: FOUNDER_NAME&lt;tab&gt;HAPLOTYPE_ID (e.g., NA12891&lt;tab&gt;NA12891#1)
 ancestry \
-    --similarity-file platinum_similarities_chr12.tsv \
+    --similarity-file platinum_similarities.tsv \
     --populations grandparents.tsv \
     --query-samples offspring.txt \
     --auto-configure --identity-floor 0.9 \
-    -o pedigree_painting_chr12.tsv \
-    --posteriors-output pedigree_posteriors_chr12.tsv</code></pre>
+    -o pedigree_painting.tsv \
+    --posteriors-output pedigree_posteriors.tsv</code></pre>
 
 <h2>Results: 4-State Founder Painting</h2>
 <div class="chart-container">
@@ -1020,7 +1038,7 @@ ancestry --similarity-file sim_ibs.tsv --populations pops.tsv \
     <tr style="background:rgba(63,185,80,0.1)"><td><strong>impopk (pairwise)</strong></td><td><strong>97.95%</strong></td><td>0.982</td><td>0.977</td></tr>
     <tr><td>impopk (softmax only)</td><td>95.1%</td><td>0.954</td><td>0.947</td></tr>
     <tr><td>RFMix (46-hap panel)</td><td>95.9%</td><td>0.963</td><td>0.954</td></tr>
-    <tr><td>RFMix (26-hap panel)</td><td>96.1%</td><td>0.965</td><td>0.956</td></tr>
+    <tr><td>RFMix (26-hap panel)</td><td>95.4%</td><td>0.960</td><td>0.948</td></tr>
   </table>
 </div>
 
