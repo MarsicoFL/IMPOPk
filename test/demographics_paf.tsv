@@ -1,0 +1,10 @@
+sample	population	n_tracts	n_pulses	pulse_idx	generations	proportion	rate	bic	log_likelihood	ks_statistic	ks_rejected
+POOLED	AFR	2	0	NA	NA	NA	NA	NA	NA	NA	false
+POOLED	AMR	0	0	NA	NA	NA	NA	NA	NA	NA	false
+POOLED	EUR	0	0	NA	NA	NA	NA	NA	NA	NA	false
+HG00733#1	AFR	1	0	NA	NA	NA	NA	NA	NA	NA	false
+HG00733#1	AMR	0	0	NA	NA	NA	NA	NA	NA	NA	false
+HG00733#1	EUR	0	0	NA	NA	NA	NA	NA	NA	NA	false
+HG00733#2	AFR	1	0	NA	NA	NA	NA	NA	NA	NA	false
+HG00733#2	AMR	0	0	NA	NA	NA	NA	NA	NA	NA	false
+HG00733#2	EUR	0	0	NA	NA	NA	NA	NA	NA	NA	false

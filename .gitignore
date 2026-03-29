@@ -49,3 +49,20 @@ test/ibs_impg_30Mb_EUR.tsv
 test/ibs_impg_5Mb_ALL.tsv
 paper/
 QA_REPORT.md
+test/ibs_impg_5Mb_small.tsv
+
+# Generated test outputs (not bundled)
+test/ibs_paf_5Mb_small.tsv
+test/ibs_impg_5Mb_small_norm.tsv
+test/ibs_paf_5Mb_c999.tsv
+test/posteriors_impg_5Mb.tsv
+test/posteriors_paf_5Mb.tsv
+test/ancestry_impg_5Mb.tsv
+test/ancestry_paf_5Mb.tsv
+test/ancestry_egrm_*.tsv
+test/ibd_impg_5Mb_small.tsv
+test/ibd_paf_5Mb_small.tsv
+test/egrm_*.grm.*
+
+# Tutorial output files
+my_first_*.tsv

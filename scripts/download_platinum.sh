@@ -56,7 +56,7 @@ done
 
 PLAT_DIR="${DATA_DIR}/platinumPed"
 
-# Verkko assemblies for the 14 adults (NA12877-NA12892)
+# Verkko assemblies for the 15 adults (NA12877-NA12892)
 # These are available from the HPRC/HPP Year 1 release
 VERKKO_SAMPLES=(
     NA12877 NA12878 NA12879 NA12880 NA12881 NA12882 NA12883

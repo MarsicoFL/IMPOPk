@@ -35,7 +35,7 @@ A suite of Rust CLI tools that compute haplotype identity directly from pangenom
 ### Build
 
 ```bash
-git clone https://github.com/MarsicoFL/impopk.git
+git clone https://github.com/MarsicoFL/IMPOPk.git
 cd impopk
 cargo build --release
 ```
