@@ -899,7 +899,7 @@ agc getctg assemblies.agc HG01884#1#CM094060.1 > afr_donor.fa
 agc getctg assemblies.agc HG00097#1#CM094060.1 > eur_donor.fa
 
 # Stitch at msprime tract boundaries using samtools faidx + cat
-# (see results/impopSim/pangenome_sim/ for the full stitching script)</code></pre>
+# The stitching logic concatenates donor sequences at tract boundaries</code></pre>
 
 <h3>Step 3: Align and run impopk</h3>
 <pre><code># Align chimeric assemblies to CHM13
