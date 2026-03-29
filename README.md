@@ -137,18 +137,6 @@ ibd --similarity-file test/ibs_paf_5Mb_EUR.tsv \
 bash test/run_mini_tests.sh
 ```
 
-## Validation Results
-
-| Benchmark | Metric | impopₖ | Gold standard |
-|-----------|--------|--------|---------------|
-| Simulated ancestry (2-way) | Concordance | **97.95%** | RFMix: 95.9% |
-| HPRC real ancestry (3-way) | Concordance | **76.45%** | vs RFMix |
-| IBD detection (chr10/11/12) | Top-10% ranking | **100%** (11/11) | vs hap-ibd |
-| Platinum pedigree (4-state) | Accuracy | **99.49%** | Mendelian inheritance |
-| IBD simulation (pair F1) | F1 | **0.514** | hap-ibd: 0.489 |
-| Full genome (22 autosomes) | Time / RAM | **195s / 101MB** | -- |
-| PAF-direct vs impg | Speedup | **1,090x** | -- |
-
 ## Data
 
 ### Bundled Data
@@ -203,10 +191,6 @@ Population sample lists in [`data/samples/`](data/samples/):
 Interactive HTML tutorial covering all tools and analysis modes: **[docs/tutorials.html](docs/tutorials.html)**
 
 Topics: Installation, Data Preparation, IBS Computation, IBD Detection, Ancestry Inference, Platinum Pedigree Validation, Simulation Framework, Advanced Features (eGRM, demographics, cross-chromosome, Jacquard).
-
-## Methodology
-
-See [METHODOLOGY.md](METHODOLOGY.md) for a scientific overview of the approach, including the HMM formulations, emission models, and comparison with VCF-based methods.
 
 ## Testing
 

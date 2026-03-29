@@ -208,51 +208,6 @@ svg text { font-family: -apple-system, sans-serif; }
   <tr><td><code>jacquard</code></td><td>Jacquard delta coefficients</td><td>None</td></tr>
 </table>
 
-<h2>Key Results</h2>
-<div class="chart-container">
-  <h4>Validation Benchmarks</h4>
-  <div class="bar-chart">
-    <div class="bar-row">
-      <span class="bar-label">Pedigree Painting</span>
-      <div class="bar-track"><div class="bar-fill" style="width:99.49%;background:var(--accent2)">99.49%</div></div>
-    </div>
-    <div class="bar-row">
-      <span class="bar-label">Sim. Ancestry (impopk)</span>
-      <div class="bar-track"><div class="bar-fill" style="width:97.95%;background:var(--accent)">97.95%</div></div>
-    </div>
-    <div class="bar-row">
-      <span class="bar-label">Sim. Ancestry (RFMix)</span>
-      <div class="bar-track"><div class="bar-fill" style="width:95.9%;background:var(--accent4)">95.9%</div></div>
-    </div>
-    <div class="bar-row">
-      <span class="bar-label">Real Ancestry (3-way)</span>
-      <div class="bar-track"><div class="bar-fill" style="width:76.45%;background:var(--accent3)">76.45%</div></div>
-    </div>
-    <div class="bar-row">
-      <span class="bar-label">IBD Top-10% Rank</span>
-      <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--accent2)">100%</div></div>
-    </div>
-  </div>
-</div>
-
-<div class="chart-container">
-  <h4>Performance (22 autosomes, full genome)</h4>
-  <div style="display:flex;gap:2rem;flex-wrap:wrap;">
-    <div style="text-align:center">
-      <div style="font-size:2.5rem;font-weight:700;color:var(--accent2)">195s</div>
-      <div style="font-size:.8rem;color:var(--fg2)">Wall-clock time</div>
-    </div>
-    <div style="text-align:center">
-      <div style="font-size:2.5rem;font-weight:700;color:var(--accent)">101 MB</div>
-      <div style="font-size:.8rem;color:var(--fg2)">Peak RAM</div>
-    </div>
-    <div style="text-align:center">
-      <div style="font-size:2.5rem;font-weight:700;color:var(--accent3)">1,090x</div>
-      <div style="font-size:.8rem;color:var(--fg2)">Faster than impg</div>
-    </div>
-  </div>
-</div>
-
 <h2>Data Sources</h2>
 <div class="info-box">
   <div class="label">HPRC Release 2</div>
@@ -782,38 +737,6 @@ ibs-from-paf \
   </svg>
 </div>
 
-<h2>Concordance Results</h2>
-<div class="chart-container">
-  <h4>3-Way Ancestry Concordance</h4>
-  <div style="display:flex;gap:2rem;flex-wrap:wrap;">
-    <div>
-      <h4 style="color:var(--accent)">Real Data (HPRC)</h4>
-      <div class="bar-chart" style="margin-top:.5rem">
-        <div class="bar-row"><span class="bar-label">AMR (F1)</span><div class="bar-track"><div class="bar-fill" style="width:81.5%;background:#c678dd">0.815</div></div></div>
-        <div class="bar-row"><span class="bar-label">AFR (F1)</span><div class="bar-track"><div class="bar-fill" style="width:47.1%;background:#e06c75">0.471</div></div></div>
-        <div class="bar-row"><span class="bar-label">EUR (F1)</span><div class="bar-track"><div class="bar-fill" style="width:38.1%;background:#98c379">0.381</div></div></div>
-        <div class="bar-row"><span class="bar-label">Overall</span><div class="bar-track"><div class="bar-fill" style="width:76.45%;background:var(--accent)">76.45%</div></div></div>
-      </div>
-    </div>
-    <div>
-      <h4 style="color:var(--accent2)">Simulation (controlled)</h4>
-      <div class="bar-chart" style="margin-top:.5rem">
-        <div class="bar-row"><span class="bar-label">impopk</span><div class="bar-track"><div class="bar-fill" style="width:97.95%;background:var(--accent2)">97.95%</div></div></div>
-        <div class="bar-row"><span class="bar-label">RFMix</span><div class="bar-track"><div class="bar-fill" style="width:95.9%;background:var(--accent4)">95.9%</div></div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<h2>Pairwise Contrast: The Key Innovation</h2>
-<p>Standard softmax uses a single temperature for all populations. When EUR-AMR gap is ~0.0002 but EUR-AFR gap is ~0.003, a single temperature can't handle both. Pairwise contrast emissions calibrate per-pair temperatures via Bradley-Terry scoring.</p>
-<div class="chart-container">
-  <h4>Impact of Pairwise Contrast (Simulation)</h4>
-  <div class="bar-chart">
-    <div class="bar-row"><span class="bar-label">Softmax only</span><div class="bar-track"><div class="bar-fill" style="width:95.1%;background:var(--fg2)">95.1%</div></div></div>
-    <div class="bar-row"><span class="bar-label">+ Pairwise</span><div class="bar-track"><div class="bar-fill" style="width:97.95%;background:var(--accent2)">97.95%</div><span class="bar-value" style="color:var(--accent2)">+2.85pp</span></div></div>
-  </div>
-</div>
 </div>
 
 <!-- ============================================== -->
@@ -912,21 +835,7 @@ ancestry \
     -o pedigree_painting.tsv \
     --posteriors-output pedigree_posteriors.tsv</code></pre>
 
-<h2>Results: 4-State Founder Painting</h2>
-<div class="chart-container">
-  <h4>4-State Founder Painting Concordance</h4>
-  <div class="bar-chart">
-    <div class="bar-row"><span class="bar-label">chr1 (248 Mb)</span><div class="bar-track"><div class="bar-fill" style="width:99.49%;background:var(--accent2)">99.49%</div></div></div>
-    <div class="bar-row"><span class="bar-label">chr20 (64 Mb)</span><div class="bar-track"><div class="bar-fill" style="width:98.25%;background:var(--accent)">98.25%</div></div></div>
-  </div>
-</div>
-
-<div class="info-box success">
-  <div class="label">Why This Matters</div>
-  <p>Real family, real data, unambiguous Mendelian ground truth. 99.49% concordance proves pangenome assembly identity carries sufficient signal for fine-grained ancestry.</p>
-</div>
-
-<h2>Founder Painting Visualization</h2>
+<h2>Expected Output: Founder Painting</h2>
 <div class="chart-container">
   <h4>Expected Painting for One Offspring Haplotype</h4>
   <svg viewBox="0 0 600 50" style="width:100%;max-width:600px">
@@ -1030,56 +939,6 @@ ancestry --similarity-file sim_ibs.tsv --populations pops.tsv \
 # Compare with ground truth
 # concordance = fraction of windows where predicted == true ancestry</code></pre>
 
-<h2>Ancestry Simulation Results</h2>
-<div class="chart-container">
-  <h4>2-Way Admixture (70% AFR / 30% EUR) on chr12</h4>
-  <table>
-    <tr><th>Method</th><th>Concordance</th><th>AFR F1</th><th>EUR F1</th></tr>
-    <tr style="background:rgba(63,185,80,0.1)"><td><strong>impopk (pairwise)</strong></td><td><strong>97.95%</strong></td><td>0.982</td><td>0.977</td></tr>
-    <tr><td>impopk (softmax only)</td><td>95.1%</td><td>0.954</td><td>0.947</td></tr>
-    <tr><td>RFMix (46-hap panel)</td><td>95.9%</td><td>0.963</td><td>0.954</td></tr>
-    <tr><td>RFMix (26-hap panel)</td><td>95.4%</td><td>0.960</td><td>0.948</td></tr>
-  </table>
-</div>
-
-<h2>IBD Simulation: Panel Size Matters</h2>
-<div class="chart-container">
-  <h4>IBD Pair-F1 vs Reference Panel Size</h4>
-  <svg viewBox="0 0 400 200" style="width:100%;max-width:400px">
-    <!-- Axes -->
-    <line x1="60" y1="170" x2="380" y2="170" stroke="#30363d"/>
-    <line x1="60" y1="10" x2="60" y2="170" stroke="#30363d"/>
-    <!-- X axis -->
-    <text x="110" y="188" fill="#8b949e" font-size="10" text-anchor="middle">30</text>
-    <text x="190" y="188" fill="#8b949e" font-size="10" text-anchor="middle">40</text>
-    <text x="270" y="188" fill="#8b949e" font-size="10" text-anchor="middle">50</text>
-    <text x="350" y="188" fill="#8b949e" font-size="10" text-anchor="middle">60</text>
-    <text x="220" y="198" fill="#8b949e" font-size="9" text-anchor="middle">Panel size (haplotypes)</text>
-    <!-- Y axis -->
-    <text x="55" y="173" fill="#8b949e" font-size="9" text-anchor="end">0.0</text>
-    <text x="55" y="90" fill="#8b949e" font-size="9" text-anchor="end">0.5</text>
-    <text x="55" y="15" fill="#8b949e" font-size="9" text-anchor="end">1.0</text>
-    <!-- Data points and line -->
-    <circle cx="110" cy="168" r="5" fill="#f85149"/>
-    <circle cx="190" cy="120" r="5" fill="#f0883e"/>
-    <circle cx="270" cy="88" r="5" fill="#3fb950"/>
-    <circle cx="350" cy="90" r="5" fill="#58a6ff"/>
-    <polyline points="110,168 190,120 270,88 350,90" fill="none" stroke="#58a6ff" stroke-width="2"/>
-    <!-- Labels -->
-    <text x="110" y="160" text-anchor="middle" fill="#f85149" font-size="9">0.000</text>
-    <text x="190" y="112" text-anchor="middle" fill="#f0883e" font-size="9">0.312</text>
-    <text x="270" y="80" text-anchor="middle" fill="#3fb950" font-size="9" font-weight="600">0.514</text>
-    <text x="350" y="82" text-anchor="middle" fill="#58a6ff" font-size="9">0.498</text>
-    <!-- Threshold line -->
-    <line x1="60" y1="120" x2="380" y2="120" stroke="#f0883e" stroke-dasharray="4,3" stroke-opacity=".5"/>
-    <text x="380" y="117" fill="#f0883e" font-size="8" text-anchor="end">min viable</text>
-  </svg>
-</div>
-
-<div class="info-box warn">
-  <div class="label">Critical Finding</div>
-  <p>IBD detection requires a minimum of ~40-50 reference haplotypes. With only 30, the signal is completely absent.</p>
-</div>
 </div>
 
 <!-- ============================================== -->
