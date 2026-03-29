@@ -18,7 +18,7 @@ install: ## Install binaries to ~/.cargo/bin
 	cargo install --path src/ancestry-cli
 	cargo install --path src/jacquard-cli
 
-clean: ## Clean build artifacts (Rust + LaTeX)
+clean: ## Clean build artifacts
 	cargo clean
 
 download-data: ## Download all required external data
