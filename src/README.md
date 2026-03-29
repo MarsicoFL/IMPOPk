@@ -1,68 +1,36 @@
-# HPRCv2-IBD Source Code
+# impopk Source Code
 
-This directory contains the core Rust CLI tools for IBD detection from pangenome data.
+This directory contains the core Rust CLI tools for IBD detection and local ancestry inference from pangenome data.
 
-## Tools
+## Crates
 
-### ibd-cli
-Identity-by-Descent detection using Hidden Markov Models.
-
-```bash
-cd ibd-cli && cargo build --release
-./target/release/ibd-hmm --help
-```
-
-**Key features:**
-- HMM-based IBD segment detection
-- Viterbi decoding for optimal state sequence
-- Emission parameter estimation with quality filtering
-- JSON output with segment coordinates and statistics
+### common
+Shared types and utilities: `Region`, `Window`, `WindowIterator`, `ColumnIndices`, `HprcError`.
 
 ### ibs-cli
 Identity-by-State window detection from pangenome alignments.
+- **`ibs`**: Wrapper around `impg similarity` (requires impg + AGC)
+- **`ibs-from-paf`**: Direct PAF identity computation (self-contained, >100x faster)
 
-```bash
-cd ibs-cli && cargo build --release
-./target/release/ibs --help
-```
+### ibd-cli
+IBD segment detection using Hidden Markov Models.
+- **`ibd`**: 2-state HMM with Viterbi, forward-backward, and Baum-Welch training
+- **`ibd-validate`**: Validation tool for comparing IBD results against gold standards
 
-**Key features:**
-- Fast window-based IBS computation
-- Cosine similarity metric
-- Support for AGC (compressed assembly) format
-- Parallel processing for large datasets
+### ancestry-cli
+Local ancestry inference using N-state HMM.
+- **`ancestry`**: Supports auto-configuration, pairwise contrast emissions, eGRM output, demographic inference, and 40+ configurable parameters
 
 ### jacquard-cli
 Jacquard delta coefficient estimation for relatedness analysis.
+- **`jacquard`**: Computes 9 condensed delta coefficients from 4-haplotype IBS patterns
+
+## Building
+
+From the workspace root:
 
 ```bash
-cd jacquard-cli && cargo build --release
-./target/release/jacquard --help
+cargo build --release
 ```
 
-**Key features:**
-- Union-Find based delta classification
-- Multiple coefficient estimation
-- Parity testing framework
-
-## Building All Tools
-
-```bash
-# Build all tools in release mode
-for tool in ibd-cli ibs-cli jacquard-cli; do
-    cd $tool && cargo build --release && cd ..
-done
-```
-
-## Dependencies
-
-- Rust 1.70+ (install via rustup)
-- Standard Rust crates (see individual Cargo.toml files)
-
-## Code Statistics
-
-| Tool | Lines of Code | Main Algorithm |
-|------|---------------|----------------|
-| ibd-cli | ~1,700 | HMM Viterbi |
-| ibs-cli | ~800 | Window similarity |
-| jacquard-cli | ~500 | Union-Find |
+Binaries are placed in `target/release/`.

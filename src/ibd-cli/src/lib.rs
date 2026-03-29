@@ -20,6 +20,9 @@
 //! - [`stats`]: Statistical utilities including Gaussian distributions, k-means
 //!   clustering, and online statistics computation
 //! - [`segment`]: Segment detection using run-length encoding and segment merging
+//! - [`concordance`]: Segment concordance metrics (Jaccard, precision/recall, boundary
+//!   accuracy) for validation against external tools like hap-ibd
+//! - [`hapibd`]: Parser for hap-ibd `.ibd` output format and segment filtering utilities
 //!
 //! ## Quick Start
 //!
@@ -62,6 +65,8 @@
 //!
 //! See the conceptual framework documentation for more details on this distinction.
 
+pub mod concordance;
+pub mod hapibd;
 pub mod hmm;
 pub mod segment;
 pub mod stats;

@@ -7,7 +7,7 @@ use anyhow::{bail, Context, Result};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
-#[command(name = "jacquard", about = "Compute Jacquard delta coefficients from IBS windows")]
+#[command(name = "jacquard", version, about = "Compute Jacquard delta coefficients from IBS windows")]
 struct Args {
     /// IBS windows file (TSV with chrom/start/end/group.a/group.b)
     #[arg(long = "ibs")]
@@ -281,9 +281,9 @@ fn run(args: Args) -> Result<()> {
         total_windows, n_loci, missing, n_unclassified
     );
 
-    for delta in 1..=9 {
-        let frac = counts[delta] as f64 / total as f64;
-        println!("Delta{}\t{:.8}\t(count={})", delta, frac, counts[delta]);
+    for (delta, &count) in counts.iter().enumerate().skip(1) {
+        let frac = if total > 0 { count as f64 / total as f64 } else { 0.0 };
+        println!("Delta{}\t{:.8}\t(count={})", delta, frac, count);
     }
 
     Ok(())
@@ -447,5 +447,347 @@ fn hap_key(raw: &str) -> String {
     match (parts.next(), parts.next()) {
         (Some(sample), Some(hap)) => format!("{}#{}", sample, hap),
         _ => raw.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── hap_key tests ─────────────────────────────────────────────────
+
+    #[test]
+    fn hap_key_sample_hash_hap() {
+        assert_eq!(hap_key("HG00096#1"), "HG00096#1");
+    }
+
+    #[test]
+    fn hap_key_three_parts_keeps_first_two() {
+        // "HG00096#1#scaffold:0-5000" → "HG00096#1"
+        assert_eq!(hap_key("HG00096#1#scaffold:0-5000"), "HG00096#1");
+    }
+
+    #[test]
+    fn hap_key_no_hash_returns_raw() {
+        assert_eq!(hap_key("nohash"), "nohash");
+    }
+
+    #[test]
+    fn hap_key_empty_string() {
+        assert_eq!(hap_key(""), "");
+    }
+
+    #[test]
+    fn hap_key_single_hash_empty_hap() {
+        // "sample#" → "sample#"
+        assert_eq!(hap_key("sample#"), "sample#");
+    }
+
+    #[test]
+    fn hap_key_hash_at_start() {
+        // "#1" → "#1"
+        assert_eq!(hap_key("#1"), "#1");
+    }
+
+    // ── classify_state tests — all 9 Jacquard delta states ────────────
+
+    fn bs(size: usize, count_a: usize, count_b: usize) -> BlockStat {
+        BlockStat { size, count_a, count_b }
+    }
+
+    // Delta 1: all 4 haplotypes in one block (all IBD)
+    #[test]
+    fn classify_state_delta1_all_connected() {
+        let blocks = vec![bs(4, 2, 2)];
+        assert_eq!(classify_state(&blocks), Some(1));
+    }
+
+    // Delta 2: A-pair and B-pair as separate blocks (both pairs IBD within, not between)
+    #[test]
+    fn classify_state_delta2_a_pair_b_pair() {
+        let blocks = vec![bs(2, 2, 0), bs(2, 0, 2)];
+        assert_eq!(classify_state(&blocks), Some(2));
+    }
+
+    #[test]
+    fn classify_state_delta2_reversed_order() {
+        // B-pair first, A-pair second — should still be Delta 2
+        let blocks = vec![bs(2, 0, 2), bs(2, 2, 0)];
+        assert_eq!(classify_state(&blocks), Some(2));
+    }
+
+    // Delta 3: triplet (2A + 1B) + singleton (1B)
+    #[test]
+    fn classify_state_delta3_triplet_2a_1b() {
+        let blocks = vec![bs(3, 2, 1), bs(1, 0, 1)];
+        assert_eq!(classify_state(&blocks), Some(3));
+    }
+
+    #[test]
+    fn classify_state_delta3_singleton_first() {
+        let blocks = vec![bs(1, 0, 1), bs(3, 2, 1)];
+        assert_eq!(classify_state(&blocks), Some(3));
+    }
+
+    // Delta 4: A-pair connected + 2 singletons (both B)
+    #[test]
+    fn classify_state_delta4_a_pair_two_singletons() {
+        let blocks = vec![bs(2, 2, 0), bs(1, 0, 1), bs(1, 0, 1)];
+        assert_eq!(classify_state(&blocks), Some(4));
+    }
+
+    // Delta 5: triplet (1A + 2B) + singleton (1A)
+    #[test]
+    fn classify_state_delta5_triplet_1a_2b() {
+        let blocks = vec![bs(3, 1, 2), bs(1, 1, 0)];
+        assert_eq!(classify_state(&blocks), Some(5));
+    }
+
+    #[test]
+    fn classify_state_delta5_singleton_first() {
+        let blocks = vec![bs(1, 1, 0), bs(3, 1, 2)];
+        assert_eq!(classify_state(&blocks), Some(5));
+    }
+
+    // Delta 6: B-pair connected + 2 singletons (both A)
+    #[test]
+    fn classify_state_delta6_b_pair_two_singletons() {
+        let blocks = vec![bs(2, 0, 2), bs(1, 1, 0), bs(1, 1, 0)];
+        assert_eq!(classify_state(&blocks), Some(6));
+    }
+
+    // Delta 7: two blocks of 2, each with 1A + 1B (cross-group pairing)
+    #[test]
+    fn classify_state_delta7_cross_pairs() {
+        let blocks = vec![bs(2, 1, 1), bs(2, 1, 1)];
+        assert_eq!(classify_state(&blocks), Some(7));
+    }
+
+    // Delta 8: mixed pair (1A + 1B) + 2 singletons
+    #[test]
+    fn classify_state_delta8_mixed_pair_two_singletons() {
+        let blocks = vec![bs(2, 1, 1), bs(1, 1, 0), bs(1, 0, 1)];
+        assert_eq!(classify_state(&blocks), Some(8));
+    }
+
+    // Delta 9: all 4 singletons (no IBD between any pair)
+    #[test]
+    fn classify_state_delta9_all_singletons() {
+        let blocks = vec![bs(1, 1, 0), bs(1, 1, 0), bs(1, 0, 1), bs(1, 0, 1)];
+        assert_eq!(classify_state(&blocks), Some(9));
+    }
+
+    // ── classify_state edge cases ─────────────────────────────────────
+
+    #[test]
+    fn classify_state_empty_returns_none() {
+        assert_eq!(classify_state(&[]), None);
+    }
+
+    #[test]
+    fn classify_state_single_block_not_size4_returns_none() {
+        // 1 block with 3 nodes — shouldn't happen normally, but classify handles it
+        let blocks = vec![bs(3, 2, 1)];
+        assert_eq!(classify_state(&blocks), None);
+    }
+
+    #[test]
+    fn classify_state_two_blocks_2_2_neither_delta2_nor_delta7() {
+        // 2 blocks of 2, but with 2A+0B and 1A+1B — invalid for delta 2 or 7
+        let blocks = vec![bs(2, 2, 0), bs(2, 1, 1)];
+        assert_eq!(classify_state(&blocks), None);
+    }
+
+    #[test]
+    fn classify_state_two_blocks_3_1_triplet_2a_0b_returns_none() {
+        // triplet with 2A+0B — doesn't match delta 3 (2A+1B) or delta 5 (1A+2B)
+        let blocks = vec![bs(3, 2, 0), bs(1, 0, 1)];
+        assert_eq!(classify_state(&blocks), None);
+    }
+
+    #[test]
+    fn classify_state_five_blocks_returns_none() {
+        // More than 4 blocks — impossible for 4 haplotypes but handled gracefully
+        let blocks = vec![bs(1, 1, 0), bs(1, 0, 1), bs(1, 0, 1), bs(1, 1, 0), bs(1, 0, 0)];
+        assert_eq!(classify_state(&blocks), None);
+    }
+
+    #[test]
+    fn classify_state_three_blocks_with_size3_returns_none() {
+        // 3 blocks, but one has size 3 instead of expected (2+1+1) pattern
+        let blocks = vec![bs(3, 2, 1), bs(1, 0, 1), bs(1, 0, 0)];
+        assert_eq!(classify_state(&blocks), None);
+    }
+
+    #[test]
+    fn classify_state_four_blocks_not_all_size1_returns_none() {
+        let blocks = vec![bs(2, 1, 1), bs(1, 1, 0), bs(1, 0, 1), bs(1, 0, 0)];
+        assert_eq!(classify_state(&blocks), None);
+    }
+
+    // ── classify_locus integration via classify_state ─────────────────
+
+    // Verify that each delta classification is stable
+    // by testing symmetric block orderings
+    #[test]
+    fn classify_state_delta4_different_ordering() {
+        // Singletons first, pair last
+        let blocks = vec![bs(1, 0, 1), bs(1, 0, 1), bs(2, 2, 0)];
+        assert_eq!(classify_state(&blocks), Some(4));
+    }
+
+    #[test]
+    fn classify_state_delta6_different_ordering() {
+        // Pair in middle
+        let blocks = vec![bs(1, 1, 0), bs(2, 0, 2), bs(1, 1, 0)];
+        assert_eq!(classify_state(&blocks), Some(6));
+    }
+
+    #[test]
+    fn classify_state_delta8_different_ordering() {
+        // Singletons first
+        let blocks = vec![bs(1, 0, 1), bs(1, 1, 0), bs(2, 1, 1)];
+        assert_eq!(classify_state(&blocks), Some(8));
+    }
+
+    // ── UnionFind tests ───────────────────────────────────────────────
+
+    #[test]
+    fn union_find_singletons() {
+        let mut uf = UnionFind::new(&["a", "b", "c"]);
+        // Each is its own root initially
+        assert_ne!(uf.find("a"), uf.find("b"));
+        assert_ne!(uf.find("b"), uf.find("c"));
+    }
+
+    #[test]
+    fn union_find_union_makes_same_root() {
+        let mut uf = UnionFind::new(&["a", "b", "c"]);
+        uf.union("a", "b");
+        assert_eq!(uf.find("a"), uf.find("b"));
+        assert_ne!(uf.find("a"), uf.find("c"));
+    }
+
+    #[test]
+    fn union_find_transitive() {
+        let mut uf = UnionFind::new(&["a", "b", "c"]);
+        uf.union("a", "b");
+        uf.union("b", "c");
+        assert_eq!(uf.find("a"), uf.find("c"));
+    }
+
+    #[test]
+    fn union_find_all_four() {
+        let mut uf = UnionFind::new(&["a1", "a2", "b1", "b2"]);
+        uf.union("a1", "a2");
+        uf.union("b1", "b2");
+        uf.union("a1", "b1");
+        // All in same component
+        let root = uf.find("a1");
+        assert_eq!(uf.find("a2"), root);
+        assert_eq!(uf.find("b1"), root);
+        assert_eq!(uf.find("b2"), root);
+    }
+
+    #[test]
+    fn union_find_duplicate_union_is_idempotent() {
+        let mut uf = UnionFind::new(&["x", "y"]);
+        uf.union("x", "y");
+        let root1 = uf.find("x");
+        uf.union("x", "y");
+        let root2 = uf.find("x");
+        assert_eq!(root1, root2);
+    }
+
+    // ── HaplotypeSet tests ────────────────────────────────────────────
+
+    #[test]
+    fn haplotype_set_contains_all_four() {
+        let haps = HaplotypeSet::new(
+            "A#1".into(), "A#2".into(), "B#1".into(), "B#2".into(),
+        );
+        assert!(haps.contains("A#1"));
+        assert!(haps.contains("A#2"));
+        assert!(haps.contains("B#1"));
+        assert!(haps.contains("B#2"));
+        assert!(!haps.contains("C#1"));
+    }
+
+    #[test]
+    fn haplotype_set_is_a_is_b() {
+        let haps = HaplotypeSet::new(
+            "A#1".into(), "A#2".into(), "B#1".into(), "B#2".into(),
+        );
+        assert!(haps.is_a("A#1"));
+        assert!(haps.is_a("A#2"));
+        assert!(!haps.is_a("B#1"));
+        assert!(haps.is_b("B#1"));
+        assert!(haps.is_b("B#2"));
+        assert!(!haps.is_b("A#1"));
+    }
+
+    #[test]
+    fn haplotype_set_nodes_returns_four() {
+        let haps = HaplotypeSet::new(
+            "A#1".into(), "A#2".into(), "B#1".into(), "B#2".into(),
+        );
+        let nodes = haps.nodes();
+        assert_eq!(nodes.len(), 4);
+        assert_eq!(nodes[0], "A#1");
+        assert_eq!(nodes[1], "A#2");
+        assert_eq!(nodes[2], "B#1");
+        assert_eq!(nodes[3], "B#2");
+    }
+
+    // ── classify_locus integration tests ──────────────────────────────
+
+    #[test]
+    fn classify_locus_delta1_all_pairs_present() {
+        let haps = HaplotypeSet::new(
+            "A#1".into(), "A#2".into(), "B#1".into(), "B#2".into(),
+        );
+        // All 6 possible pairs → all 4 haplotypes in one block → Delta 1
+        let mut data = LocusData::default();
+        data.pairs.insert(Pair::new("A#1".into(), "A#2".into()));
+        data.pairs.insert(Pair::new("A#1".into(), "B#1".into()));
+        data.pairs.insert(Pair::new("A#1".into(), "B#2".into()));
+        data.pairs.insert(Pair::new("A#2".into(), "B#1".into()));
+        data.pairs.insert(Pair::new("A#2".into(), "B#2".into()));
+        data.pairs.insert(Pair::new("B#1".into(), "B#2".into()));
+        assert_eq!(classify_locus(&data, &haps), Some(1));
+    }
+
+    #[test]
+    fn classify_locus_delta9_no_pairs() {
+        let haps = HaplotypeSet::new(
+            "A#1".into(), "A#2".into(), "B#1".into(), "B#2".into(),
+        );
+        // No pairs → 4 singletons → Delta 9
+        let data = LocusData::default();
+        assert_eq!(classify_locus(&data, &haps), Some(9));
+    }
+
+    #[test]
+    fn classify_locus_delta2_within_group_ibd() {
+        let haps = HaplotypeSet::new(
+            "A#1".into(), "A#2".into(), "B#1".into(), "B#2".into(),
+        );
+        // A1-A2 and B1-B2 connected, but no cross-group → Delta 2
+        let mut data = LocusData::default();
+        data.pairs.insert(Pair::new("A#1".into(), "A#2".into()));
+        data.pairs.insert(Pair::new("B#1".into(), "B#2".into()));
+        assert_eq!(classify_locus(&data, &haps), Some(2));
+    }
+
+    #[test]
+    fn classify_locus_delta7_cross_group_pairs() {
+        let haps = HaplotypeSet::new(
+            "A#1".into(), "A#2".into(), "B#1".into(), "B#2".into(),
+        );
+        // A1-B1 and A2-B2 connected → two cross-group blocks of size 2 → Delta 7
+        let mut data = LocusData::default();
+        data.pairs.insert(Pair::new("A#1".into(), "B#1".into()));
+        data.pairs.insert(Pair::new("A#2".into(), "B#2".into()));
+        assert_eq!(classify_locus(&data, &haps), Some(7));
     }
 }

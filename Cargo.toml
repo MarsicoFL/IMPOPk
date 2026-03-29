@@ -9,17 +9,14 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.1.0"
 edition = "2021"
+rust-version = "1.70"
 authors = ["Franco Marsico"]
 license = "MIT"
-repository = "https://github.com/your-org/HPRCv2-IBD"
-
-[workspace.dependencies]
-anyhow = "1.0"
-clap = { version = "4.4", features = ["derive"] }
-thiserror = "1.0"
-rayon = "1.8"
+repository = "https://github.com/MarsicoFL/impopk"
+description = "impopk: IBD detection and local ancestry inference from pangenome alignments"
+publish = false
 
 [profile.release]
 lto = true

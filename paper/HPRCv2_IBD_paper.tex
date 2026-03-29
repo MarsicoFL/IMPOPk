@@ -1,0 +1,71 @@
+\documentclass[11pt]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{lineno}
+\emergencystretch=3pt
+
+% Line numbers for review
+\linenumbers
+
+% Title
+\title{HPRCv2-IBD: Identity-by-Descent Detection and Local Ancestry Inference from Pangenome~Alignments}
+
+\author{
+    Franco et~al.\\
+    \textit{Human Pangenome Reference Consortium}
+}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% Abstract
+\input{abstract}
+
+% Introduction
+\input{introduction}
+
+% Related Work
+\input{related_work}
+
+% Methods
+\input{methods_ibs}
+\input{methods_ibd}
+\input{methods_ancestry}
+\input{methods_validation}
+
+% Results
+\input{results}
+
+% Discussion
+\input{discussion}
+
+% Acknowledgments
+\section*{Acknowledgments}
+We thank the Human Pangenome Reference Consortium (HPRC) for providing the high-quality haplotype-resolved assemblies that made this work possible. We acknowledge the developers of \texttt{impg}, minigraph-cactus, and AGC for the pangenome infrastructure underlying our approach.
+
+% Data availability
+\section*{Data Availability}
+HPRC assemblies and pangenome graphs are available from \url{https://humanpangenome.org}. The HPRCv2-IBD software is available as open-source Rust code.
+
+% Code availability
+\section*{Code Availability}
+Source code for all tools (ibd-cli, ibs-cli, ibs-from-paf, ancestry-cli, jacquard-cli) is available in the HPRCv2-IBD repository. The software includes 7{,}334 automated tests across 241 validation benchmarks.
+
+% Bibliography
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

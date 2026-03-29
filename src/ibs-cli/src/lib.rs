@@ -31,5 +31,12 @@
 //! Observable sequence similarity between haplotypes. Each window is analyzed
 //! independently using `impg similarity` to compute pairwise identity scores.
 
+pub mod paf;
+
+// TPA format support
+pub mod agc_access;
+pub mod cigar_reconstruct;
+pub mod spatial_index;
+
 // Re-export common types from hprc-common for backwards compatibility
 pub use hprc_common::{HprcError as IbsError, Region, Result, Window, WindowIterator};

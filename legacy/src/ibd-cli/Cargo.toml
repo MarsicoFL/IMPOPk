@@ -1,0 +1,33 @@
+[package]
+name = "hprc-ibd"
+version = "0.2.0"
+edition = "2021"
+authors = ["Franco Marsico"]
+description = "IBD (Identity-By-Descent) segment detection using HMM for HPRC pangenome data"
+license = "MIT"
+keywords = ["bioinformatics", "pangenome", "IBD", "HMM", "HPRC"]
+categories = ["science", "command-line-utilities"]
+
+[lib]
+name = "hprc_ibd"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ibd"
+path = "src/main.rs"
+
+[[bin]]
+name = "ibd-validate"
+path = "src/bin/validate.rs"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.4", features = ["derive"] }
+thiserror = "1.0"
+rayon = "1.8"
+hprc-common = { path = "../common" }
+
+[dev-dependencies]
+assert_cmd = "2.0"
+tempfile = "3.8"
+toml = "0.5"

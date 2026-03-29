@@ -1,4 +1,5 @@
 //! Integration tests for the ibs CLI binary.
+#![allow(deprecated)]
 
 use assert_cmd::Command;
 

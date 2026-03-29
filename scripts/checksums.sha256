@@ -1,0 +1,38 @@
+# SHA256 checksums for impopk data files
+#
+# Verify with: sha256sum -c checksums.sha256
+# Or use: scripts/verify_checksums.sh
+#
+# All checksums below were computed from known-good local copies.
+
+# === HPRC Release 2 ===
+e9b417e4ea49a18009d522e33444f57b7c09773ff9ec0d5ecb942e282f5eba56  data/assemblies/HPRC_r2_assemblies_0.6.1.agc
+cf48ae04e5cab5636dd926287413f555f3755acc14024d714f16be74cfae1b6d  data/alignments/hprc465vschm13.aln.paf.gz
+
+# === Genetic maps (bundled) ===
+442d1f6646921a89324c05b9529975c601f9c63dbd03acf4caed94d8832ada02  data/genetic_maps/plink.chr10.GRCh38.map
+bd6430449ec031a9448672638d14f51b67168841b7128afb7756c262f6960e04  data/genetic_maps/plink.chr11.GRCh38.map
+68badb1d7a527f4b0e6f1d3034280f8628773a0fb232549ad56c8d5f898274d4  data/genetic_maps/plink.chr12.GRCh38.map
+3610d71958a569d67012a4862ef19ae4111d7008521319b62998407d648b1c52  data/genetic_maps/plink.chr20.GRCh38.map
+
+# === Genetic maps (remaining chromosomes) ===
+# TODO: Add checksums for chr1-9, chr13-19, chr21-22 after first download.
+# Compute with:
+#   for f in data/genetic_maps/plink.chr*.GRCh38.map; do sha256sum "$f"; done
+
+# === CHM13 T2T v2.0 reference ===
+# TODO: Add checksums after first download. Compute with:
+#   sha256sum data/reference/chm13v2.0.fa.gz
+#   sha256sum data/reference/chm13v2.0.fa.gz.fai
+#   sha256sum data/reference/chm13v2.0.fa.gz.gzi
+#   sha256sum data/reference/chm13v2.0_SD.bed.gz
+
+# === Validation VCFs ===
+# TODO: Add checksums after first download. Compute with:
+#   sha256sum data/vcf/1kGP_high_coverage_Illumina.chr*.vcf.gz
+#   sha256sum data/vcf/1kGP_high_coverage_Illumina.chr*.vcf.gz.tbi
+
+# === Platinum Pedigree assemblies ===
+# TODO: Add checksums after first download. Compute with:
+#   sha256sum data/platinumPed/verkko/*.fa.gz
+#   sha256sum data/platinumPed/hifiasm/*.fa.gz

@@ -1,0 +1,8 @@
+\section{Methods: IBS Computation from Pangenome Alignments}
+\label{sec:methods_ibs}
+
+Identity-by-state (IBS) values serve as the primary observations for all downstream HMM inference. Unlike conventional IBS estimation from genotype arrays or VCF files, our approach computes pairwise sequence identity directly from pangenome alignments, avoiding the ascertainment bias and information loss inherent in variant calling.
+
+Given a target genomic region and a window size $W$ (default 10\,kb), we partition the region into non-overlapping windows. For each window, we query the pangenome alignment to compute pairwise sequence identity between all haplotype pairs in a specified sample subset. Two computation modes are supported: (1)~per-window queries via \texttt{impg}~\cite{impg}, which projects alignments through the pangenome graph structure using the reference coordinate system, and (2)~PAF-direct mode (\texttt{ibs-from-paf}), which parses CIGAR strings from the full alignment file in a single streaming pass.
+
+Raw output is filtered by: identity cutoff ($\geq 0.999$), self-pair removal, reference removal, and canonical pair ordering to avoid duplicates. The output is a tab-separated file of per-window, per-pair identity values forming the input to IBD and ancestry HMMs. For relatedness inference, the same IBS observations are extended to estimate Jacquard condensed identity coefficients~\cite{jacquard1974genetics} from the four-haplotype sharing pattern between diploid individuals (Supplementary Section~L.1).

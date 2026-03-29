@@ -1,6 +1,6 @@
 [package]
 name = "hprc-common"
-version = "0.2.0"
+version = "0.1.0"
 edition = "2021"
 description = "Shared types and utilities for HPRC IBD/IBS analysis tools"
 license = "MIT"

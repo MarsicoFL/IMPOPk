@@ -1,97 +1,49 @@
-# ============================================
-# HPRCv2-IBD .gitignore
-# Remote repo contains ONLY package code (src/)
-# ============================================
-
-# ------------------------------------------
-# RUST BUILD ARTIFACTS
-# ------------------------------------------
+# Rust build artifacts
 **/target/
-**/*.rs.bk
-# Keep root Cargo.lock for reproducible builds, ignore any in subdirectories
 src/*/Cargo.lock
 
-# ------------------------------------------
-# PYTHON
-# ------------------------------------------
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-*.egg
-*.egg-info/
-.eggs/
-pip-log.txt
-.ipynb_checkpoints/
-.pytest_cache/
-.mypy_cache/
 
-# ------------------------------------------
-# IDE / EDITOR
-# ------------------------------------------
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-*~
-.project
-.settings/
-*.sublime-*
 
-# ------------------------------------------
 # OS
-# ------------------------------------------
 .DS_Store
 Thumbs.db
 
-# ------------------------------------------
-# LOCAL CONFIGURATION
-# ------------------------------------------
-.claude/
-.env
-.env.*
-*.local
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.fls
+*.synctex.gz
 
-# ------------------------------------------
-# TEMPORARY FILES
-# ------------------------------------------
+# Downloaded data (not bundled)
+data/alignments/
+data/assemblies/
+data/reference/
+data/vcf/
+data/platinumPed/
+data/masks/
+
+# Temporary
 tmp/
 temp/
 *.tmp
 *.bak
 
-# ------------------------------------------
-# LATEX ARTIFACTS
-# ------------------------------------------
-*.aux
-*.log
-*.out
-*.toc
-*.fls
-*.synctex.gz
-*.bbl
-*.blg
-
-# ------------------------------------------
-# LOCAL ONLY (not part of package)
-# ------------------------------------------
-experiments/
-reports/
-archive/
-scripts/analysis/
-CONTRIBUTING.md
-STRUCTURE.md
-
-# ------------------------------------------
-# DATA: Only include sample lists
-# ------------------------------------------
-data/*
-!data/samples/
-!data/README.md
-
-# ------------------------------------------
-# DOCS: Only include tutorials
-# ------------------------------------------
-docs/*
-!docs/tutorials/
-!docs/README.md
+# Large test files (generate with run_mini_tests.sh)
+test/ibs_chr12_30Mb.tsv
+test/ibd_states.tsv
+test/ibs_paf_5Mb_ALL.tsv
+test/ibs_impg_1Mb.tsv
+test/ibs_impg_30Mb_EUR.tsv
+test/ibs_impg_5Mb_ALL.tsv

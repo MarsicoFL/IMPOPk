@@ -1,6 +1,6 @@
 [package]
 name = "hprc-ibs"
-version = "0.2.0"
+version = "0.1.0"
 edition = "2021"
 authors = ["Franco Marsico"]
 description = "IBS (Identity-By-State) detection for HPRC pangenome data"
@@ -21,10 +21,36 @@ anyhow = "1.0"
 clap = { version = "4.4", features = ["derive"] }
 thiserror = "1.0"
 rayon = "1.8"
+flate2 = "1.0"
 hprc-common = { path = "../common" }
+bincode = "1.3"
+serde = { version = "1.0", features = ["derive"] }
+
+# TPA format support (optional, for ibs-from-tpa)
+tpa = { git = "https://github.com/AndreaGuarracino/tpa" }
+lib_wfa2 = { git = "https://github.com/AndreaGuarracino/lib_wfa2", rev = "8859b6a214141968f37d9bcb22552408318adda0" }
+tracepoints = { git = "https://github.com/AndreaGuarracino/tracepoints", rev = "66a5511b0b84d8502f9d7c99efd150616ff2cae3" }
+ragc-core = { git = "https://github.com/ekg/ragc", rev = "40e5cad" }
+
+[[bin]]
+name = "ibs-from-paf"
+path = "src/bin/from_paf.rs"
+
+[[bin]]
+name = "ibs-from-tpa"
+path = "src/bin/from_tpa.rs"
+
+[[bin]]
+name = "tpa-spatial-index"
+path = "src/bin/build_spatial_index.rs"
+
+[[bin]]
+name = "tpa-validate"
+path = "src/bin/validate.rs"
 
 [dev-dependencies]
 assert_cmd = "2.0"
+predicates = "3.0"
 tempfile = "3.8"
 toml = "0.5"
 serde = { version = "1.0", features = ["derive"] }

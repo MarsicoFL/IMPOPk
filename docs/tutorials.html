@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>impopk Tutorials — Pangenome IBD &amp; Ancestry</title>
+<style>
+:root {
+  --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --fg: #c9d1d9;
+  --fg2: #8b949e; --accent: #58a6ff; --accent2: #3fb950; --accent3: #d2a8ff;
+  --accent4: #f0883e; --red: #f85149; --border: #30363d;
+  --code-bg: #0d1117; --sidebar-w: 280px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--bg); color: var(--fg); line-height: 1.6; }
+
+/* Sidebar */
+.sidebar { position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100vh;
+  background: var(--bg2); border-right: 1px solid var(--border); overflow-y: auto;
+  padding: 1rem 0; z-index: 100; transition: transform .3s; }
+.sidebar h2 { padding: 0 1rem .5rem; font-size: .9rem; color: var(--accent);
+  text-transform: uppercase; letter-spacing: .08em; }
+.sidebar .logo { padding: .5rem 1rem 1rem; font-size: 1.4rem; font-weight: 700;
+  color: var(--fg); border-bottom: 1px solid var(--border); margin-bottom: .5rem; }
+.sidebar .logo span { color: var(--accent); }
+.sidebar a { display: block; padding: .4rem 1rem .4rem 1.5rem; color: var(--fg2);
+  text-decoration: none; font-size: .85rem; border-left: 3px solid transparent;
+  transition: all .15s; }
+.sidebar a:hover, .sidebar a.active { color: var(--fg); background: var(--bg3);
+  border-left-color: var(--accent); }
+.sidebar a.active { font-weight: 600; color: var(--accent); }
+.sidebar .sec-title { padding: .8rem 1rem .2rem; font-size: .75rem; color: var(--fg2);
+  text-transform: uppercase; letter-spacing: .06em; }
+
+/* Mobile hamburger */
+.hamburger { display: none; position: fixed; top: .8rem; left: .8rem; z-index: 200;
+  background: var(--bg2); border: 1px solid var(--border); color: var(--fg);
+  font-size: 1.4rem; padding: .3rem .6rem; border-radius: 6px; cursor: pointer; }
+
+/* Main */
+.main { margin-left: var(--sidebar-w); padding: 2rem 3rem 4rem; max-width: 900px; }
+.main h1 { font-size: 2rem; margin-bottom: .5rem; color: var(--fg); }
+.main h1 .badge { font-size: .7rem; padding: .15rem .5rem; border-radius: 20px;
+  background: var(--accent); color: var(--bg); vertical-align: middle; margin-left: .5rem; }
+.main h2 { font-size: 1.4rem; margin: 2rem 0 .8rem; padding-bottom: .3rem;
+  border-bottom: 1px solid var(--border); color: var(--fg); }
+.main h3 { font-size: 1.1rem; margin: 1.5rem 0 .5rem; color: var(--accent3); }
+.main p, .main li { margin-bottom: .6rem; color: var(--fg); font-size: .95rem; }
+.main ul, .main ol { padding-left: 1.5rem; }
+.main a { color: var(--accent); text-decoration: none; }
+.main a:hover { text-decoration: underline; }
+
+/* Code blocks */
+pre { position: relative; background: var(--code-bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1rem; margin: .8rem 0 1.2rem; overflow-x: auto;
+  font-size: .85rem; line-height: 1.5; }
+pre code { color: var(--fg); font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; }
+code { background: var(--bg3); padding: .15rem .4rem; border-radius: 4px; font-size: .88em;
+  font-family: 'SF Mono', 'Fira Code', monospace; }
+pre code { background: none; padding: 0; }
+.copy-btn { position: absolute; top: .5rem; right: .5rem; background: var(--bg3);
+  border: 1px solid var(--border); color: var(--fg2); padding: .25rem .6rem;
+  border-radius: 5px; font-size: .75rem; cursor: pointer; transition: all .15s; }
+.copy-btn:hover { background: var(--accent); color: var(--bg); }
+.copy-btn.copied { background: var(--accent2); color: var(--bg); }
+
+/* Tables */
+table { border-collapse: collapse; width: 100%; margin: .8rem 0 1.2rem; font-size: .88rem; }
+th, td { padding: .5rem .8rem; border: 1px solid var(--border); text-align: left; }
+th { background: var(--bg3); font-weight: 600; color: var(--fg); }
+td { color: var(--fg); }
+tr:nth-child(even) { background: var(--bg2); }
+
+/* Info boxes */
+.info-box { border-left: 4px solid var(--accent); background: rgba(88,166,255,.08);
+  padding: .8rem 1rem; margin: 1rem 0; border-radius: 0 6px 6px 0; }
+.info-box.warn { border-left-color: var(--accent4); background: rgba(240,136,62,.08); }
+.info-box.success { border-left-color: var(--accent2); background: rgba(63,185,80,.08); }
+.info-box .label { font-weight: 700; font-size: .8rem; text-transform: uppercase;
+  margin-bottom: .3rem; }
+.info-box.warn .label { color: var(--accent4); }
+.info-box.success .label { color: var(--accent2); }
+.info-box .label { color: var(--accent); }
+
+/* Charts */
+.chart-container { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 1.2rem; margin: 1rem 0 1.5rem; }
+.chart-container h4 { font-size: .85rem; color: var(--fg2); margin-bottom: .8rem;
+  text-transform: uppercase; letter-spacing: .04em; }
+svg text { font-family: -apple-system, sans-serif; }
+
+/* Pipeline diagram */
+.pipeline { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+  margin: 1rem 0 1.5rem; }
+.pipeline .step { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+  padding: .6rem 1rem; font-size: .82rem; text-align: center; min-width: 100px; }
+.pipeline .step .name { font-weight: 700; color: var(--accent); }
+.pipeline .step .desc { color: var(--fg2); font-size: .75rem; }
+.pipeline .arrow { color: var(--accent2); font-size: 1.4rem; }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; margin: 1rem 0 0; border-bottom: 1px solid var(--border); }
+.tab-btn { padding: .5rem 1.2rem; background: none; border: none; color: var(--fg2);
+  cursor: pointer; font-size: .85rem; border-bottom: 2px solid transparent;
+  transition: all .15s; }
+.tab-btn:hover { color: var(--fg); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-content { display: none; padding: 1rem 0; }
+.tab-content.active { display: block; }
+
+/* Section visibility */
+.tutorial-section { display: none; }
+.tutorial-section.active { display: block; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .hamburger { display: block; }
+  .main { margin-left: 0; padding: 3rem 1.2rem 4rem; }
+}
+
+/* Bar chart helper */
+.bar-chart { display: flex; flex-direction: column; gap: .4rem; }
+.bar-row { display: flex; align-items: center; gap: .5rem; }
+.bar-label { min-width: 120px; font-size: .82rem; color: var(--fg2); text-align: right; }
+.bar-track { flex: 1; height: 24px; background: var(--bg3); border-radius: 4px; overflow: hidden; position: relative; }
+.bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: .5rem;
+  font-size: .75rem; font-weight: 600; color: var(--bg); transition: width .8s ease; }
+.bar-value { position: absolute; right: .5rem; top: 50%; transform: translateY(-50%);
+  font-size: .75rem; color: var(--fg2); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+
+<nav class="sidebar" id="sidebar">
+  <div class="logo">impop<span>k</span></div>
+  <div class="sec-title">Getting Started</div>
+  <a href="#" data-section="overview" class="active">Overview</a>
+  <a href="#" data-section="t1">1. Installation</a>
+  <a href="#" data-section="t2">2. Data Preparation</a>
+  <div class="sec-title">Core Analysis</div>
+  <a href="#" data-section="t3">3. IBS Computation</a>
+  <a href="#" data-section="t4">4. IBD Detection</a>
+  <a href="#" data-section="t5">5. Ancestry Inference</a>
+  <div class="sec-title">Validation</div>
+  <a href="#" data-section="t6">6. Platinum Pedigree</a>
+  <a href="#" data-section="t7">7. Simulation</a>
+  <div class="sec-title">Advanced</div>
+  <a href="#" data-section="t8">8. Advanced Features</a>
+  <div class="sec-title" style="margin-top:1.5rem">Resources</div>
+  <a href="https://github.com/MarsicoFL/impopk" target="_blank">GitHub Repository</a>
+  <a href="https://github.com/pangenome/HPRCv2" target="_blank">HPRCv2 Data</a>
+  <a href="https://github.com/pangenome/impop" target="_blank">impop (Python)</a>
+</nav>
+
+<main class="main">
+
+<!-- ============================================== -->
+<!-- OVERVIEW -->
+<!-- ============================================== -->
+<div class="tutorial-section active" id="overview">
+<h1>impop<span style="color:var(--accent)">k</span> Tutorials <span class="badge">v0.1</span></h1>
+<p>IBD detection and local ancestry inference directly from pangenome assemblies. No VCF, no phasing, no SNP arrays.</p>
+
+<h2>The Pipeline</h2>
+<div class="pipeline">
+  <div class="step"><div class="name">PAF</div><div class="desc">Pangenome alignments</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">ibs-from-paf</div><div class="desc">Pairwise identity</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">ibd / ancestry</div><div class="desc">HMM inference</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">Segments</div><div class="desc">IBD / ancestry tracts</div></div>
+</div>
+<p style="margin:.3rem 0 .5rem;font-size:.85rem;color:var(--fg2)">Alternative fast path (regional queries):</p>
+<div class="pipeline">
+  <div class="step"><div class="name">PAF</div><div class="desc">Pangenome alignments</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">cigzip</div><div class="desc">TPA compression</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">ibs-from-tpa</div><div class="desc">Indexed identity (6x faster)</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">ibd / ancestry</div><div class="desc">HMM inference</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">Segments</div><div class="desc">IBD / ancestry tracts</div></div>
+</div>
+
+<h2>Nine Binaries</h2>
+<table>
+  <tr><th>Binary</th><th>Purpose</th><th>External deps</th></tr>
+  <tr><td><code>ibs-from-paf</code></td><td>IBS from PAF directly (&gt;100x faster than impg)</td><td>None</td></tr>
+  <tr><td><code>ibs-from-tpa</code></td><td>IBS from TPA with spatial index (6x faster, recommended for regional queries)</td><td>AGC, <a href="https://github.com/AndreaGuarracino/cigzip">cigzip</a></td></tr>
+  <tr><td><code>tpa-spatial-index</code></td><td>Build spatial index over TPA files for regional queries</td><td>None</td></tr>
+  <tr><td><code>tpa-validate</code></td><td>Numerical validation between IBS outputs</td><td>None</td></tr>
+  <tr><td><code>ibs</code></td><td>IBS via impg (legacy)</td><td>impg, AGC</td></tr>
+  <tr><td><code>ibd</code></td><td>IBD detection (live or pre-computed)</td><td>None / impg</td></tr>
+  <tr><td><code>ibd-validate</code></td><td>IBD from pre-computed IBS file</td><td>None</td></tr>
+  <tr><td><code>ancestry</code></td><td>Local ancestry inference (N-state HMM)</td><td>None</td></tr>
+  <tr><td><code>jacquard</code></td><td>Jacquard delta coefficients</td><td>None</td></tr>
+</table>
+
+<h2>Key Results</h2>
+<div class="chart-container">
+  <h4>Validation Benchmarks</h4>
+  <div class="bar-chart">
+    <div class="bar-row">
+      <span class="bar-label">Pedigree Painting</span>
+      <div class="bar-track"><div class="bar-fill" style="width:99.53%;background:var(--accent2)">99.53%</div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Sim. Ancestry (impopk)</span>
+      <div class="bar-track"><div class="bar-fill" style="width:97.95%;background:var(--accent)">97.95%</div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Sim. Ancestry (RFMix)</span>
+      <div class="bar-track"><div class="bar-fill" style="width:95.9%;background:var(--accent4)">95.9%</div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Real Ancestry (3-way)</span>
+      <div class="bar-track"><div class="bar-fill" style="width:76.45%;background:var(--accent3)">76.45%</div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">IBD Top-10% Rank</span>
+      <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--accent2)">100%</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="chart-container">
+  <h4>Performance (22 autosomes, full genome)</h4>
+  <div style="display:flex;gap:2rem;flex-wrap:wrap;">
+    <div style="text-align:center">
+      <div style="font-size:2.5rem;font-weight:700;color:var(--accent2)">195s</div>
+      <div style="font-size:.8rem;color:var(--fg2)">Wall-clock time</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:2.5rem;font-weight:700;color:var(--accent)">101 MB</div>
+      <div style="font-size:.8rem;color:var(--fg2)">Peak RAM</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:2.5rem;font-weight:700;color:var(--accent3)">1,090x</div>
+      <div style="font-size:.8rem;color:var(--fg2)">Faster than impg</div>
+    </div>
+  </div>
+</div>
+
+<h2>Data Sources</h2>
+<div class="info-box">
+  <div class="label">HPRC Release 2</div>
+  <p>464 haplotypes (232 individuals) from 5 super-populations. PAF alignments and AGC assemblies are hosted on Garrison Lab S3 (<a href="https://github.com/pangenome/HPRCv2" target="_blank">pangenome/HPRCv2</a>).</p>
+</div>
+</div>
+
+<!-- ============================================== -->
+<!-- TUTORIAL 1: INSTALLATION -->
+<!-- ============================================== -->
+<div class="tutorial-section" id="t1">
+<h1>Tutorial 1: Installation <span class="badge">15 min</span></h1>
+
+<h2>Prerequisites</h2>
+<ul>
+  <li>Linux or macOS (tested Ubuntu 22.04+, macOS 13+)</li>
+  <li>~2 GB free disk space</li>
+  <li>Internet connection</li>
+</ul>
+
+<h2>Step 1: Clone the repository</h2>
+<pre><code>git clone https://github.com/MarsicoFL/impopk.git
+cd impopk</code></pre>
+
+<h2>Step 2: Install Rust (if needed)</h2>
+<pre><code>curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
+rustc --version   # Should be >= 1.70</code></pre>
+
+<h2>Step 3: Build</h2>
+<pre><code>cargo build --release
+# Or: make build</code></pre>
+<div class="info-box">
+  <div class="label">Note</div>
+  <p>First build takes 2-5 minutes. Subsequent builds are much faster. The 9 binaries are placed in <code>target/release/</code>.</p>
+</div>
+
+<h2>Step 4: Verify all 9 binaries</h2>
+<pre><code>for bin in ibs ibs-from-paf ibs-from-tpa tpa-spatial-index tpa-validate ibd ibd-validate ancestry jacquard; do
+    ./target/release/$bin --help | head -1
+done</code></pre>
+
+<h2>Step 5 (Optional): Install to PATH</h2>
+<pre><code>make install   # Installs to ~/.cargo/bin/</code></pre>
+
+<h2>Step 6 (Optional): External dependencies</h2>
+<p>Only needed for <code>ibs</code> and <code>ibd</code> live modes. Skip if you use <code>ibs-from-paf</code> (recommended).</p>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="impg-tab">impg</button>
+  <button class="tab-btn" data-tab="agc-tab">AGC</button>
+  <button class="tab-btn" data-tab="docker-tab">Docker</button>
+</div>
+<div class="tab-content active" id="impg-tab">
+<pre><code>git clone https://github.com/pangenome/impg.git
+cd impg && cargo build --release
+sudo cp target/release/impg /usr/local/bin/</code></pre>
+</div>
+<div class="tab-content" id="agc-tab">
+<pre><code>git clone https://github.com/refresh-bio/agc.git
+cd agc && make -j$(nproc)
+sudo cp agc /usr/local/bin/</code></pre>
+</div>
+<div class="tab-content" id="docker-tab">
+<pre><code>make docker        # Builds image with impopk + impg + AGC
+make docker-test   # Verifies all binaries
+docker run --rm -v $(pwd)/data:/data impopk ibs-from-paf --help</code></pre>
+</div>
+
+<h2>Step 7: Run tests</h2>
+<pre><code>make test    # 7,334 tests across all crates
+make clippy  # Linter check</code></pre>
+</div>
+
+<!-- ============================================== -->
+<!-- TUTORIAL 2: DATA PREPARATION -->
+<!-- ============================================== -->
+<div class="tutorial-section" id="t2">
+<h1>Tutorial 2: Data Preparation <span class="badge">~12 GB</span></h1>
+
+<h2>Required Data</h2>
+<table>
+  <tr><th>File</th><th>Size</th><th>Source</th></tr>
+  <tr><td><code>hprc465vschm13.aln.paf.gz</code></td><td>5.3 GB</td><td><a href="https://github.com/pangenome/HPRCv2" target="_blank">HPRCv2</a></td></tr>
+  <tr><td><code>HPRC_r2_assemblies_0.6.1.agc</code></td><td>3.1 GB</td><td><a href="https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=submissions/B4174A5F-F20E-4DCF-8470-F8A907B640BC--HPRCv2_0.6.1_pr_agc_submission/" target="_blank">HPRC S3</a></td></tr>
+  <tr><td>CHM13 v2.0 reference</td><td>0.9 GB</td><td>T2T Consortium</td></tr>
+  <tr><td>Genetic maps (22 chr)</td><td>10 MB</td><td>Browning Lab</td></tr>
+  <tr><td>Platinum pedigree (optional)</td><td>~1 GB</td><td>HPRC</td></tr>
+  <tr><td>Validation VCFs (optional)</td><td>~2 GB</td><td>1000 Genomes</td></tr>
+</table>
+
+<h2>Step 1: Preview downloads</h2>
+<pre><code>bash scripts/download_all.sh --dry-run</code></pre>
+
+<h2>Step 2: Download everything</h2>
+<pre><code>bash scripts/download_all.sh
+# Downloads from:
+#   PAF: garrisonlab.s3.amazonaws.com/hprcv2/pafs/hprc465vschm13.aln.paf.gz
+#   AGC: s3-us-west-2.amazonaws.com/human-pangenomics/.../HPRC_r2_assemblies_0.6.1.agc
+#   Ref: T2T CHM13 v2.0</code></pre>
+
+<div class="info-box">
+  <div class="label">Tip</div>
+  <p>Downloads are resumable. If interrupted, re-run the script and it skips completed files.</p>
+</div>
+
+<h2>Step 3: Verify checksums</h2>
+<pre><code>make verify-data</code></pre>
+
+<h2>Step 4: Directory structure</h2>
+<pre><code>data/
+├── samples/           # Bundled: AFR(140), EUR(62), EAS(102), CSA(72), AMR(88)
+├── genetic_maps/      # Bundled (4 chr) + downloaded (22 chr)
+├── assemblies/        # HPRC_r2_assemblies_0.6.1.agc
+└── alignments/        # hprc465vschm13.aln.paf.gz + .gzi + .impg</code></pre>
+
+<h2>Population Samples</h2>
+<div class="chart-container">
+  <h4>464 Haplotypes across 5 Super-Populations</h4>
+  <div class="bar-chart">
+    <div class="bar-row">
+      <span class="bar-label">AFR (70 indiv.)</span>
+      <div class="bar-track"><div class="bar-fill" style="width:30.2%;background:#e06c75">140</div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">EAS (51 indiv.)</span>
+      <div class="bar-track"><div class="bar-fill" style="width:22%;background:#61afef">102</div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">AMR (44 indiv.)</span>
+      <div class="bar-track"><div class="bar-fill" style="width:19%;background:#c678dd">88</div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">CSA (36 indiv.)</span>
+      <div class="bar-track"><div class="bar-fill" style="width:15.5%;background:#e5c07b">72</div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">EUR (31 indiv.)</span>
+      <div class="bar-track"><div class="bar-fill" style="width:13.4%;background:#98c379">62</div></div>
+    </div>
+  </div>
+</div>
+
+<h2>Understanding PAF format</h2>
+<pre><code># Each line: query aligned to CHM13 reference
+# HG00097#1#CM094060.1  251554408  62698117  73651253  +  CHM13#0#chr12  133324548  ...
+#
+# Query name encodes: SAMPLE#HAP#CONTIG
+# CIGAR strings (in tags) used by ibs-from-paf for identity computation</code></pre>
+</div>
+
+<!-- ============================================== -->
+<!-- TUTORIAL 3: IBS -->
+<!-- ============================================== -->
+<div class="tutorial-section" id="t3">
+<h1>Tutorial 3: IBS Computation <span class="badge">Core</span></h1>
+
+<h2>What is IBS?</h2>
+<p>Identity-by-State (IBS) measures sequence similarity between two haplotypes over a genomic window. Unlike variant-based methods that define identity per SNP or indel, impopk defines IBS per <em>genomic segment</em>: the identity of a window is the fraction of aligned bases where both haplotypes agree, computed over the full window size.</p>
+<p>Pairwise identity can be extracted from three sources:</p>
+<ul>
+  <li><code>ibs-from-paf</code> &mdash; directly from PAF alignment CIGAR strings (recommended for simplicity)</li>
+  <li><code>ibs</code> &mdash; via <a href="https://github.com/pangenome/impg">impg</a> implicit pangenome queries (legacy, requires impg + AGC)</li>
+  <li><code>ibs-from-tpa</code> &mdash; from pre-indexed <a href="https://github.com/AndreaGuarracino/tpa">TPA</a> format with spatial index (fastest for regional queries)</li>
+</ul>
+
+<h2>Quick Start</h2>
+<pre><code># Compute IBS for 1 Mb of chr12 (10 kb windows)
+ibs-from-paf \
+    -a data/alignments/hprc465vschm13.aln.paf.gz \
+    -r CHM13 \
+    --region chr12:1000000-2000000 \
+    --size 10000 \
+    --output ibs_chr12_1Mb.tsv</code></pre>
+
+<h2>Output Format</h2>
+<pre><code>chrom  start    end      group.a    group.b    estimated.identity  group.a.length  group.b.length
+chr12  1000000  1009999  HG00097#1  HG00099#1  0.998400            10000           9987
+chr12  1000000  1009999  HG00097#1  HG00100#2  0.999100            10000           10000
+chr12  1010000  1019999  HG00097#1  HG00099#1  0.998900            10000           10000</code></pre>
+
+<h2>Identity Value Ranges</h2>
+<p>Typical pairwise identity values at 10 kb windows for HPRC pangenome data:</p>
+<table>
+  <tr><th>Population pair</th><th>Mean identity</th><th>Std dev</th></tr>
+  <tr><td>Within-population (e.g., EUR-EUR)</td><td>~0.9970</td><td>~0.0005</td></tr>
+  <tr><td>Cross-population (e.g., EUR-AFR)</td><td>~0.9965</td><td>~0.0008</td></tr>
+  <tr><td>Same individual (hap1 vs hap2)</td><td>~0.9975</td><td>~0.0004</td></tr>
+</table>
+<div class="info-box">
+  <div class="label">Note</div>
+  <p>Identity values are very high (&gt;0.996) because pangenome haplotypes share recent common ancestry. Small differences (&lt;0.001) in mean identity between populations are the signal that downstream HMMs use for ancestry and IBD inference.</p>
+</div>
+
+<h2>Fast Mode: IBS from TPA (recommended for regional queries)</h2>
+
+<p>For repeated or regional queries, pre-indexing with the <a href="https://github.com/AndreaGuarracino/tpa">TPA format</a> avoids re-scanning the full PAF file. This gives 6x speedup for typical single-chromosome queries.</p>
+
+<h3>One-time setup</h3>
+<pre><code># Step 1: Convert PAF to TPA (requires cigzip: github.com/AndreaGuarracino/cigzip)
+cigzip encode --paf alignments.paf.gz | cigzip compress -i - -o alignments.tpa
+
+# Step 2: Build spatial index (~15 seconds for full genome)
+tpa-spatial-index --tpa alignments.tpa --output alignments.sidx</code></pre>
+
+<h3>Regional queries (seconds instead of minutes)</h3>
+<pre><code>ibs-from-tpa \
+    --tpa alignments.tpa \
+    --spatial-index alignments.sidx \
+    --agc assemblies.agc \
+    --region chr12:1000000-2000000 \
+    --size 10000 \
+    --output ibs_chr12_1Mb.tsv</code></pre>
+
+<div class="info-box success">
+  <div class="label">Drop-in replacement</div>
+  <p>Output of <code>ibs-from-tpa</code> is numerically identical to <code>ibs-from-paf</code> (validated: mean diff = 0.00006, max diff = 0.008). It can be used directly with <code>ancestry</code> and <code>ibd</code> without any changes.</p>
+</div>
+
+<div class="info-box">
+  <div class="label">When to use which</div>
+  <p><b>ibs-from-paf</b>: Simple setup, no pre-processing needed. Best for one-off full-genome runs.<br>
+  <b>ibs-from-tpa</b>: Requires TPA conversion (one-time, ~2 min) + AGC file. Best for interactive analysis, repeated regional queries, or when querying many small regions.</p>
+</div>
+
+<h2>Filtering by Population</h2>
+<pre><code># Only EUR haplotypes
+ibs-from-paf \
+    -a data/alignments/hprc465vschm13.aln.paf.gz \
+    -r CHM13 --region chr12:1-50000000 --size 10000 \
+    --subset-sequence-list data/samples/EUR.txt \
+    --output ibs_chr12_EUR.tsv</code></pre>
+
+<h2>Query-vs-Reference Mode</h2>
+<pre><code># Only emit pairs where one hap is query and one is reference
+ibs-from-paf \
+    -a data/alignments/hprc465vschm13.aln.paf.gz \
+    -r CHM13 --region chr12:1-50000000 --size 50000 \
+    --query-samples query_individuals.txt \
+    --ref-samples data/samples/EUR.txt \
+    --output ibs_query_vs_EUR.tsv</code></pre>
+
+<h2>Full Genome Processing</h2>
+<pre><code># All 22 autosomes via BED file
+ibs-from-paf \
+    -a data/alignments/hprc465vschm13.aln.paf.gz \
+    -r CHM13 --bed autosomes.bed --size 50000 \
+    --output ibs_genome.tsv</code></pre>
+
+<div class="chart-container">
+  <h4>Performance Benchmarks</h4>
+  <table>
+    <tr><th>Scope</th><th>Window</th><th>Time</th><th>RAM</th></tr>
+    <tr><td>1 Mb region</td><td>10 kb</td><td>1-5 sec</td><td>&lt;50 MB</td></tr>
+    <tr><td>Full chr12</td><td>50 kb</td><td>10-30 sec</td><td>&lt;100 MB</td></tr>
+    <tr><td>22 autosomes</td><td>50 kb</td><td>~195 sec</td><td>~101 MB</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ============================================== -->
+<!-- TUTORIAL 4: IBD -->
+<!-- ============================================== -->
+<div class="tutorial-section" id="t4">
+<h1>Tutorial 4: IBD Detection <span class="badge">Core</span></h1>
+
+<h2>The 2-State HMM</h2>
+<div class="chart-container">
+  <h4>Hidden Markov Model for IBD Detection</h4>
+  <svg viewBox="0 0 500 160" style="width:100%;max-width:500px">
+    <!-- State circles -->
+    <circle cx="130" cy="80" r="45" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
+    <text x="130" y="75" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="700">Non-IBD</text>
+    <text x="130" y="93" text-anchor="middle" fill="#8b949e" font-size="9">~0.997</text>
+    <circle cx="370" cy="80" r="45" fill="none" stroke="#3fb950" stroke-width="2.5"/>
+    <text x="370" y="75" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="700">IBD</text>
+    <text x="370" y="93" text-anchor="middle" fill="#8b949e" font-size="9">~0.9995</text>
+    <!-- Transitions -->
+    <path d="M175,65 Q250,20 325,65" fill="none" stroke="#f0883e" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="250" y="35" text-anchor="middle" fill="#f0883e" font-size="9">P(enter) = 0.0001</text>
+    <path d="M325,95 Q250,140 175,95" fill="none" stroke="#d2a8ff" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="250" y="148" text-anchor="middle" fill="#d2a8ff" font-size="9">P(exit) = 1/L</text>
+    <!-- Self loops -->
+    <path d="M95,50 Q60,10 95,45" fill="none" stroke="#58a6ff" stroke-width="1" stroke-opacity=".5"/>
+    <path d="M405,50 Q440,10 405,45" fill="none" stroke="#3fb950" stroke-width="1" stroke-opacity=".5"/>
+    <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#f0883e"/></marker></defs>
+  </svg>
+</div>
+
+<h2>Identity Distributions: IBD vs Non-IBD</h2>
+<div class="chart-container">
+  <h4>The HMM discriminates two overlapping distributions</h4>
+  <svg viewBox="0 0 600 200" style="width:100%;max-width:600px">
+    <line x1="60" y1="170" x2="580" y2="170" stroke="#30363d" stroke-width="1"/>
+    <line x1="60" y1="20" x2="60" y2="170" stroke="#30363d" stroke-width="1"/>
+    <text x="60" y="190" fill="#8b949e" font-size="11">0.990</text>
+    <text x="190" y="190" fill="#8b949e" font-size="11">0.994</text>
+    <text x="320" y="190" fill="#8b949e" font-size="11">0.997</text>
+    <text x="450" y="190" fill="#8b949e" font-size="11">0.999</text>
+    <text x="560" y="190" fill="#8b949e" font-size="11">1.000</text>
+    <text x="300" y="198" fill="#8b949e" font-size="10" text-anchor="middle">Pairwise Identity</text>
+    <!-- Non-IBD distribution (wider, centered ~0.997) -->
+    <path d="M120,168 Q200,165 260,140 Q300,80 330,40 Q350,80 380,140 Q420,165 480,168" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
+    <path d="M120,168 Q200,165 260,140 Q300,80 330,40 Q350,80 380,140 Q420,165 480,168 Z" fill="#58a6ff" fill-opacity="0.1"/>
+    <!-- IBD distribution (narrower, centered ~0.9995) -->
+    <path d="M440,168 Q470,155 490,110 Q500,50 510,30 Q520,50 530,110 Q550,155 570,168" fill="none" stroke="#3fb950" stroke-width="2.5"/>
+    <path d="M440,168 Q470,155 490,110 Q500,50 510,30 Q520,50 530,110 Q550,155 570,168 Z" fill="#3fb950" fill-opacity="0.1"/>
+    <rect x="100" y="22" width="12" height="12" rx="2" fill="#58a6ff" fill-opacity="0.5"/>
+    <text x="118" y="32" fill="#c9d1d9" font-size="11">Non-IBD pairs (~0.997)</text>
+    <rect x="300" y="22" width="12" height="12" rx="2" fill="#3fb950" fill-opacity="0.5"/>
+    <text x="318" y="32" fill="#c9d1d9" font-size="11">IBD pairs (~0.9995)</text>
+    <line x1="360" y1="155" x2="460" y2="155" stroke="#f0883e" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="410" y="150" fill="#f0883e" font-size="9" text-anchor="middle">identity gap ~0.002</text>
+  </svg>
+</div>
+<p>The identity gap (~0.002) between IBD and non-IBD pairs is the signal the HMM uses. Baum-Welch estimates these emission distributions from the data.</p>
+
+<h2>Recommended Workflow</h2>
+<div class="pipeline">
+  <div class="step"><div class="name">ibs-from-paf</div><div class="desc">Compute IBS</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">ibd-validate</div><div class="desc">Run HMM</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">IBD segments</div><div class="desc">TSV / BED</div></div>
+</div>
+
+<h3>Step 1: Compute IBS</h3>
+<pre><code>ibs-from-paf \
+    -a data/alignments/hprc465vschm13.aln.paf.gz \
+    -r CHM13 --region chr12:1-50000000 --size 10000 \
+    --subset-sequence-list data/samples/EUR.txt \
+    --output ibs_chr12_EUR.tsv</code></pre>
+
+<h3>Step 2: Run IBD detection</h3>
+<pre><code>ibd-validate \
+    --input ibs_chr12_EUR.tsv \
+    --output ibd_segments.tsv \
+    --population EUR \
+    --window-size 10000 \
+    --baum-welch-iters 20 \
+    --identity-floor 0.9 \
+    --min-len-bp 2000000 \
+    --min-windows 200</code></pre>
+
+<h2>Output Format</h2>
+<pre><code>chrom  start    end      group.a       group.b       n_windows  mean_identity  mean_posterior  min_posterior  max_posterior  lod_score
+chr12  5210001  8740000  HG00097#1...  HG00099#1...  353        0.999420       0.9830          0.8712         0.9991         47.20</code></pre>
+
+<h2>LOD Score Interpretation</h2>
+<div class="chart-container">
+  <h4>Evidence Strength</h4>
+  <div class="bar-chart">
+    <div class="bar-row">
+      <span class="bar-label">LOD &lt; 3</span>
+      <div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--fg2)">Not significant</div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">LOD 3-5</span>
+      <div class="bar-track"><div class="bar-fill" style="width:40%;background:var(--accent4)">Suggestive</div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">LOD 5-10</span>
+      <div class="bar-track"><div class="bar-fill" style="width:70%;background:var(--accent)">Strong</div></div>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">LOD &gt; 10</span>
+      <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--accent2)">Very strong</div></div>
+    </div>
+  </div>
+</div>
+
+<h2>Key Parameters</h2>
+<table>
+  <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>--identity-floor</code></td><td>0.9</td><td>Filter alignment gaps</td></tr>
+  <tr><td><code>--baum-welch-iters</code></td><td>20</td><td>EM training iterations</td></tr>
+  <tr><td><code>--min-len-bp</code></td><td>2000000</td><td>Minimum segment length (2 Mb)</td></tr>
+  <tr><td><code>--min-lod</code></td><td>3.0</td><td>Minimum LOD score</td></tr>
+  <tr><td><code>--population</code></td><td>Generic</td><td>Prior parameters: AFR, EUR, EAS, CSA, AMR</td></tr>
+  <tr><td><code>--bridge-gaps</code></td><td>0</td><td>Bridge short non-IBD gaps (2-3 recommended)</td></tr>
+</table>
+
+<h2>Population Identity Priors</h2>
+<div class="chart-container">
+  <h4>Expected Identity by Population (non-IBD / IBD)</h4>
+  <svg viewBox="0 0 500 180" style="width:100%;max-width:500px">
+    <!-- Y axis labels -->
+    <text x="55" y="42" fill="#8b949e" font-size="10" text-anchor="end">AFR</text>
+    <text x="55" y="72" fill="#8b949e" font-size="10" text-anchor="end">AMR</text>
+    <text x="55" y="102" fill="#8b949e" font-size="10" text-anchor="end">EAS</text>
+    <text x="55" y="132" fill="#8b949e" font-size="10" text-anchor="end">EUR</text>
+    <!-- Scale: 0.994 to 1.000, mapped to x=65..485 -->
+    <!-- Non-IBD bars -->
+    <rect x="65" y="30" width="210" height="16" rx="3" fill="#58a6ff" fill-opacity="0.6"/>
+    <text x="280" y="43" fill="#c9d1d9" font-size="9">0.9960</text>
+    <rect x="65" y="60" width="250" height="16" rx="3" fill="#58a6ff" fill-opacity="0.6"/>
+    <text x="320" y="73" fill="#c9d1d9" font-size="9">0.9965</text>
+    <rect x="65" y="90" width="280" height="16" rx="3" fill="#58a6ff" fill-opacity="0.6"/>
+    <text x="350" y="103" fill="#c9d1d9" font-size="9">0.9970</text>
+    <rect x="65" y="120" width="325" height="16" rx="3" fill="#58a6ff" fill-opacity="0.6"/>
+    <text x="395" y="133" fill="#c9d1d9" font-size="9">0.9975</text>
+    <!-- IBD bars (right end) -->
+    <rect x="400" y="30" width="70" height="16" rx="3" fill="#3fb950" fill-opacity="0.7"/>
+    <text x="475" y="43" fill="#c9d1d9" font-size="9">0.999</text>
+    <rect x="405" y="60" width="70" height="16" rx="3" fill="#3fb950" fill-opacity="0.7"/>
+    <rect x="408" y="90" width="70" height="16" rx="3" fill="#3fb950" fill-opacity="0.7"/>
+    <rect x="415" y="120" width="70" height="16" rx="3" fill="#3fb950" fill-opacity="0.7"/>
+    <!-- Legend -->
+    <rect x="65" y="155" width="10" height="10" rx="2" fill="#58a6ff" fill-opacity="0.6"/>
+    <text x="80" y="164" fill="#8b949e" font-size="9">Non-IBD</text>
+    <rect x="160" y="155" width="10" height="10" rx="2" fill="#3fb950" fill-opacity="0.7"/>
+    <text x="175" y="164" fill="#8b949e" font-size="9">IBD</text>
+  </svg>
+</div>
+
+<h2>Parameter Presets</h2>
+<div class="tabs">
+  <button class="tab-btn active" data-tab="prod-tab">Production</button>
+  <button class="tab-btn" data-tab="prec-tab">High Precision</button>
+  <button class="tab-btn" data-tab="recall-tab">High Recall</button>
+</div>
+<div class="tab-content active" id="prod-tab">
+<pre><code>ibd-validate -i ibs_file.tsv -o ibd.tsv \
+    --population EUR --window-size 10000 \
+    --identity-floor 0.9 --min-len-bp 2000000 \
+    --min-windows 200 --baum-welch-iters 20</code></pre>
+</div>
+<div class="tab-content" id="prec-tab">
+<pre><code>ibd-validate -i ibs_file.tsv -o ibd.tsv \
+    --population EUR --window-size 10000 \
+    --identity-floor 0.95 --min-len-bp 3000000 \
+    --min-windows 300 --baum-welch-iters 20 \
+    --posterior-threshold 0.5</code></pre>
+</div>
+<div class="tab-content" id="recall-tab">
+<pre><code>ibd-validate -i ibs_file.tsv -o ibd.tsv \
+    --population EUR --window-size 10000 \
+    --identity-floor 0.9 --min-len-bp 1000000 \
+    --min-windows 100 --baum-welch-iters 20</code></pre>
+</div>
+</div>
+
+<!-- ============================================== -->
+<!-- TUTORIAL 5: ANCESTRY -->
+<!-- ============================================== -->
+<div class="tutorial-section" id="t5">
+<h1>Tutorial 5: Ancestry Inference <span class="badge">Core</span></h1>
+
+<h2>N-State HMM for Local Ancestry</h2>
+<p>Each genomic window is assigned to the ancestral population it most likely derives from. States = populations (e.g., AFR, EUR, AMR). Emissions are computed from pangenome identity between query and reference haplotypes.</p>
+
+<h2>Input Preparation</h2>
+
+<h3>Populations file (TSV)</h3>
+<pre><code># Generate from sample lists
+for pop in AFR EUR AMR; do
+    while read -r hap; do
+        printf '%s\t%s\n' "$pop" "$hap"
+    done < data/samples/${pop}.txt
+done > populations.tsv</code></pre>
+
+<h3>Compute similarities</h3>
+<pre><code># Create subset with query + reference haplotypes
+cat data/samples/AFR.txt data/samples/EUR.txt data/samples/AMR.txt query_amr.txt \
+    | sort -u > ancestry_subset.txt
+
+ibs-from-paf \
+    -a data/alignments/hprc465vschm13.aln.paf.gz \
+    -r CHM13 --region chr12:1-133000000 --size 5000 \
+    --subset-sequence-list ancestry_subset.txt \
+    --output similarities_chr12.tsv</code></pre>
+
+<h2>Run with Auto-Configure (Recommended)</h2>
+<pre><code>ancestry \
+    --similarity-file similarities_chr12.tsv \
+    --populations populations.tsv \
+    --query-samples query_amr.txt \
+    --auto-configure \
+    --identity-floor 0.9 \
+    -o ancestry_chr12.tsv \
+    --posteriors-output posteriors_chr12.tsv</code></pre>
+
+<div class="info-box success">
+  <div class="label">Auto-Configure</div>
+  <p>Automatically estimates temperature, pairwise weight, emission context, and enables pairwise contrast emissions. Eliminates manual tuning.</p>
+</div>
+
+<h2>Expected Output</h2>
+<div class="chart-container">
+  <h4>Ancestry Painting Example (chr12, admixed AMR individual)</h4>
+  <svg viewBox="0 0 600 80" style="width:100%;max-width:600px">
+    <!-- Chromosome ideogram -->
+    <rect x="20" y="10" width="560" height="25" rx="12" fill="#21262d" stroke="#30363d"/>
+    <!-- Ancestry tracts -->
+    <rect x="20" y="10" width="120" height="25" rx="12" fill="#c678dd" fill-opacity="0.8"/>
+    <rect x="140" y="10" width="80" height="25" fill="#98c379" fill-opacity="0.8"/>
+    <rect x="220" y="10" width="200" height="25" fill="#c678dd" fill-opacity="0.8"/>
+    <rect x="420" y="10" width="60" height="25" fill="#e06c75" fill-opacity="0.8"/>
+    <rect x="480" y="10" width="100" height="25" rx="0 12 12 0" fill="#c678dd" fill-opacity="0.8"/>
+    <!-- Labels -->
+    <text x="80" y="27" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">AMR</text>
+    <text x="180" y="27" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">EUR</text>
+    <text x="320" y="27" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">AMR</text>
+    <text x="450" y="27" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">AFR</text>
+    <text x="530" y="27" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">AMR</text>
+    <!-- Position axis -->
+    <text x="20" y="55" fill="#8b949e" font-size="9">0 Mb</text>
+    <text x="300" y="55" fill="#8b949e" font-size="9" text-anchor="middle">chr12</text>
+    <text x="565" y="55" fill="#8b949e" font-size="9" text-anchor="end">133 Mb</text>
+    <!-- Legend -->
+    <rect x="150" y="62" width="10" height="10" rx="2" fill="#c678dd" fill-opacity="0.8"/>
+    <text x="165" y="71" fill="#8b949e" font-size="9">AMR</text>
+    <rect x="210" y="62" width="10" height="10" rx="2" fill="#98c379" fill-opacity="0.8"/>
+    <text x="225" y="71" fill="#8b949e" font-size="9">EUR</text>
+    <rect x="270" y="62" width="10" height="10" rx="2" fill="#e06c75" fill-opacity="0.8"/>
+    <text x="285" y="71" fill="#8b949e" font-size="9">AFR</text>
+  </svg>
+</div>
+
+<h2>Concordance Results</h2>
+<div class="chart-container">
+  <h4>3-Way Ancestry Concordance</h4>
+  <div style="display:flex;gap:2rem;flex-wrap:wrap;">
+    <div>
+      <h4 style="color:var(--accent)">Real Data (HPRC)</h4>
+      <div class="bar-chart" style="margin-top:.5rem">
+        <div class="bar-row"><span class="bar-label">AMR (F1)</span><div class="bar-track"><div class="bar-fill" style="width:81.5%;background:#c678dd">0.815</div></div></div>
+        <div class="bar-row"><span class="bar-label">AFR (F1)</span><div class="bar-track"><div class="bar-fill" style="width:47.1%;background:#e06c75">0.471</div></div></div>
+        <div class="bar-row"><span class="bar-label">EUR (F1)</span><div class="bar-track"><div class="bar-fill" style="width:38.1%;background:#98c379">0.381</div></div></div>
+        <div class="bar-row"><span class="bar-label">Overall</span><div class="bar-track"><div class="bar-fill" style="width:76.45%;background:var(--accent)">76.45%</div></div></div>
+      </div>
+    </div>
+    <div>
+      <h4 style="color:var(--accent2)">Simulation (controlled)</h4>
+      <div class="bar-chart" style="margin-top:.5rem">
+        <div class="bar-row"><span class="bar-label">impopk</span><div class="bar-track"><div class="bar-fill" style="width:97.95%;background:var(--accent2)">97.95%</div></div></div>
+        <div class="bar-row"><span class="bar-label">RFMix</span><div class="bar-track"><div class="bar-fill" style="width:95.9%;background:var(--accent4)">95.9%</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>Pairwise Contrast: The Key Innovation</h2>
+<p>Standard softmax uses a single temperature for all populations. When EUR-AMR gap is ~0.0002 but EUR-AFR gap is ~0.003, a single temperature can't handle both. Pairwise contrast emissions calibrate per-pair temperatures via Bradley-Terry scoring.</p>
+<div class="chart-container">
+  <h4>Impact of Pairwise Contrast (Simulation)</h4>
+  <div class="bar-chart">
+    <div class="bar-row"><span class="bar-label">Softmax only</span><div class="bar-track"><div class="bar-fill" style="width:95.1%;background:var(--fg2)">95.1%</div></div></div>
+    <div class="bar-row"><span class="bar-label">+ Pairwise</span><div class="bar-track"><div class="bar-fill" style="width:97.95%;background:var(--accent2)">97.95%</div><span class="bar-value" style="color:var(--accent2)">+2.85pp</span></div></div>
+  </div>
+</div>
+</div>
+
+<!-- ============================================== -->
+<!-- TUTORIAL 6: PEDIGREE -->
+<!-- ============================================== -->
+<div class="tutorial-section" id="t6">
+<h1>Tutorial 6: Platinum Pedigree <span class="badge">Validation</span></h1>
+
+<h2>CEPH 1463 Family</h2>
+<div class="chart-container">
+  <h4>Family Structure</h4>
+  <svg viewBox="0 0 500 200" style="width:100%;max-width:500px">
+    <!-- Grandparents -->
+    <rect x="20" y="10" width="100" height="30" rx="6" fill="#e06c75" fill-opacity="0.3" stroke="#e06c75"/>
+    <text x="70" y="30" text-anchor="middle" fill="#e06c75" font-size="10" font-weight="600">NA12891</text>
+    <rect x="140" y="10" width="100" height="30" rx="6" fill="#e5c07b" fill-opacity="0.3" stroke="#e5c07b"/>
+    <text x="190" y="30" text-anchor="middle" fill="#e5c07b" font-size="10" font-weight="600">NA12892</text>
+    <rect x="270" y="10" width="100" height="30" rx="6" fill="#61afef" fill-opacity="0.3" stroke="#61afef"/>
+    <text x="320" y="30" text-anchor="middle" fill="#61afef" font-size="10" font-weight="600">NA12889</text>
+    <rect x="390" y="10" width="100" height="30" rx="6" fill="#98c379" fill-opacity="0.3" stroke="#98c379"/>
+    <text x="440" y="30" text-anchor="middle" fill="#98c379" font-size="10" font-weight="600">NA12890</text>
+    <!-- Parents -->
+    <line x1="130" y1="40" x2="130" y2="65" stroke="#30363d"/>
+    <line x1="370" y1="40" x2="370" y2="65" stroke="#30363d"/>
+    <rect x="80" y="65" width="100" height="30" rx="6" fill="#21262d" stroke="#30363d"/>
+    <text x="130" y="85" text-anchor="middle" fill="#c9d1d9" font-size="10">NA12878 (M)</text>
+    <rect x="320" y="65" width="100" height="30" rx="6" fill="#21262d" stroke="#30363d"/>
+    <text x="370" y="85" text-anchor="middle" fill="#c9d1d9" font-size="10">NA12877 (F)</text>
+    <!-- Offspring -->
+    <line x1="250" y1="80" x2="250" y2="120" stroke="#30363d"/>
+    <line x1="100" y1="120" x2="400" y2="120" stroke="#30363d"/>
+    <g transform="translate(60,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12879</text></g>
+    <g transform="translate(140,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12880</text></g>
+    <g transform="translate(220,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12881</text></g>
+    <g transform="translate(300,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12882</text></g>
+    <g transform="translate(380,130)"><rect width="70" height="25" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff"/><text x="35" y="17" text-anchor="middle" fill="#58a6ff" font-size="9">NA12883</text></g>
+    <!-- Vertical connections -->
+    <line x1="95" y1="120" x2="95" y2="130" stroke="#30363d"/>
+    <line x1="175" y1="120" x2="175" y2="130" stroke="#30363d"/>
+    <line x1="255" y1="120" x2="255" y2="130" stroke="#30363d"/>
+    <line x1="335" y1="120" x2="335" y2="130" stroke="#30363d"/>
+    <line x1="415" y1="120" x2="415" y2="130" stroke="#30363d"/>
+    <!-- Labels -->
+    <text x="130" y="185" text-anchor="middle" fill="#8b949e" font-size="9">Maternal grandparents</text>
+    <text x="370" y="185" text-anchor="middle" fill="#8b949e" font-size="9">Paternal grandparents</text>
+  </svg>
+</div>
+
+<h2>Data Access</h2>
+<p>Assemblies are publicly available from the <a href="https://github.com/Platinum-Pedigree-Consortium/Platinum-Pedigree-Datasets">Platinum Pedigree Consortium</a> on AWS S3 (no authentication needed for open-access samples):</p>
+<pre><code># Browse available data
+aws s3 ls --no-sign-request s3://platinum-pedigree-data/
+
+# Key directories:
+#   assemblies/     - Genome assemblies per individual
+#   data/hifi/      - HiFi reads (mapped and raw)
+#   variants/       - VCF variant calls (GRCh38 and T2T-CHM13)
+#   truthset_v1.2/  - Benchmark variant truthsets</code></pre>
+<div class="info-box">
+  <div class="label">Open Access</div>
+  <p>All individuals used in this tutorial (NA12878, NA12891, NA12892, NA12879&ndash;NA12886) are open-access. Five other family members (NA12883, NA12884, NA12887, 200103, 200105) require <a href="https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs003793.v1.p1">dbGaP access</a>.</p>
+</div>
+
+<h2>Workflow</h2>
+<pre><code># 1. Compute similarities (18 haplotypes: 8 grandparent + 10 offspring)
+ibs-from-paf \
+    -a data/alignments/hprc465vschm13.aln.paf.gz \
+    -r CHM13 --region chr12:1-133000000 --size 5000 \
+    --subset-sequence-list platinum_subset.txt \
+    --output platinum_similarities_chr12.tsv
+
+# 2. Run 4-state founder painting
+ancestry \
+    --similarity-file platinum_similarities_chr12.tsv \
+    --populations grandparents.tsv \
+    --query-samples offspring.txt \
+    --auto-configure --identity-floor 0.9 \
+    -o pedigree_painting_chr12.tsv \
+    --posteriors-output pedigree_posteriors_chr12.tsv</code></pre>
+
+<h2>Results: 4-State Founder Painting</h2>
+<div class="chart-container">
+  <h4>Per-Offspring Concordance with Mendelian Ground Truth</h4>
+  <div class="bar-chart">
+    <div class="bar-row"><span class="bar-label">NA12879</span><div class="bar-track"><div class="bar-fill" style="width:99.5%;background:var(--accent2)">99.5%</div></div></div>
+    <div class="bar-row"><span class="bar-label">NA12880</span><div class="bar-track"><div class="bar-fill" style="width:99.1%;background:var(--accent2)">99.1%</div></div></div>
+    <div class="bar-row"><span class="bar-label">NA12881</span><div class="bar-track"><div class="bar-fill" style="width:99.5%;background:var(--accent2)">99.5%</div></div></div>
+    <div class="bar-row"><span class="bar-label">NA12882</span><div class="bar-track"><div class="bar-fill" style="width:97.5%;background:var(--accent)">97.5%</div></div></div>
+    <div class="bar-row"><span class="bar-label">NA12883</span><div class="bar-track"><div class="bar-fill" style="width:99.0%;background:var(--accent2)">99.0%</div></div></div>
+    <div class="bar-row"><span class="bar-label" style="font-weight:700">Mean</span><div class="bar-track"><div class="bar-fill" style="width:99.53%;background:var(--accent2)">99.53%</div></div></div>
+  </div>
+</div>
+
+<div class="info-box success">
+  <div class="label">Why This Matters</div>
+  <p>Real family, real data, unambiguous Mendelian ground truth. 99.53% concordance proves pangenome assembly identity carries sufficient signal for fine-grained ancestry.</p>
+</div>
+
+<h2>Founder Painting Visualization</h2>
+<div class="chart-container">
+  <h4>Expected Painting for One Offspring Haplotype</h4>
+  <svg viewBox="0 0 600 50" style="width:100%;max-width:600px">
+    <rect x="20" y="5" width="560" height="22" rx="11" fill="#21262d"/>
+    <rect x="20" y="5" width="160" height="22" rx="11" fill="#e06c75" fill-opacity="0.7"/>
+    <rect x="180" y="5" width="100" height="22" fill="#e5c07b" fill-opacity="0.7"/>
+    <rect x="280" y="5" width="200" height="22" fill="#e06c75" fill-opacity="0.7"/>
+    <rect x="480" y="5" width="100" height="22" rx="0 11 11 0" fill="#e5c07b" fill-opacity="0.7"/>
+    <text x="100" y="20" text-anchor="middle" fill="#fff" font-size="8">NA12891</text>
+    <text x="230" y="20" text-anchor="middle" fill="#fff" font-size="8">NA12892</text>
+    <text x="380" y="20" text-anchor="middle" fill="#fff" font-size="8">NA12891</text>
+    <text x="530" y="20" text-anchor="middle" fill="#fff" font-size="8">NA12892</text>
+    <text x="300" y="45" text-anchor="middle" fill="#8b949e" font-size="9">Maternal haplotype showing recombination between grandparents</text>
+  </svg>
+</div>
+</div>
+
+<!-- ============================================== -->
+<!-- TUTORIAL 7: SIMULATION -->
+<!-- ============================================== -->
+<div class="tutorial-section" id="t7">
+<h1>Tutorial 7: Simulation Framework <span class="badge">Descriptive</span></h1>
+
+<h2>5-Stage Pipeline</h2>
+<div class="pipeline">
+  <div class="step"><div class="name">msprime</div><div class="desc">Known tracts</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">Stitch</div><div class="desc">Chimeric assemblies</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">minimap2</div><div class="desc">PAF alignments</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">ibs-from-paf</div><div class="desc">IBS computation</div></div>
+  <div class="arrow">&rarr;</div>
+  <div class="step"><div class="name">ancestry</div><div class="desc">Inference + eval</div></div>
+</div>
+
+<div class="info-box">
+  <div class="label">Key Insight</div>
+  <p>Chimeric assemblies are stitched from real HPRC sequences at msprime-defined boundaries. This preserves realistic alignment artifacts and population-specific identity patterns that purely simulated sequences would miss.</p>
+</div>
+
+<h2>Simulation Code</h2>
+<h3>Step 1: Simulate ancestry tracts with msprime</h3>
+<pre><code>import msprime
+import numpy as np
+
+# 2-way admixture: 70% AFR, 30% EUR on chr12 (133 Mb)
+demography = msprime.Demography()
+demography.add_population(name="AFR", initial_size=14000)
+demography.add_population(name="EUR", initial_size=9000)
+demography.add_population(name="ANC", initial_size=18500)
+demography.add_population(name="ADM", initial_size=30000)
+demography.add_admixture(time=15, derived="ADM", ancestral=["AFR","EUR"], proportions=[0.7,0.3])
+demography.add_population_split(time=2000, derived=["AFR","EUR"], ancestral="ANC")
+
+ts = msprime.sim_ancestry(
+    samples={"ADM": 5},  # 5 admixed diploids → 10 haplotypes
+    demography=demography,
+    sequence_length=133_000_000,
+    recombination_rate=1e-8,
+    random_seed=42
+)
+
+# Extract ground-truth tracts
+for tree in ts.trees():
+    for sample in ts.samples():
+        pop = ts.node(tree.root).population  # ancestral population at this tree
+        # ... write BED file with (chrom, start, end, population)</code></pre>
+
+<h3>Step 2: Stitch chimeric assemblies from real HPRC sequences</h3>
+<pre><code># For each simulated haplotype, replace tracts with real HPRC FASTAs
+# AFR tracts → real AFR assembly sequence (e.g., HG01884)
+# EUR tracts → real EUR assembly sequence (e.g., HG00097)
+
+# Extract sequences from AGC
+agc getctg assemblies.agc HG01884#1#CM094060.1 > afr_donor.fa
+agc getctg assemblies.agc HG00097#1#CM094060.1 > eur_donor.fa
+
+# Stitch at msprime tract boundaries using samtools faidx + cat
+# (see results/impopSim/pangenome_sim/ for the full stitching script)</code></pre>
+
+<h3>Step 3: Align and run impopk</h3>
+<pre><code># Align chimeric assemblies to CHM13
+minimap2 -cx asm5 --eqx -t 8 chm13.fa chimeric_haps.fa > chimeric.paf
+
+# Combine chimeric + reference panel PAFs
+cat chimeric.paf reference_panel.paf > combined.paf
+
+# Compute IBS and run ancestry inference
+ibs-from-paf -a combined.paf -r CHM13 --region chr12 --region-length 133000000 \
+    --size 10000 --output sim_ibs.tsv
+ancestry --similarity-file sim_ibs.tsv --populations pops.tsv \
+    --query-samples sim_query.txt --auto-configure -o sim_ancestry.tsv
+
+# Compare with ground truth
+# concordance = fraction of windows where predicted == true ancestry</code></pre>
+
+<h2>Ancestry Simulation Results</h2>
+<div class="chart-container">
+  <h4>2-Way Admixture (70% AFR / 30% EUR) on chr12</h4>
+  <table>
+    <tr><th>Method</th><th>Concordance</th><th>AFR F1</th><th>EUR F1</th></tr>
+    <tr style="background:rgba(63,185,80,0.1)"><td><strong>impopk (pairwise)</strong></td><td><strong>97.95%</strong></td><td>0.982</td><td>0.977</td></tr>
+    <tr><td>impopk (softmax only)</td><td>95.1%</td><td>0.954</td><td>0.947</td></tr>
+    <tr><td>RFMix (46-hap panel)</td><td>95.9%</td><td>0.963</td><td>0.954</td></tr>
+    <tr><td>RFMix (26-hap panel)</td><td>96.1%</td><td>0.965</td><td>0.956</td></tr>
+  </table>
+</div>
+
+<h2>IBD Simulation: Panel Size Matters</h2>
+<div class="chart-container">
+  <h4>IBD Pair-F1 vs Reference Panel Size</h4>
+  <svg viewBox="0 0 400 200" style="width:100%;max-width:400px">
+    <!-- Axes -->
+    <line x1="60" y1="170" x2="380" y2="170" stroke="#30363d"/>
+    <line x1="60" y1="10" x2="60" y2="170" stroke="#30363d"/>
+    <!-- X axis -->
+    <text x="110" y="188" fill="#8b949e" font-size="10" text-anchor="middle">30</text>
+    <text x="190" y="188" fill="#8b949e" font-size="10" text-anchor="middle">40</text>
+    <text x="270" y="188" fill="#8b949e" font-size="10" text-anchor="middle">50</text>
+    <text x="350" y="188" fill="#8b949e" font-size="10" text-anchor="middle">60</text>
+    <text x="220" y="198" fill="#8b949e" font-size="9" text-anchor="middle">Panel size (haplotypes)</text>
+    <!-- Y axis -->
+    <text x="55" y="173" fill="#8b949e" font-size="9" text-anchor="end">0.0</text>
+    <text x="55" y="90" fill="#8b949e" font-size="9" text-anchor="end">0.5</text>
+    <text x="55" y="15" fill="#8b949e" font-size="9" text-anchor="end">1.0</text>
+    <!-- Data points and line -->
+    <circle cx="110" cy="168" r="5" fill="#f85149"/>
+    <circle cx="190" cy="120" r="5" fill="#f0883e"/>
+    <circle cx="270" cy="88" r="5" fill="#3fb950"/>
+    <circle cx="350" cy="90" r="5" fill="#58a6ff"/>
+    <polyline points="110,168 190,120 270,88 350,90" fill="none" stroke="#58a6ff" stroke-width="2"/>
+    <!-- Labels -->
+    <text x="110" y="160" text-anchor="middle" fill="#f85149" font-size="9">0.000</text>
+    <text x="190" y="112" text-anchor="middle" fill="#f0883e" font-size="9">0.312</text>
+    <text x="270" y="80" text-anchor="middle" fill="#3fb950" font-size="9" font-weight="600">0.514</text>
+    <text x="350" y="82" text-anchor="middle" fill="#58a6ff" font-size="9">0.498</text>
+    <!-- Threshold line -->
+    <line x1="60" y1="120" x2="380" y2="120" stroke="#f0883e" stroke-dasharray="4,3" stroke-opacity=".5"/>
+    <text x="380" y="117" fill="#f0883e" font-size="8" text-anchor="end">min viable</text>
+  </svg>
+</div>
+
+<div class="info-box warn">
+  <div class="label">Critical Finding</div>
+  <p>IBD detection requires a minimum of ~40-50 reference haplotypes. With only 30, the signal is completely absent.</p>
+</div>
+</div>
+
+<!-- ============================================== -->
+<!-- TUTORIAL 8: ADVANCED -->
+<!-- ============================================== -->
+<div class="tutorial-section" id="t8">
+<h1>Tutorial 8: Advanced Features <span class="badge">Expert</span></h1>
+
+<h2>1. eGRM: Assembly-Direct Genetic Relationship Matrix</h2>
+<pre><code># Haploid eGRM (GCTA-compatible)
+ancestry \
+    --similarity-file similarities.tsv \
+    --populations populations.tsv --query-samples query.txt \
+    --output-egrm egrm_chr12 --center-egrm \
+    -o ancestry.tsv
+
+# Diploid eGRM (for GWAS/heritability)
+ancestry \
+    --similarity-file similarities.tsv \
+    --populations populations.tsv --query-samples query.txt \
+    --output-egrm egrm_diploid --diploid-egrm --double-center-egrm \
+    -o ancestry.tsv
+
+# Use with GCTA
+gcta64 --grm egrm_diploid --pca 10 --out pca_results</code></pre>
+
+<h2>2. Demographic Inference</h2>
+<pre><code>ancestry \
+    --similarity-file similarities.tsv \
+    --populations populations.tsv --query-samples query_amr.txt \
+    --auto-configure --identity-floor 0.9 \
+    --demographic-inference --demographic-output demographics.tsv \
+    --max-pulses 3 \
+    -o ancestry.tsv</code></pre>
+
+<div class="info-box">
+  <div class="label">How It Works</div>
+  <p>Fits a shifted exponential mixture model to ancestry tract lengths. Each pulse represents an admixture event. Rate encodes generations since admixture. BIC selects the optimal number of pulses.</p>
+</div>
+
+<h2>3. Cross-Chromosome Parameter Transfer</h2>
+<pre><code># Learn params on a clean chromosome
+ancestry --similarity-file sim_chr12.tsv \
+    --populations pop.tsv --query-samples q.txt \
+    --auto-configure --identity-floor 0.9 \
+    --save-params params_chr12.json -o /dev/null
+
+# Apply to a noisier chromosome
+ancestry --similarity-file sim_chr1.tsv \
+    --populations pop.tsv --query-samples q.txt \
+    --load-params params_chr12.json -o ancestry_chr1.tsv</code></pre>
+
+<div class="chart-container">
+  <h4>Cross-Chr Transfer Impact (chr12 &rarr; chr1)</h4>
+  <div class="bar-chart">
+    <div class="bar-row"><span class="bar-label">chr1 (local params)</span><div class="bar-track"><div class="bar-fill" style="width:71%;background:var(--fg2)">71.3%</div></div></div>
+    <div class="bar-row"><span class="bar-label">chr1 (chr12 params)</span><div class="bar-track"><div class="bar-fill" style="width:76.4%;background:var(--accent2)">76.4%</div><span class="bar-value" style="color:var(--accent2)">+5.14pp</span></div></div>
+  </div>
+</div>
+
+<h2>4. Jacquard Delta Coefficients</h2>
+<pre><code>jacquard \
+    --ibs ibs_output.tsv \
+    --hap-a1 HG00097#1 --hap-a2 HG00097#2 \
+    --hap-b1 HG00099#1 --hap-b2 HG00099#2</code></pre>
+<pre><code># Output: 9 delta coefficients
+# Delta9 (no IBD):  0.986  ← dominant for unrelated pairs
+# Delta7 (1-pair IBD): 0.012  ← elevated for half-sibs
+# Delta1 (fully identical): 0.000</code></pre>
+
+<h2>5. Multi-Scale IBD</h2>
+<pre><code>ibd --similarity-file ibs.tsv \
+    --population EUR --identity-floor 0.9 --min-lod 3.0 \
+    --baum-welch-iters 20 --multi-scale \
+    --output ibd_multiscale.tsv</code></pre>
+<p>Runs HMM at 1x, 2x, 4x window sizes simultaneously. Segments confirmed at multiple scales are high-confidence.</p>
+
+<h2>Summary of Advanced Flags</h2>
+<table>
+  <tr><th>Feature</th><th>Key Flags</th><th>Use Case</th></tr>
+  <tr><td>eGRM</td><td><code>--output-egrm, --center-egrm, --diploid-egrm</code></td><td>GWAS, PCA, heritability</td></tr>
+  <tr><td>Demographics</td><td><code>--demographic-inference, --max-pulses</code></td><td>Admixture timing</td></tr>
+  <tr><td>Param transfer</td><td><code>--save-params, --load-params</code></td><td>Cross-chr consistency</td></tr>
+  <tr><td>Jacquard</td><td><code>jacquard --ibs --hap-*</code></td><td>Relatedness</td></tr>
+  <tr><td>Multi-scale</td><td><code>ibd --multi-scale</code></td><td>Robust IBD</td></tr>
+  <tr><td>Pairwise contrast</td><td><code>--pairwise-emissions, --pairwise-weight</code></td><td>IIA-resistant ancestry</td></tr>
+</table>
+</div>
+
+</main>
+
+<script>
+// Navigation
+document.querySelectorAll('.sidebar a[data-section]').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    const id = link.dataset.section;
+    document.querySelectorAll('.tutorial-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    link.classList.add('active');
+    window.scrollTo(0, 0);
+    // Close mobile sidebar
+    document.querySelector('.sidebar').classList.remove('open');
+  });
+});
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tabGroup = btn.parentElement;
+    const contentParent = tabGroup.parentElement;
+    tabGroup.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // Find all tab-content siblings after this tab group
+    let sibling = tabGroup.nextElementSibling;
+    while (sibling && sibling.classList.contains('tab-content')) {
+      sibling.classList.remove('active');
+      sibling = sibling.nextElementSibling;
+    }
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// Copy buttons on code blocks
+document.querySelectorAll('pre').forEach(pre => {
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = 'Copy';
+  btn.addEventListener('click', () => {
+    navigator.clipboard.writeText(pre.querySelector('code').textContent).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  });
+  pre.appendChild(btn);
+});
+
+// Animate bars on scroll
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.querySelectorAll('.bar-fill').forEach(bar => {
+        const w = bar.style.width;
+        bar.style.width = '0';
+        requestAnimationFrame(() => { bar.style.width = w; });
+      });
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.chart-container').forEach(c => observer.observe(c));
+</script>
+</body>
+</html>

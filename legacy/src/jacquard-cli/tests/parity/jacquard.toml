@@ -1,0 +1,14 @@
+name = "jacquard"
+workdir = "."
+script = "../../bin/jacquard/jacquard_coeffs.sh"
+rust_bin = "jacquard"
+
+[[tests]]
+name = "toy"
+args = [
+  "--ibs", "tests/data/jacquard_toy.tsv",
+  "--hap-a1", "HGA#1",
+  "--hap-a2", "HGA#2",
+  "--hap-b1", "HGB#1",
+  "--hap-b2", "HGB#2",
+]

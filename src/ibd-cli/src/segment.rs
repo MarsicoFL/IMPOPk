@@ -1,3 +1,4 @@
+#![allow(clippy::manual_is_multiple_of)]
 //! Segment Detection and Merging Algorithms
 //!
 //! This module provides tools for detecting and managing IBS/IBD segments
@@ -176,7 +177,7 @@ pub fn detect_segments_rle(
     for i in 0..n {
         let ident = ident_map.get(&i).copied();
         let missing = ident.is_none();
-        let good = ident.map_or(false, |id| id >= effective_threshold);
+        let good = ident.is_some_and(|id| id >= effective_threshold);
 
         match current_start {
             None => {
@@ -247,6 +248,7 @@ pub fn detect_segments_rle(
     segments
 }
 
+#[allow(clippy::too_many_arguments)]
 fn finalize_segment(
     start_idx: usize,
     end_idx: usize,
@@ -377,6 +379,123 @@ pub fn merge_segments(segments: &mut Vec<Segment>) {
     }
 
     *segments = merged;
+}
+
+// =============================================================================
+// Segment Length Distribution Analysis
+// =============================================================================
+
+/// Summary statistics for a collection of IBD segment lengths.
+#[derive(Debug, Clone)]
+pub struct SegmentLengthStats {
+    /// Number of segments
+    pub count: usize,
+    /// Mean segment length in bp
+    pub mean_bp: f64,
+    /// Median segment length in bp
+    pub median_bp: f64,
+    /// Standard deviation of segment lengths in bp
+    pub std_bp: f64,
+    /// Minimum segment length in bp
+    pub min_bp: u64,
+    /// Maximum segment length in bp
+    pub max_bp: u64,
+    /// Total length of all segments in bp
+    pub total_bp: u64,
+}
+
+/// Compute summary statistics for segment length distribution.
+///
+/// Returns zeroed stats for empty input.
+pub fn segment_length_distribution(segments: &[Segment]) -> SegmentLengthStats {
+    if segments.is_empty() {
+        return SegmentLengthStats {
+            count: 0,
+            mean_bp: 0.0,
+            median_bp: 0.0,
+            std_bp: 0.0,
+            min_bp: 0,
+            max_bp: 0,
+            total_bp: 0,
+        };
+    }
+
+    let mut lengths: Vec<u64> = segments.iter().map(|s| s.length_bp()).collect();
+    lengths.sort_unstable();
+
+    let count = lengths.len();
+    let total: u64 = lengths.iter().sum();
+    let mean = total as f64 / count as f64;
+
+    let median = if count % 2 == 0 {
+        (lengths[count / 2 - 1] + lengths[count / 2]) as f64 / 2.0
+    } else {
+        lengths[count / 2] as f64
+    };
+
+    let variance = if count > 1 {
+        lengths.iter().map(|&l| (l as f64 - mean).powi(2)).sum::<f64>() / (count - 1) as f64
+    } else {
+        0.0
+    };
+
+    SegmentLengthStats {
+        count,
+        mean_bp: mean,
+        median_bp: median,
+        std_bp: variance.sqrt(),
+        min_bp: lengths[0],
+        max_bp: lengths[count - 1],
+        total_bp: total,
+    }
+}
+
+/// Compute a histogram of segment lengths with the given bin size.
+///
+/// Returns a vector of (bin_start_bp, count) pairs, sorted by bin_start.
+/// Each bin covers [bin_start, bin_start + bin_size_bp).
+pub fn segment_length_histogram(segments: &[Segment], bin_size_bp: u64) -> Vec<(u64, usize)> {
+    if segments.is_empty() || bin_size_bp == 0 {
+        return Vec::new();
+    }
+
+    let lengths: Vec<u64> = segments.iter().map(|s| s.length_bp()).collect();
+    let max_len = *lengths.iter().max().unwrap();
+
+    let n_bins = (max_len / bin_size_bp) as usize + 1;
+    let mut counts = vec![0usize; n_bins];
+
+    for &len in &lengths {
+        let bin = (len / bin_size_bp) as usize;
+        if bin < counts.len() {
+            counts[bin] += 1;
+        }
+    }
+
+    counts
+        .into_iter()
+        .enumerate()
+        .filter(|(_, c)| *c > 0)
+        .map(|(i, c)| (i as u64 * bin_size_bp, c))
+        .collect()
+}
+
+/// Format a segment as a BED line (0-based half-open coordinates).
+///
+/// BED fields: chrom, start, end, name, score, strand
+/// - start is converted from 1-based to 0-based
+/// - name = "hapA_hapB"
+/// - score = LOD * 100, capped at 1000 (BED convention), minimum 0
+/// - strand = "."
+pub fn format_segment_bed(seg: &Segment, lod: f64) -> String {
+    let bed_start = seg.start.saturating_sub(1);
+    let score = if lod > 0.0 {
+        ((lod * 100.0).round() as u64).min(1000)
+    } else {
+        0
+    };
+    let name = format!("{}_{}", seg.hap_a, seg.hap_b);
+    format!("{}\t{}\t{}\t{}\t{}\t.", seg.chrom, bed_start, seg.end, name, score)
 }
 
 #[cfg(test)]
@@ -943,5 +1062,106 @@ mod tests {
         assert_eq!(params.min_windows, 3);
         assert_eq!(params.min_length_bp, 5000);
         assert_eq!(params.drop_tolerance, 0.0);
+    }
+
+    // === Segment Length Distribution Tests ===
+
+    #[test]
+    fn test_segment_length_stats_empty() {
+        let stats = segment_length_distribution(&[]);
+        assert_eq!(stats.count, 0);
+        assert_eq!(stats.mean_bp, 0.0);
+        assert_eq!(stats.median_bp, 0.0);
+        assert_eq!(stats.std_bp, 0.0);
+        assert_eq!(stats.min_bp, 0);
+        assert_eq!(stats.max_bp, 0);
+        assert_eq!(stats.total_bp, 0);
+    }
+
+    #[test]
+    fn test_segment_length_stats_single() {
+        let segments = vec![make_segment("chr1", 1000, 5999, "A", "B", 0, 9, 0.999, 0.998)];
+        let stats = segment_length_distribution(&segments);
+        assert_eq!(stats.count, 1);
+        assert_eq!(stats.mean_bp, 5000.0);
+        assert_eq!(stats.median_bp, 5000.0);
+        assert_eq!(stats.std_bp, 0.0);
+        assert_eq!(stats.min_bp, 5000);
+        assert_eq!(stats.max_bp, 5000);
+        assert_eq!(stats.total_bp, 5000);
+    }
+
+    #[test]
+    fn test_segment_length_stats_multiple() {
+        let segments = vec![
+            make_segment("chr1", 0, 9999, "A", "B", 0, 9, 0.999, 0.998),    // 10000 bp
+            make_segment("chr1", 0, 19999, "C", "D", 0, 19, 0.999, 0.998),   // 20000 bp
+            make_segment("chr1", 0, 29999, "E", "F", 0, 29, 0.999, 0.998),   // 30000 bp
+        ];
+        let stats = segment_length_distribution(&segments);
+        assert_eq!(stats.count, 3);
+        assert!((stats.mean_bp - 20000.0).abs() < 1e-6);
+        assert_eq!(stats.median_bp, 20000.0);
+        assert_eq!(stats.min_bp, 10000);
+        assert_eq!(stats.max_bp, 30000);
+        assert_eq!(stats.total_bp, 60000);
+        assert!(stats.std_bp > 0.0);
+    }
+
+    #[test]
+    fn test_segment_length_histogram_empty() {
+        let hist = segment_length_histogram(&[], 10000);
+        assert!(hist.is_empty());
+    }
+
+    #[test]
+    fn test_segment_length_histogram_zero_bin_size() {
+        let segments = vec![make_segment("chr1", 0, 9999, "A", "B", 0, 9, 0.999, 0.998)];
+        let hist = segment_length_histogram(&segments, 0);
+        assert!(hist.is_empty());
+    }
+
+    #[test]
+    fn test_segment_to_bed_line() {
+        let seg = make_segment("chr20", 1000001, 5000000, "HG00733#1", "NA12878#1", 0, 9, 0.999, 0.998);
+        let lod = 12.5;
+        let bed_line = format_segment_bed(&seg, lod);
+        // BED: 0-based start, half-open end
+        assert_eq!(bed_line, "chr20\t1000000\t5000000\tHG00733#1_NA12878#1\t1000\t.");
+    }
+
+    #[test]
+    fn test_segment_to_bed_line_low_lod() {
+        let seg = make_segment("chr1", 100, 200, "A", "B", 0, 0, 0.999, 0.999);
+        let lod = 2.3;
+        let bed_line = format_segment_bed(&seg, lod);
+        assert_eq!(bed_line, "chr1\t99\t200\tA_B\t230\t.");
+    }
+
+    #[test]
+    fn test_segment_to_bed_line_negative_lod() {
+        let seg = make_segment("chr1", 100, 200, "A", "B", 0, 0, 0.999, 0.999);
+        let lod = -1.0;
+        let bed_line = format_segment_bed(&seg, lod);
+        // Negative LOD → score 0
+        assert_eq!(bed_line, "chr1\t99\t200\tA_B\t0\t.");
+    }
+
+    #[test]
+    fn test_segment_length_histogram_known() {
+        let segments = vec![
+            make_segment("chr1", 0, 4999, "A", "B", 0, 4, 0.999, 0.998),     // 5000 bp
+            make_segment("chr1", 0, 7999, "C", "D", 0, 7, 0.999, 0.998),     // 8000 bp
+            make_segment("chr1", 0, 14999, "E", "F", 0, 14, 0.999, 0.998),   // 15000 bp
+            make_segment("chr1", 0, 19999, "G", "H", 0, 19, 0.999, 0.998),   // 20000 bp
+        ];
+        let hist = segment_length_histogram(&segments, 10000);
+        // bin 0: [0, 10000) → 5000 and 8000 → 2 segments
+        // bin 1: [10000, 20000) → 15000 → 1 segment
+        // bin 2: [20000, 30000) → 20000 → 1 segment
+        assert_eq!(hist.len(), 3);
+        assert_eq!(hist[0], (0, 2));
+        assert_eq!(hist[1], (10000, 1));
+        assert_eq!(hist[2], (20000, 1));
     }
 }

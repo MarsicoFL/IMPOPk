@@ -1,0 +1,14 @@
+\section{Validation Against Established Methods}
+\label{sec:validation}
+
+We validate IBD detection and local ancestry inference by running pangenome-based and VCF-based methods on the same samples, genomic regions, and reference panels. All concordance metrics are computed from base-pair-level overlap and per-window agreement.
+
+\subsection{Design}
+
+Validation spans chromosomes 10, 11, 12, and 20, using 223 HPRC individuals present in both the pangenome and phased VCFs. IBD is compared against hap-ibd~\cite{browning2020hap_ibd} (v1.0, default parameters, 4,091-sample VCFs phased with SHAPEIT5). Local ancestry is compared against RFMix v2~\cite{maples2013rfmix} (default parameters). The matched reference panel design---100\% sample overlap between tools---isolates the effect of input data representation (pangenome similarity vs.\ VCF genotype likelihoods) from panel composition effects. Detailed parameter settings for both tools are in Supplementary Section~L.5.
+
+\paragraph{IBD evaluation.}
+The primary metric is ranking-based: all haplotype pairs are ranked by robust statistics (trimmed mean, median) of pangenome identity, and we assess whether known IBD pairs cluster at the top. This avoids threshold sensitivity. The secondary metric is segment-level overlap: Jaccard index, precision, recall, and F1, with hap-ibd as ground truth. Population-stratified metrics are computed separately for intra- and inter-population pairs.
+
+\paragraph{Ancestry evaluation.}
+Per-window concordance $C = W^{-1}\sum_w \mathbb{1}[\hat{a}_w^{\text{ours}} = \hat{a}_w^{\text{RFMix}}]$ is the primary metric. Per-population precision, recall, and F1 assess minority ancestry detection. The chr20 baseline uses a 2-way (EUR/AFR) model with 79 matched reference individuals; the chr10/11/12 extension uses a 3-way (EUR/AFR/AMR) model with 31 HPRC pangenome references (62 haplotypes) for our tool and 1,486 VCF reference haplotypes for RFMix, reflecting the smaller available pangenome panel. Detailed metric definitions, confusion matrices, and switch-point accuracy are in Supplementary Section~L.5.

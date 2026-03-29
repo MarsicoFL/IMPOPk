@@ -1,0 +1,23 @@
+[package]
+name = "hprc-jacquard"
+version = "0.2.0"
+edition = "2021"
+authors = ["Franco Marsico"]
+description = "Jacquard delta coefficient estimation from IBS windows for HPRC pangenome data"
+license = "MIT"
+keywords = ["bioinformatics", "Jacquard", "IBD", "relatedness", "HPRC"]
+categories = ["science", "command-line-utilities"]
+
+[[bin]]
+name = "jacquard"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.4", features = ["derive"] }
+
+[dev-dependencies]
+assert_cmd = "2.0"
+tempfile = "3.8"
+toml = "0.5"
+serde = { version = "1.0", features = ["derive"] }

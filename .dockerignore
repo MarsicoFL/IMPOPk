@@ -1,0 +1,14 @@
+target/
+.git/
+data/alignments/
+data/assemblies/
+data/reference/
+data/vcf/
+data/platinumPed/
+data/masks/
+paper/
+docs/
+tutorials/
+*.pdf
+*.tmp
+*.bak

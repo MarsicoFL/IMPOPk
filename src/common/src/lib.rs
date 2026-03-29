@@ -326,7 +326,7 @@ impl Window {
     /// assert_eq!(window.length(), 100);
     /// ```
     pub fn length(&self) -> u64 {
-        self.end - self.start + 1
+        self.end.saturating_sub(self.start) + 1
     }
 }
 
@@ -646,5 +646,109 @@ mod tests {
 
         let w_single = Window::new(100, 100);
         assert_eq!(w_single.length(), 1);
+    }
+
+    // === ColumnIndices tests ===
+
+    #[test]
+    fn test_column_indices_standard_header() {
+        let header = "chrom\tstart\tend\tgroup.a\tgroup.b\testimated.identity";
+        let cols = ColumnIndices::from_header(header).unwrap();
+        assert_eq!(cols.chrom, 0);
+        assert_eq!(cols.start, 1);
+        assert_eq!(cols.end, 2);
+        assert_eq!(cols.group_a, 3);
+        assert_eq!(cols.group_b, 4);
+        assert_eq!(cols.estimated_identity, 5);
+    }
+
+    #[test]
+    fn test_column_indices_reordered_header() {
+        let header = "estimated.identity\tgroup.b\tgroup.a\tend\tstart\tchrom";
+        let cols = ColumnIndices::from_header(header).unwrap();
+        assert_eq!(cols.estimated_identity, 0);
+        assert_eq!(cols.group_b, 1);
+        assert_eq!(cols.group_a, 2);
+        assert_eq!(cols.end, 3);
+        assert_eq!(cols.start, 4);
+        assert_eq!(cols.chrom, 5);
+    }
+
+    #[test]
+    fn test_column_indices_extra_columns() {
+        let header = "extra1\tchrom\textra2\tstart\tend\tgroup.a\tgroup.b\textra3\testimated.identity";
+        let cols = ColumnIndices::from_header(header).unwrap();
+        assert_eq!(cols.chrom, 1);
+        assert_eq!(cols.start, 3);
+        assert_eq!(cols.end, 4);
+        assert_eq!(cols.group_a, 5);
+        assert_eq!(cols.group_b, 6);
+        assert_eq!(cols.estimated_identity, 8);
+    }
+
+    #[test]
+    fn test_column_indices_missing_chrom() {
+        let header = "start\tend\tgroup.a\tgroup.b\testimated.identity";
+        let result = ColumnIndices::from_header(header);
+        assert!(result.is_err());
+        match result {
+            Err(HprcError::MissingColumn(col)) => assert_eq!(col, "chrom"),
+            _ => panic!("Expected MissingColumn error for 'chrom'"),
+        }
+    }
+
+    #[test]
+    fn test_column_indices_missing_identity() {
+        let header = "chrom\tstart\tend\tgroup.a\tgroup.b";
+        let result = ColumnIndices::from_header(header);
+        assert!(result.is_err());
+        match result {
+            Err(HprcError::MissingColumn(col)) => assert_eq!(col, "estimated.identity"),
+            _ => panic!("Expected MissingColumn error for 'estimated.identity'"),
+        }
+    }
+
+    #[test]
+    fn test_column_indices_empty_header() {
+        let header = "";
+        let result = ColumnIndices::from_header(header);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_column_indices_max_index() {
+        let header = "chrom\tstart\tend\tgroup.a\tgroup.b\testimated.identity";
+        let cols = ColumnIndices::from_header(header).unwrap();
+        assert_eq!(cols.max_index(), 5);
+    }
+
+    #[test]
+    fn test_column_indices_max_index_reordered() {
+        let header = "estimated.identity\tchrom\tstart\tend\tgroup.a\tgroup.b\textra";
+        let cols = ColumnIndices::from_header(header).unwrap();
+        // group.b is at index 5, which is the max
+        assert_eq!(cols.max_index(), 5);
+    }
+
+    // === Region Display tests ===
+
+    #[test]
+    fn test_region_display() {
+        let region = Region {
+            chrom: "chr20".to_string(),
+            start: 1000000,
+            end: 2000000,
+        };
+        assert_eq!(format!("{}", region), "chr20:1000000-2000000");
+    }
+
+    #[test]
+    fn test_region_display_roundtrip() {
+        let original = Region::parse("chr10:500-1500", None).unwrap();
+        let display_str = format!("{}", original);
+        let reparsed = Region::parse(&display_str, None).unwrap();
+        assert_eq!(reparsed.chrom, original.chrom);
+        assert_eq!(reparsed.start, original.start);
+        assert_eq!(reparsed.end, original.end);
     }
 }

@@ -1,0 +1,97 @@
+# ============================================
+# HPRCv2-IBD .gitignore
+# Remote repo contains ONLY package code (src/)
+# ============================================
+
+# ------------------------------------------
+# RUST BUILD ARTIFACTS
+# ------------------------------------------
+**/target/
+**/*.rs.bk
+# Keep root Cargo.lock for reproducible builds, ignore any in subdirectories
+src/*/Cargo.lock
+
+# ------------------------------------------
+# PYTHON
+# ------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+pip-log.txt
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+
+# ------------------------------------------
+# IDE / EDITOR
+# ------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.sublime-*
+
+# ------------------------------------------
+# OS
+# ------------------------------------------
+.DS_Store
+Thumbs.db
+
+# ------------------------------------------
+# LOCAL CONFIGURATION
+# ------------------------------------------
+.claude/
+.env
+.env.*
+*.local
+
+# ------------------------------------------
+# TEMPORARY FILES
+# ------------------------------------------
+tmp/
+temp/
+*.tmp
+*.bak
+
+# ------------------------------------------
+# LATEX ARTIFACTS
+# ------------------------------------------
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.synctex.gz
+*.bbl
+*.blg
+
+# ------------------------------------------
+# LOCAL ONLY (not part of package)
+# ------------------------------------------
+experiments/
+reports/
+archive/
+scripts/analysis/
+CONTRIBUTING.md
+STRUCTURE.md
+
+# ------------------------------------------
+# DATA: Only include sample lists
+# ------------------------------------------
+data/*
+!data/samples/
+!data/README.md
+
+# ------------------------------------------
+# DOCS: Only include tutorials
+# ------------------------------------------
+docs/*
+!docs/tutorials/
+!docs/README.md

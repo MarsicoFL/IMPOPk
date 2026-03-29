@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = [
+    "src/common",
+    "src/ibd-cli",
+    "src/ibs-cli",
+    "src/jacquard-cli",
+    "src/ancestry-cli",
+]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+authors = ["Franco Marsico"]
+license = "MIT"
+repository = "https://github.com/your-org/HPRCv2-IBD"
+
+[workspace.dependencies]
+anyhow = "1.0"
+clap = { version = "4.4", features = ["derive"] }
+thiserror = "1.0"
+rayon = "1.8"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+opt-level = 3

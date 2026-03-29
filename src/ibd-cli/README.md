@@ -5,7 +5,7 @@ Identity-By-Descent (IBD) segment detection using Hidden Markov Model (HMM) for 
 ## Overview
 
 This tool detects IBD segments between haplotypes using a 2-state HMM:
-- **State 0 (non-IBD)**: Random similarity (~50% identity)
+- **State 0 (non-IBD)**: Background similarity (~99.9% identity)
 - **State 1 (IBD)**: Shared ancestry (~99.9% identity)
 
 ## Algorithm
@@ -63,7 +63,7 @@ cargo build --release
 - `hmm.rs`: HMM parameters, Viterbi algorithm, segment extraction
 - `stats.rs`: Gaussian distributions, k-means clustering
 - `segment.rs`: Segment detection and merging
-- `lib.rs`: Core types (Region, Window, WindowIterator)
+- `lib.rs`: Pipeline overview, module re-exports (hmm, stats, segment, concordance, hapibd)
 
 ## Dependencies
 

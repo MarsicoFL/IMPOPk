@@ -24,8 +24,21 @@
 
 pub mod hmm;
 pub mod ancestry;
+pub mod demography;
+pub mod egrm;
+pub mod params;
 mod validation;
+pub mod rfmix;
+pub mod concordance;
 
 pub use hmm::*;
 pub use ancestry::*;
+pub use demography::{
+    DemographyParams, DemographicResult, PulseEstimate, SampleDemographicResult,
+    extract_tract_lengths, infer_demography, infer_all_demography,
+    infer_per_sample_demography, ks_test_exponential,
+    format_demography_report, write_demography_tsv,
+};
+pub use egrm::{parse_similarity_for_egrm, write_gcta_grm, write_diploid_gcta_grm};
+pub use params::LearnedParams;
 pub use validation::*;
