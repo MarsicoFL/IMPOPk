@@ -36,7 +36,7 @@ A suite of Rust CLI tools that compute haplotype identity directly from pangenom
 
 ```bash
 git clone https://github.com/MarsicoFL/IMPOPk.git
-cd impopk
+cd IMPOPk
 cargo build --release
 ```
 
@@ -206,7 +206,7 @@ cargo clippy --workspace -- -D warnings
     title   = {impopk: Identity-by-Descent Detection and Local Ancestry
                Inference from Pangenome Alignments},
     author  = {Marsico, Franco},
-    journal = {TBD},
+    journal = {bioRxiv (preprint)},
     year    = {2026}
 }
 ```

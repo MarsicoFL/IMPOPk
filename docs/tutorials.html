@@ -224,13 +224,13 @@ svg text { font-family: -apple-system, sans-serif; }
 <h2>Prerequisites</h2>
 <ul>
   <li>Linux or macOS (tested Ubuntu 22.04+, macOS 13+)</li>
-  <li>~2 GB free disk space</li>
+  <li>~10 GB free disk space</li>
   <li>Internet connection</li>
 </ul>
 
 <h2>Step 1: Clone the repository</h2>
 <pre><code>git clone https://github.com/MarsicoFL/IMPOPk.git
-cd impopk</code></pre>
+cd IMPOPk</code></pre>
 
 <h2>Step 2: Install Rust (if needed)</h2>
 <pre><code>curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -267,7 +267,7 @@ cd impg && cargo build --release
 sudo cp target/release/impg /usr/local/bin/</code></pre>
 </div>
 <div class="tab-content" id="agc-tab">
-<pre><code>git clone https://github.com/refresh-bio/agc.git
+<pre><code>git clone --recursive https://github.com/refresh-bio/agc.git
 cd agc && make -j$(nproc)
 sudo cp bin/agc /usr/local/bin/</code></pre>
 </div>
@@ -322,7 +322,9 @@ make clippy  # Linter check</code></pre>
 ├── samples/           # Bundled: AFR(140), EUR(62), EAS(102), CSA(72), AMR(88)
 ├── genetic_maps/      # Bundled (4 chr) + downloaded (22 chr)
 ├── assemblies/        # HPRC_r2_assemblies_0.6.1.agc
-└── alignments/        # hprc465vschm13.aln.paf.gz + .gzi + .impg</code></pre>
+└── alignments/        # hprc465vschm13.aln.paf.gz + .impg
+├── reference/         # CHM13 v2.0 (downloaded)
+├── vcf/               # Validation VCFs (downloaded)</code></pre>
 
 <h2>Population Samples</h2>
 <div class="chart-container">

@@ -80,3 +80,4 @@ test/ibd_live_*.bed
 test/ibs_paf_chr12_*.tsv
 test/params_*.json
 METHODOLOGY.md
+*.pdf

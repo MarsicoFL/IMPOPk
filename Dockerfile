@@ -7,13 +7,13 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Build AGC (C++ project, uses make)
-# TODO (2026-03-28): pin to a specific release tag or commit hash for reproducibility
+# Pinned to specific release tags for reproducibility
 RUN git clone --depth 1 --branch v3.2 https://github.com/refresh-bio/agc.git /opt/agc && \
     cd /opt/agc && \
     make -j"$(nproc)"
 
 # Build impg (Rust project)
-# TODO (2026-03-28): pin to a specific release tag or commit hash for reproducibility
+# Pinned to specific release tags for reproducibility
 RUN git clone --depth 1 --branch v0.2.3 https://github.com/pangenome/impg.git /opt/impg && \
     cd /opt/impg && \
     cargo build --release
