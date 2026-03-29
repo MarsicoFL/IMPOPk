@@ -20,7 +20,6 @@ ibs \
     --region chr1:1-10000000 \
     --size 5000 \
     -c 0.999 \
-    -m cosine \
     --output ibs_results.tsv
 ```
 

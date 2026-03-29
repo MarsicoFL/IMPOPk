@@ -457,15 +457,6 @@ ibs-from-paf \
     -r CHM13 --bed autosomes.bed --size 50000 \
     --output ibs_genome.tsv</code></pre>
 
-<div class="chart-container">
-  <h4>Performance Benchmarks</h4>
-  <table>
-    <tr><th>Scope</th><th>Window</th><th>Time</th><th>RAM</th></tr>
-    <tr><td>1 Mb region</td><td>10 kb</td><td>1-5 sec</td><td>&lt;50 MB</td></tr>
-    <tr><td>Full chr12</td><td>50 kb</td><td>10-30 sec</td><td>&lt;100 MB</td></tr>
-    <tr><td>22 autosomes</td><td>50 kb</td><td>~195 sec</td><td>~101 MB</td></tr>
-  </table>
-</div>
 </div>
 
 <!-- ============================================== -->
@@ -580,48 +571,32 @@ chr12  5210001  8740000  HG00097#1...  HG00099#1...  353        0.999420       0
 </div>
 
 <h2>Key Parameters</h2>
+<p>For <code>ibd-validate</code> (recommended for pre-computed IBS files):</p>
 <table>
   <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
-  <tr><td><code>--identity-floor</code></td><td>0.9</td><td>Filter alignment gaps</td></tr>
-  <tr><td><code>--baum-welch-iters</code></td><td>20</td><td>EM training iterations</td></tr>
-  <tr><td><code>--min-len-bp</code></td><td>2000000</td><td>Minimum segment length (2 Mb)</td></tr>
-  <tr><td><code>--min-lod</code></td><td>3.0</td><td>Minimum LOD score</td></tr>
-  <tr><td><code>--population</code></td><td>Generic</td><td>Prior parameters: AFR, EUR, EAS, CSA, AMR</td></tr>
-  <tr><td><code>--bridge-gaps</code></td><td>0</td><td>Bridge short non-IBD gaps (2-3 recommended)</td></tr>
+  <tr><td><code>--identity-floor</code></td><td>0.0</td><td>Filter alignment gaps (recommended: 0.9)</td></tr>
+  <tr><td><code>--baum-welch-iters</code></td><td>10</td><td>EM training iterations (20 for production)</td></tr>
+  <tr><td><code>--min-len-bp</code></td><td>5000</td><td>Minimum segment length (2000000 for production)</td></tr>
+  <tr><td><code>--min-windows</code></td><td>3</td><td>Minimum windows per segment</td></tr>
+  <tr><td><code>--population</code></td><td>Generic</td><td>Prior parameters: AFR, EUR, EAS, CSA, AMR, InterPop, Generic</td></tr>
+  <tr><td><code>--posterior-threshold</code></td><td>0.0</td><td>Min mean posterior for segment</td></tr>
 </table>
+<div class="info-box">
+  <div class="label">ibd vs ibd-validate</div>
+  <p><code>ibd-validate</code> reads pre-computed IBS files (<code>-i</code>). <code>ibd</code> can also compute IBS live from PAF/AGC and supports additional features: <code>--min-lod</code>, <code>--bridge-gaps</code>, <code>--multi-scale</code>, <code>--output-bed</code>. Use <code>ibd</code> for the full feature set, <code>ibd-validate</code> for simple workflows.</p>
+</div>
 
 <h2>Population Identity Priors</h2>
-<div class="chart-container">
-  <h4>Expected Identity by Population (non-IBD / IBD)</h4>
-  <svg viewBox="0 0 500 180" style="width:100%;max-width:500px">
-    <!-- Y axis labels -->
-    <text x="55" y="42" fill="#8b949e" font-size="10" text-anchor="end">AFR</text>
-    <text x="55" y="72" fill="#8b949e" font-size="10" text-anchor="end">AMR</text>
-    <text x="55" y="102" fill="#8b949e" font-size="10" text-anchor="end">EAS</text>
-    <text x="55" y="132" fill="#8b949e" font-size="10" text-anchor="end">EUR</text>
-    <!-- Scale: 0.994 to 1.000, mapped to x=65..485 -->
-    <!-- Non-IBD bars -->
-    <rect x="65" y="30" width="210" height="16" rx="3" fill="#58a6ff" fill-opacity="0.6"/>
-    <text x="280" y="43" fill="#c9d1d9" font-size="9">0.9960</text>
-    <rect x="65" y="60" width="250" height="16" rx="3" fill="#58a6ff" fill-opacity="0.6"/>
-    <text x="320" y="73" fill="#c9d1d9" font-size="9">0.9965</text>
-    <rect x="65" y="90" width="280" height="16" rx="3" fill="#58a6ff" fill-opacity="0.6"/>
-    <text x="350" y="103" fill="#c9d1d9" font-size="9">0.9970</text>
-    <rect x="65" y="120" width="325" height="16" rx="3" fill="#58a6ff" fill-opacity="0.6"/>
-    <text x="395" y="133" fill="#c9d1d9" font-size="9">0.9975</text>
-    <!-- IBD bars (right end) -->
-    <rect x="400" y="30" width="70" height="16" rx="3" fill="#3fb950" fill-opacity="0.7"/>
-    <text x="475" y="43" fill="#c9d1d9" font-size="9">0.999</text>
-    <rect x="405" y="60" width="70" height="16" rx="3" fill="#3fb950" fill-opacity="0.7"/>
-    <rect x="408" y="90" width="70" height="16" rx="3" fill="#3fb950" fill-opacity="0.7"/>
-    <rect x="415" y="120" width="70" height="16" rx="3" fill="#3fb950" fill-opacity="0.7"/>
-    <!-- Legend -->
-    <rect x="65" y="155" width="10" height="10" rx="2" fill="#58a6ff" fill-opacity="0.6"/>
-    <text x="80" y="164" fill="#8b949e" font-size="9">Non-IBD</text>
-    <rect x="160" y="155" width="10" height="10" rx="2" fill="#3fb950" fill-opacity="0.7"/>
-    <text x="175" y="164" fill="#8b949e" font-size="9">IBD</text>
-  </svg>
-</div>
+<p>The HMM uses population-specific emission priors based on expected nucleotide diversity:</p>
+<table>
+  <tr><th>Population</th><th>Non-IBD identity</th><th>IBD identity</th><th>Gap</th></tr>
+  <tr><td>AFR</td><td>0.99875</td><td>0.9997</td><td>0.00095</td></tr>
+  <tr><td>AMR</td><td>0.99900</td><td>0.9997</td><td>0.00070</td></tr>
+  <tr><td>EAS</td><td>0.99920</td><td>0.9997</td><td>0.00050</td></tr>
+  <tr><td>CSA</td><td>0.99905</td><td>0.9997</td><td>0.00065</td></tr>
+  <tr><td>EUR</td><td>0.99915</td><td>0.9997</td><td>0.00055</td></tr>
+</table>
+<p>Higher diversity (AFR) gives a larger identity gap, making IBD easier to detect. Use <code>--population</code> to select the appropriate prior.</p>
 
 <h2>Parameter Presets</h2>
 <div class="tabs">

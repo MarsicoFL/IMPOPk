@@ -20,7 +20,6 @@ install: ## Install binaries to ~/.cargo/bin
 
 clean: ## Clean build artifacts (Rust + LaTeX)
 	cargo clean
-	[ -d paper ] && cd paper && rm -f *.aux *.log *.out *.toc *.bbl *.blg *.fls *.synctex.gz *.fdb_latexmk 2>/dev/null || true
 
 download-data: ## Download all required external data
 	bash scripts/download_all.sh

@@ -12,3 +12,5 @@ tutorials/
 *.pdf
 *.tmp
 *.bak
+legacy/
+test/
