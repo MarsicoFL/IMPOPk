@@ -1,3 +1,5 @@
+> **ARCHIVED**: This directory contains a frozen snapshot of impopk v0.2.0 (January 2026). For the current version, see the [root directory](../README.md).
+
 # impopₖ
 
 Identity-by-Descent (IBD) detection from pangenome assemblies using haplotype-level identity analysis.
