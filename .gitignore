@@ -66,3 +66,16 @@ test/egrm_*.grm.*
 
 # Tutorial output files
 my_first_*.tsv
+
+# Agent-generated test outputs (not part of the package)
+test/ancestry_*.tsv
+test/ancestry_*.bed
+test/demographics_*.tsv
+test/ibd_bridged.tsv
+test/ibd_composite.tsv
+test/ibd_distance.tsv
+test/ibd_genmap.tsv
+test/ibd_live_*.tsv
+test/ibd_live_*.bed
+test/ibs_paf_chr12_*.tsv
+test/params_*.json

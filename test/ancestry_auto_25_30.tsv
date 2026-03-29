@@ -1,2 +1,0 @@
-chrom	start	end	sample	ancestry	n_windows	mean_similarity	mean_posterior	discriminability	lod_score
-chr12	25000000	30000000	HG00733#1	EUR	501	0.999620	0.998856	0.001980	0.0728

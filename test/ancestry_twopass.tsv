@@ -1,3 +1,0 @@
-chrom	start	end	sample	ancestry	n_windows	mean_similarity	mean_posterior	discriminability	lod_score
-chr12	15000000	20000000	HG00733#2	AFR	501	0.999136	0.880814	0.001265	0.2135
-chr12	15000000	18019999	HG00733#1	AFR	302	0.999478	0.967772	0.000835	0.9272
