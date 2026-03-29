@@ -47,3 +47,5 @@ test/ibs_paf_5Mb_ALL.tsv
 test/ibs_impg_1Mb.tsv
 test/ibs_impg_30Mb_EUR.tsv
 test/ibs_impg_5Mb_ALL.tsv
+paper/
+QA_REPORT.md
