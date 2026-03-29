@@ -737,6 +737,7 @@ ibs-from-paf \
   </svg>
 </div>
 
+<p>The output TSV contains ancestry segments with posterior probabilities, discriminability scores, and LOD scores. The posteriors file provides per-window probability distributions across all populations. Use <code>--auto-configure</code> for best results without manual parameter tuning.</p>
 </div>
 
 <!-- ============================================== -->
@@ -939,6 +940,7 @@ ancestry --similarity-file sim_ibs.tsv --populations pops.tsv \
 # Compare with ground truth
 # concordance = fraction of windows where predicted == true ancestry</code></pre>
 
+<p>Compare your predicted ancestry calls against the ground-truth tracts from msprime to compute concordance. This simulation framework lets you evaluate parameter sensitivity and quantify the accuracy of impopk on data with known ancestry.</p>
 </div>
 
 <!-- ============================================== -->
@@ -991,12 +993,9 @@ ancestry --similarity-file sim_chr1.tsv \
     --populations pop.tsv --query-samples q.txt \
     --load-params params_chr12.json -o ancestry_chr1.tsv</code></pre>
 
-<div class="chart-container">
-  <h4>Cross-Chr Transfer Impact (chr12 &rarr; chr1)</h4>
-  <div class="bar-chart">
-    <div class="bar-row"><span class="bar-label">chr1 (local params)</span><div class="bar-track"><div class="bar-fill" style="width:71%;background:var(--fg2)">71.3%</div></div></div>
-    <div class="bar-row"><span class="bar-label">chr1 (chr12 params)</span><div class="bar-track"><div class="bar-fill" style="width:76.4%;background:var(--accent2)">76.4%</div><span class="bar-value" style="color:var(--accent2)">+5.14pp</span></div></div>
-  </div>
+<div class="info-box">
+  <div class="label">Why Transfer?</div>
+  <p>Chromosomes with segmental duplications can bias parameter estimation (inflated temperature, inflated D_min). Learning on a clean chromosome and applying to noisier ones avoids this bias.</p>
 </div>
 
 <h2>4. Jacquard Delta Coefficients</h2>
