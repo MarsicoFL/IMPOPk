@@ -36,7 +36,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # External tool binaries
-COPY --from=deps /opt/agc/agc /usr/local/bin/
+COPY --from=deps /opt/agc/bin/agc /usr/local/bin/
 COPY --from=deps /opt/impg/target/release/impg /usr/local/bin/
 
 # impopk binaries

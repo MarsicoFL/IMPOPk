@@ -8,11 +8,11 @@ Under the coalescent, pairwise sequence identity between two haplotypes directly
 
 $$I = 1 - 2\mu t$$
 
-where $\mu$ is the per-base mutation rate and $t$ is the TMRCA in generations. This relationship is exact to first order under the infinite-sites model and makes pairwise identity a sufficient statistic for TMRCA at each genomic locus.
+where $\mu$ is the per-base mutation rate and $t$ is the TMRCA in generations. This relationship is accurate to first order under the infinite-sites model (the exact form is $I = e^{-2\mu t}$) and makes pairwise identity a sufficient statistic for TMRCA at each genomic locus.
 
 Four independent research programs have converged on the conclusion that TMRCA-based relatedness is superior to genotype-based measures: the expected GRM (eGRM) from ancestral recombination graphs outperforms the canonical GRM in 97.5% of simulated association settings (Fan et al. 2022); the Branch GRM from genealogical trees provides a theoretically optimal measure (Lehmann et al. 2026); GeSi classifies TMRCA-based measures as "full" versus the "shallow" signal captured by standard GRM or KING (GeSi 2025); and Super Admixture connects admixture proportions directly to the coancestry matrix via per-population identity means (Chen et al. 2025).
 
-Haplotype-resolved assemblies from the Human Pangenome Reference Consortium (HPRC) provide direct access to this signal. Pairwise identity from assemblies captures all variation simultaneously---SNPs, indels, and structural variants---without ascertainment bias, reference bias, or phasing error. The per-window identity matrix across $n$ haplotypes is, in effect, a local expected GRM estimated directly from assemblies, without requiring VCF generation, statistical phasing, or ARG inference.
+Haplotype-resolved assemblies from the Human Pangenome Reference Consortium (HPRC) provide direct access to this signal. Pairwise identity from assemblies captures all variation simultaneously---SNPs, indels, and structural variants---without ascertainment bias or phasing error, and with reduced reference bias. The per-window identity matrix across $n$ haplotypes is, in effect, a local expected GRM estimated directly from assemblies, without requiring VCF generation, statistical phasing, or ARG inference.
 
 ## 2. IBS Computation: From PAF Alignments to Pairwise Identity Windows
 

@@ -314,7 +314,7 @@ sudo cp target/release/impg /usr/local/bin/</code></pre>
 <div class="tab-content" id="agc-tab">
 <pre><code>git clone https://github.com/refresh-bio/agc.git
 cd agc && make -j$(nproc)
-sudo cp agc /usr/local/bin/</code></pre>
+sudo cp bin/agc /usr/local/bin/</code></pre>
 </div>
 <div class="tab-content" id="docker-tab">
 <pre><code>make docker        # Builds image with impopk + impg + AGC
@@ -438,9 +438,9 @@ chr12  1010000  1019999  HG00097#1  HG00099#1  0.998900            10000        
 <p>Typical pairwise identity values at 10 kb windows for HPRC pangenome data:</p>
 <table>
   <tr><th>Population pair</th><th>Mean identity</th><th>Std dev</th></tr>
-  <tr><td>Within-population (e.g., EUR-EUR)</td><td>~0.9970</td><td>~0.0005</td></tr>
-  <tr><td>Cross-population (e.g., EUR-AFR)</td><td>~0.9965</td><td>~0.0008</td></tr>
-  <tr><td>Same individual (hap1 vs hap2)</td><td>~0.9975</td><td>~0.0004</td></tr>
+  <tr><td>Within-population (e.g., EUR-EUR)</td><td>~0.9992</td><td>~0.0012</td></tr>
+  <tr><td>Cross-population (e.g., EUR-AFR)</td><td>~0.9988</td><td>~0.0015</td></tr>
+  <tr><td>Same individual (hap1 vs hap2)</td><td>~0.9993</td><td>~0.0010</td></tr>
 </table>
 <div class="info-box">
   <div class="label">Note</div>
@@ -469,7 +469,7 @@ tpa-spatial-index --tpa alignments.tpa --output alignments.sidx</code></pre>
 
 <div class="info-box success">
   <div class="label">Drop-in replacement</div>
-  <p>Output of <code>ibs-from-tpa</code> is numerically identical to <code>ibs-from-paf</code> (validated: mean diff = 0.00006, max diff = 0.008). It can be used directly with <code>ancestry</code> and <code>ibd</code> without any changes.</p>
+  <p>Output of <code>ibs-from-tpa</code> is numerically equivalent to <code>ibs-from-paf</code> (validated: mean diff = 0.00006, max diff = 0.008, due to CIGAR reconstruction from tracepoints). It can be used directly with <code>ancestry</code> and <code>ibd</code> without any changes.</p>
 </div>
 
 <div class="info-box">
@@ -526,7 +526,7 @@ ibs-from-paf \
     <!-- State circles -->
     <circle cx="130" cy="80" r="45" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
     <text x="130" y="75" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="700">Non-IBD</text>
-    <text x="130" y="93" text-anchor="middle" fill="#8b949e" font-size="9">~0.997</text>
+    <text x="130" y="93" text-anchor="middle" fill="#8b949e" font-size="9">~0.999</text>
     <circle cx="370" cy="80" r="45" fill="none" stroke="#3fb950" stroke-width="2.5"/>
     <text x="370" y="75" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="700">IBD</text>
     <text x="370" y="93" text-anchor="middle" fill="#8b949e" font-size="9">~0.9995</text>
@@ -561,11 +561,11 @@ ibs-from-paf \
     <path d="M440,168 Q470,155 490,110 Q500,50 510,30 Q520,50 530,110 Q550,155 570,168" fill="none" stroke="#3fb950" stroke-width="2.5"/>
     <path d="M440,168 Q470,155 490,110 Q500,50 510,30 Q520,50 530,110 Q550,155 570,168 Z" fill="#3fb950" fill-opacity="0.1"/>
     <rect x="100" y="22" width="12" height="12" rx="2" fill="#58a6ff" fill-opacity="0.5"/>
-    <text x="118" y="32" fill="#c9d1d9" font-size="11">Non-IBD pairs (~0.997)</text>
+    <text x="118" y="32" fill="#c9d1d9" font-size="11">Non-IBD pairs (~0.999)</text>
     <rect x="300" y="22" width="12" height="12" rx="2" fill="#3fb950" fill-opacity="0.5"/>
     <text x="318" y="32" fill="#c9d1d9" font-size="11">IBD pairs (~0.9995)</text>
     <line x1="360" y1="155" x2="460" y2="155" stroke="#f0883e" stroke-width="1.5" stroke-dasharray="4,3"/>
-    <text x="410" y="150" fill="#f0883e" font-size="9" text-anchor="middle">identity gap ~0.002</text>
+    <text x="410" y="150" fill="#f0883e" font-size="9" text-anchor="middle">identity gap ~0.0007</text>
   </svg>
 </div>
 <p>The identity gap (~0.002) between IBD and non-IBD pairs is the signal the HMM uses. Baum-Welch estimates these emission distributions from the data.</p>
@@ -707,12 +707,22 @@ chr12  5210001  8740000  HG00097#1...  HG00099#1...  353        0.999420       0
 <h2>Input Preparation</h2>
 
 <h3>Populations file (TSV)</h3>
-<pre><code># Generate from sample lists
+<p>Two columns, no header: <code>POPULATION_NAME&lt;tab&gt;HAPLOTYPE_ID</code>. One line per haplotype (not per individual).</p>
+<pre><code># Example: populations.tsv
+# EUR	HG00097#1
+# EUR	HG00097#2
+# AFR	HG01884#1
+# AFR	HG01884#2
+
+# Generate from sample lists
 for pop in AFR EUR AMR; do
     while read -r hap; do
         printf '%s\t%s\n' "$pop" "$hap"
-    done < data/samples/${pop}.txt
-done > populations.tsv</code></pre>
+    done &lt; "data/samples/${pop}.txt"
+done &gt; populations.tsv</code></pre>
+
+<h3>Query samples file</h3>
+<p>One haplotype ID per line (e.g., <code>HG00639#1</code>). These are the samples to classify. They should NOT overlap with reference haplotypes in the populations file.</p>
 
 <h3>Compute similarities</h3>
 <pre><code># Create subset with query + reference haplotypes

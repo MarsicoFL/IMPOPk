@@ -42,7 +42,7 @@ cargo build --release
 
 Binaries: `target/release/{ibs,ibs-from-paf,ibs-from-tpa,tpa-spatial-index,tpa-validate,ibd,ibd-validate,ancestry,jacquard}`
 
-See [INSTALL.md](INSTALL.md) for detailed instructions including optional dependencies (impg, AGC).
+
 
 ## Quick Start
 
@@ -141,7 +141,7 @@ bash test/run_mini_tests.sh
 
 | Benchmark | Metric | impopₖ | Gold standard |
 |-----------|--------|--------|---------------|
-| Simulated ancestry (3-way) | Concordance | **97.95%** | RFMix: 95.9% |
+| Simulated ancestry (2-way) | Concordance | **97.95%** | RFMix: 95.9% |
 | HPRC real ancestry (3-way) | Concordance | **76.45%** | vs RFMix |
 | IBD detection (chr10/11/12) | Top-10% ranking | **100%** (11/11) | vs hap-ibd |
 | Platinum pedigree (4-state) | Accuracy | **99.49%** | Mendelian inheritance |
@@ -200,38 +200,9 @@ Population sample lists in [`data/samples/`](data/samples/):
 
 ## Tutorials
 
-Step-by-step tutorials covering all tools and analysis modes. All tutorials use real HPRC data and require running the download scripts first.
+Interactive HTML tutorial covering all tools and analysis modes: **[docs/tutorials.html](docs/tutorials.html)**
 
-| Tutorial | Topic |
-|----------|-------|
-| [01_installation.md](tutorials/01_installation.md) | Build impopₖ and install optional dependencies |
-| [02_data_preparation.md](tutorials/02_data_preparation.md) | Download data, verify checksums, explore structure |
-| [03_ibs_computation.md](tutorials/03_ibs_computation.md) | Compute pairwise identity from PAF with ibs-from-paf |
-| [04_ibd_detection.md](tutorials/04_ibd_detection.md) | Detect IBD segments with the 2-state HMM |
-| [05_ancestry_inference.md](tutorials/05_ancestry_inference.md) | 3-way local ancestry inference with auto-configure |
-| [06_platinum_pedigree.md](tutorials/06_platinum_pedigree.md) | Founder painting in CEPH 1463 (99.49% accuracy) |
-| [07_simulation.md](tutorials/07_simulation.md) | Simulation framework with msprime + pangenome_sim |
-| [08_advanced_features.md](tutorials/08_advanced_features.md) | eGRM, demographic inference, cross-chromosome, Jacquard |
-
-## Paper
-
-The `paper/` directory contains the full manuscript in LaTeX:
-
-- `HPRCv2_IBD_paper.tex` -- main document
-- Individual section files: `abstract.tex`, `introduction.tex`, `methods_*.tex`, `results.tex`, `discussion.tex`
-- `supplementary.tex` -- detailed supplementary material
-- `references.bib` -- bibliography
-- `HPRCv2_IBD_paper.pdf` -- pre-compiled PDF
-
-To compile from source:
-
-```bash
-cd paper
-pdflatex HPRCv2_IBD_paper
-bibtex HPRCv2_IBD_paper
-pdflatex HPRCv2_IBD_paper
-pdflatex HPRCv2_IBD_paper
-```
+Topics: Installation, Data Preparation, IBS Computation, IBD Detection, Ancestry Inference, Platinum Pedigree Validation, Simulation Framework, Advanced Features (eGRM, demographics, cross-chromosome, Jacquard).
 
 ## Methodology
 
