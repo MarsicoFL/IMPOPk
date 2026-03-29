@@ -3,6 +3,7 @@
 //! Maps (chromosome, genomic_bin) → Vec<record_id> for fast lookups.
 //! Built by streaming TPA metadata (skips tracepoints for speed).
 
+use bincode::Options;
 use crate::paf::extract_target_chrom;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -108,8 +109,15 @@ impl SpatialIndex {
             anyhow::bail!("Spatial index not found: {}", path);
         }
         let file = File::open(path)?;
+        let file_len = file.metadata()?.len();
+        if file_len < 8 {
+            anyhow::bail!("Spatial index file too small ({} bytes): {}", file_len, path);
+        }
         let reader = BufReader::new(file);
-        let index: SpatialIndex = bincode::deserialize_from(reader)?;
+        let index: SpatialIndex = bincode::options()
+            .with_limit(file_len)
+            .deserialize_from(reader)
+            .map_err(|e| anyhow::anyhow!("Failed to deserialize spatial index '{}': {}", path, e))?;
         Ok(index)
     }
 }

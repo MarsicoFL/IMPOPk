@@ -88,12 +88,12 @@ fn main() -> Result<()> {
     println!("Reference only: {}", ref_only);
     println!("Test only:      {}", test_only);
 
-    if !diffs.is_empty() {
-        diffs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let pass = if !diffs.is_empty() {
+        diffs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         let mean: f64 = diffs.iter().sum::<f64>() / diffs.len() as f64;
         let median = diffs[diffs.len() / 2];
         let max = diffs.last().copied().unwrap_or(0.0);
-        let p99 = diffs[(diffs.len() as f64 * 0.99) as usize];
+        let p99 = diffs[((diffs.len() as f64 * 0.99) as usize).min(diffs.len() - 1)];
 
         println!();
         println!("Identity difference (|ref - test|):");
@@ -103,8 +103,8 @@ fn main() -> Result<()> {
         println!("  Max:    {:.6}", max);
         println!();
 
-        let pass = mean < 0.001 && max < 0.01;
-        if pass {
+        let ok = mean < 0.001 && max < 0.01;
+        if ok {
             println!("VERDICT: PASS (mean < 0.001, max < 0.01)");
         } else {
             println!(
@@ -112,9 +112,17 @@ fn main() -> Result<()> {
                 mean, max
             );
         }
+        ok
     } else if matched == 0 {
         println!();
         println!("VERDICT: FAIL (no matching rows)");
+        false
+    } else {
+        true
+    };
+
+    if !pass {
+        std::process::exit(1);
     }
 
     Ok(())

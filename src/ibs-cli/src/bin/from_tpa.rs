@@ -191,7 +191,7 @@ fn main() -> Result<()> {
     let window_results: Vec<Vec<paf::PairwiseIdentity>> = windows
         .par_iter()
         .map(|&(window_start, window_end)| {
-            let w_start_0 = window_start - 1;
+            let w_start_0 = window_start.saturating_sub(1);
             let w_end_0 = window_end;
             paf::compute_window_pairwise(
                 &alignments,
