@@ -214,7 +214,7 @@ svg text { font-family: -apple-system, sans-serif; }
   <div class="bar-chart">
     <div class="bar-row">
       <span class="bar-label">Pedigree Painting</span>
-      <div class="bar-track"><div class="bar-fill" style="width:99.53%;background:var(--accent2)">99.53%</div></div>
+      <div class="bar-track"><div class="bar-fill" style="width:99.49%;background:var(--accent2)">99.49%</div></div>
     </div>
     <div class="bar-row">
       <span class="bar-label">Sim. Ancestry (impopk)</span>
@@ -886,20 +886,16 @@ ancestry \
 
 <h2>Results: 4-State Founder Painting</h2>
 <div class="chart-container">
-  <h4>Per-Offspring Concordance with Mendelian Ground Truth</h4>
+  <h4>4-State Founder Painting Concordance</h4>
   <div class="bar-chart">
-    <div class="bar-row"><span class="bar-label">NA12879</span><div class="bar-track"><div class="bar-fill" style="width:99.5%;background:var(--accent2)">99.5%</div></div></div>
-    <div class="bar-row"><span class="bar-label">NA12880</span><div class="bar-track"><div class="bar-fill" style="width:99.1%;background:var(--accent2)">99.1%</div></div></div>
-    <div class="bar-row"><span class="bar-label">NA12881</span><div class="bar-track"><div class="bar-fill" style="width:99.5%;background:var(--accent2)">99.5%</div></div></div>
-    <div class="bar-row"><span class="bar-label">NA12882</span><div class="bar-track"><div class="bar-fill" style="width:97.5%;background:var(--accent)">97.5%</div></div></div>
-    <div class="bar-row"><span class="bar-label">NA12883</span><div class="bar-track"><div class="bar-fill" style="width:99.0%;background:var(--accent2)">99.0%</div></div></div>
-    <div class="bar-row"><span class="bar-label" style="font-weight:700">Mean</span><div class="bar-track"><div class="bar-fill" style="width:99.53%;background:var(--accent2)">99.53%</div></div></div>
+    <div class="bar-row"><span class="bar-label">chr1 (248 Mb)</span><div class="bar-track"><div class="bar-fill" style="width:99.49%;background:var(--accent2)">99.49%</div></div></div>
+    <div class="bar-row"><span class="bar-label">chr20 (64 Mb)</span><div class="bar-track"><div class="bar-fill" style="width:98.25%;background:var(--accent)">98.25%</div></div></div>
   </div>
 </div>
 
 <div class="info-box success">
   <div class="label">Why This Matters</div>
-  <p>Real family, real data, unambiguous Mendelian ground truth. 99.53% concordance proves pangenome assembly identity carries sufficient signal for fine-grained ancestry.</p>
+  <p>Real family, real data, unambiguous Mendelian ground truth. 99.49% concordance proves pangenome assembly identity carries sufficient signal for fine-grained ancestry.</p>
 </div>
 
 <h2>Founder Painting Visualization</h2>
@@ -966,11 +962,17 @@ ts = msprime.sim_ancestry(
     random_seed=42
 )
 
-# Extract ground-truth tracts
-for tree in ts.trees():
-    for sample in ts.samples():
-        pop = ts.node(tree.root).population  # ancestral population at this tree
-        # ... write BED file with (chrom, start, end, population)</code></pre>
+# Extract ground-truth ancestry tracts using link_ancestors
+# Each sample's lineage is traced through the tree to the source population
+tables = ts.dump_tables()
+ancestors = tables.link_ancestors(
+    samples=ts.samples(),
+    ancestors=np.where(np.array([ts.node(n).population in [0, 1]  # AFR=0, EUR=1
+                                  for n in range(ts.num_nodes)]))[0]
+)
+# For each (sample, ancestor) pair, the ancestor's population gives local ancestry
+# Group by sample and merge adjacent intervals with same ancestry to get tracts
+# Output: BED file with (chrom, start, end, population) per haplotype</code></pre>
 
 <h3>Step 2: Stitch chimeric assemblies from real HPRC sequences</h3>
 <pre><code># For each simulated haplotype, replace tracts with real HPRC FASTAs
