@@ -625,6 +625,12 @@ chr12  5210001  8740000  HG00097#1...  HG00099#1...  353        0.999420       0
     --identity-floor 0.9 --min-len-bp 1000000 \
     --min-windows 100 --baum-welch-iters 20</code></pre>
 </div>
+
+<div class="info-box warn">
+  <div class="label">Common mistakes</div>
+  <p><b>0 segments found?</b> This is expected for small regions or unrelated samples. Try: (1) lower <code>--min-len-bp</code> (e.g., 500000); (2) use <code>--identity-floor 0.9</code> to filter alignment gaps; (3) ensure your region is large enough (IBD segments are typically &gt;1 Mb).</p>
+  <p><b>Using <code>ibd-validate</code> but want <code>--min-lod</code> or <code>--bridge-gaps</code>?</b> Those flags only exist on <code>ibd</code> (not <code>ibd-validate</code>). Use <code>ibd --similarity-file</code> instead.</p>
+</div>
 </div>
 
 <!-- ============================================== -->
@@ -715,6 +721,12 @@ ibs-from-paf \
 </div>
 
 <p>The output TSV contains ancestry segments with posterior probabilities, discriminability scores, and LOD scores. The posteriors file provides per-window probability distributions across all populations. Use <code>--auto-configure</code> for best results without manual parameter tuning.</p>
+
+<div class="info-box warn">
+  <div class="label">Common mistakes</div>
+  <p><b>Empty output (0 segments)?</b> Check: (1) populations.tsv must use <b>tabs</b>, not spaces, between columns; (2) query sample IDs must match exactly what appears in the IBS file (e.g., <code>HG00639#1</code>, not <code>HG00639</code>); (3) <code>Populations: []</code> in the log means the populations file was not parsed correctly.</p>
+  <p><b>All posteriors ambiguous?</b> Use <code>--auto-configure</code> or <code>--estimate-params</code>. The default temperature (0.03) is too high for most datasets.</p>
+</div>
 </div>
 
 <!-- ============================================== -->
