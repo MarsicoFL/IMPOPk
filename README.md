@@ -199,18 +199,6 @@ cargo test --workspace          # 7334 tests
 cargo clippy --workspace -- -D warnings
 ```
 
-## Citation
-
-```bibtex
-@article{marsico2026impopk,
-    title   = {impopk: Identity-by-Descent Detection and Local Ancestry
-               Inference from Pangenome Alignments},
-    author  = {Marsico, Franco},
-    journal = {bioRxiv (preprint)},
-    year    = {2026}
-}
-```
-
 ## License
 
 MIT License
