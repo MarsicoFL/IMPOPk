@@ -220,10 +220,11 @@ single <code>awk</code> pass that computes the IBS fraction per window.
 <h3>Interpret the output</h3>
 
 <pre><code>cat output/ibs_enrichment.tsv | head -5
-# chrom  start  end  n_pairs  n_ibs  frac_ibs
-# chr12  15000000  15009999  15  1  0.066667
-# chr12  15010000  15019999  15  3  0.200000
-# ...</code></pre>
+# chrom          start     end        n_pairs  n_ibs  frac_ibs
+# CHM13#0#chr12  15000000  15009999   15       1      0.066667
+# CHM13#0#chr12  15010000  15019999   15       3      0.200000
+# CHM13#0#chr12  15020000  15029999   15       3      0.200000
+# CHM13#0#chr12  15030000  15039999   15       3      0.200000</code></pre>
 
 <p>
 Sort by <code>frac_ibs</code> descending to see the windows where the

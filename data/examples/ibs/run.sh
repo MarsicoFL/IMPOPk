@@ -15,21 +15,24 @@ mkdir -p output
 
 THRESHOLD=0.9999
 
-awk -v T=$THRESHOLD '
-BEGIN { FS=OFS="\t" }
-NR==1 { next }
 {
-    key = $1 "\t" $2 "\t" $3
-    total[key]++
-    if ($6+0 >= T) hi[key]++
-}
-END {
-    print "chrom","start","end","n_pairs","n_ibs","frac_ibs"
-    for (k in total) {
-        h = (k in hi) ? hi[k] : 0
-        printf "%s\t%d\t%d\t%.6f\n", k, total[k], h, h/total[k]
+    # Header first, then sorted data rows (so `head` always shows the header)
+    echo -e "chrom\tstart\tend\tn_pairs\tn_ibs\tfrac_ibs"
+    awk -v T=$THRESHOLD '
+    BEGIN { FS=OFS="\t" }
+    NR==1 { next }
+    {
+        key = $1 "\t" $2 "\t" $3
+        total[key]++
+        if ($6+0 >= T) hi[key]++
     }
-}' input/ibs.tsv | sort -k1,1 -k2,2n > output/ibs_enrichment.tsv
+    END {
+        for (k in total) {
+            h = (k in hi) ? hi[k] : 0
+            printf "%s\t%d\t%d\t%.6f\n", k, total[k], h, h/total[k]
+        }
+    }' input/ibs.tsv | sort -k1,1 -k2,2n
+} > output/ibs_enrichment.tsv
 
 echo "Windows summarised:"
 wc -l output/ibs_enrichment.tsv
