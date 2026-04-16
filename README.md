@@ -217,6 +217,18 @@ discriminability  lod_score
 
 End-to-end tutorials covering each mode are in `docs/tutorials.html`.
 
+## Integration tests
+
+A short end-to-end sanity script exercises all five binaries on the
+bundled mini fixtures and runs `cargo test --workspace` + `cargo clippy`:
+
+```bash
+bash test/run_mini_tests.sh
+```
+
+Expect `21/21 passed`. Use this after any local modification to catch
+regressions.
+
 ## License
 
 MIT. See `LICENSE`.

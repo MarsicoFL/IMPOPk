@@ -147,6 +147,9 @@ RFMix as gold-standard comparisons.
 
 ### Platinum pedigree
 CEPH family 1463 pedigree data from the Platinum Genomes project, used
-for the 4-state founder painting validation (99.53% accuracy).
+to run the 4-state founder painting at full pedigree scale. A small
+synthetic analogue of this workflow ships at
+`data/examples/pedigree/` and can be exercised without downloading
+the real pedigree.
 
 Source: s3://platinum-pedigree-data/
