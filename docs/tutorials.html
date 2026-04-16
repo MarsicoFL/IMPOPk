@@ -397,12 +397,13 @@ reference haplotype to its population label.</li>
 <p><b>The answer.</b></p>
 
 <pre><code>head -5 output/ancestry.tsv
-# chrom  start     end        sample     ancestry  n_windows  mean_similarity  mean_posterior  discriminability  lod_score
-# chr12  15000000  15329999   HG00639#2  EUR       33         0.999906         0.999207        0.000667          2.1735
-# chr12  15000000  15329999   HG00639#1  EUR       33         0.999915         0.601676        0.000285          0.0530
-# ...</code></pre>
+# chrom  start     end        sample     ancestry  n_windows  mean_similarity  mean_posterior  ...
+# chr12  15000000  15329999   HG00639#?  EUR       33         0.99990x         0.999207        ...
+# chr12  15000000  15329999   HG00639#?  EUR       33         0.99990x         0.601676        ...</code></pre>
 
 <p>
+(The row order between the two haplotypes is non-deterministic under
+<code>--threads 4</code>; sort by sample if you want a stable ordering.)
 Both query haplotypes of HG00639 (a CEU individual) are painted EUR
 across the 330 kb slice — which is the right call for this
 non-admixed region. Notice the asymmetry in
@@ -480,6 +481,17 @@ is the canonical validation set; its inheritance vectors give
 per-segment ground truth.
 </p>
 
+<div class="note">
+<b>A printout you can safely ignore in this mode.</b> After any
+<code>ancestry</code> run the binary prints an "Admixture time
+estimates (T77)" block (ĝ ≈ N generations). That estimator assumes
+population-scale admixture and makes sense for the AFR/EUR/AMR
+scenario in §4c. In founder-painting mode each "population" is a
+single grandparent haplotype, so the generations number is
+meaningless here and should be disregarded. The segment calls in
+<code>output/painting.tsv</code> are unaffected.
+</div>
+
 <!-- -------- -->
 <h3 id="ch4e">4e. Kinship — how related are they overall?</h3>
 
@@ -543,13 +555,17 @@ coefficients to stdout:
 
 <div class="note">
 <b>What you should see.</b> A short header followed by nine Δ rows.
-The first line of stderr is a <code>win_size not divisible</code>
-warning from the tool's internal grid check — this is expected on the
-synthetic 5 Mb × 10 kb example (one extra boundary bp) and does not
-affect the coefficients. On this fully-correlated synthetic pair
-<code>Δ<sub>1</sub></code> dominates; on a real pair of diploid
-individuals the nine coefficients spread out according to the pair's
-identity-state decomposition.
+The first line of stderr is a
+<code>win_size not divisible</code> warning from the tool's grid
+check: on the synthetic 5 Mb example the IBS windows are
+half-open <code>[start, end)</code> of 10 000 bp, but jacquard infers
+its grid from <code>max_end − min_start + 1</code> and computes
+<code>win_size = 10 001</code>. The off-by-one is cosmetic, not a
+bug — the 500 windows are counted correctly and
+<code>Δ<sub>1</sub>–Δ<sub>9</sub></code> are valid. On this
+fully-correlated synthetic pair <code>Δ<sub>1</sub></code> dominates;
+on a real diploid pair the nine coefficients spread out according to
+the pair's identity-state decomposition.
 </div>
 
 <p>
@@ -660,6 +676,17 @@ and interpretation, not plumbing.
 <table>
 <tr><th>Symptom</th><th>Likely cause</th><th>What to do</th></tr>
 <tr>
+  <td><code>ancestry</code> exits cleanly but produces an empty output
+  file, with the log line <code>Loaded observations for 0 samples</code>.</td>
+  <td>A haplotype ID listed in <code>queries.txt</code> is not present
+  in the IBS TSV (typo, wrong <code>#haplotype</code> suffix, or the
+  subset list passed to <code>ibs</code> excluded it).</td>
+  <td>Grep the IBS TSV for each query ID before re-running:
+  <code>awk '$4==q || $5==q' q=HG00639#1 ibs_chr12.tsv | head</code>.
+  A match returns rows; no match means the query was filtered out at
+  the <code>ibs</code> stage.</td>
+</tr>
+<tr>
   <td><code>ibd</code> reports 0 segments.</td>
   <td>The panel has no true IBD, or all segments are shorter than
   <code>--min-len-bp</code>.</td>
@@ -728,6 +755,21 @@ and interpretation, not plumbing.
 <li>Kingman, J.F.C. (1982), <i>The coalescent</i>, <i>Stochastic Processes and their Applications</i> 13: 235–248 (no DOI).</li>
 <li><a href="https://doi.org/10.1534/genetics.112.148825">Thompson (2013), <i>Identity by descent: variation in meiosis, across genomes, and in populations</i>, <i>Genetics</i> 194: 301–326.</a></li>
 <li><a href="https://doi.org/10.1214/aoms/1177697196">Baum, Petrie, Soules & Weiss (1970) — A maximization technique occurring in the statistical analysis of probabilistic functions of Markov chains.</a></li>
+</ul>
+
+<h3>Read the implementation</h3>
+<p>
+If you want to see the HMMs in code, the core sources are short and
+heavily commented:
+</p>
+<ul>
+<li><code>src/ibd-cli/src/hmm.rs</code> — 2-state Gaussian HMM
+(Baum-Welch, forward-backward, Viterbi).</li>
+<li><code>src/ancestry-cli/src/hmm.rs</code> — N-state softmax HMM.</li>
+<li><code>src/ancestry-cli/src/demography.rs</code> — the post-hoc T77
+admixture-time estimator (printed at the end of every ancestry run).</li>
+<li><code>scripts/kinship_from_ibd.py</code> — ~80-line Python
+implementation of θ̂.</li>
 </ul>
 
 </body>
