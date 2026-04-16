@@ -4,289 +4,330 @@
 <meta charset="UTF-8">
 <title>impopₖ — Tutorial</title>
 <style>
-  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 900px; margin: 2em auto; padding: 0 1em; line-height: 1.6; color: #222; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 900px; margin: 2em auto; padding: 0 1em; line-height: 1.65; color: #222; }
   h1 { color: #111; border-bottom: 2px solid #333; padding-bottom: 0.3em; }
-  h2 { color: #111; margin-top: 2.2em; border-bottom: 1px solid #ccc; padding-bottom: 0.2em; }
-  h3 { color: #222; margin-top: 1.5em; }
+  h2 { color: #111; margin-top: 2.4em; border-bottom: 1px solid #ccc; padding-bottom: 0.25em; }
+  h3 { color: #333; margin-top: 1.6em; }
   code, pre { font-family: "SF Mono", Consolas, monospace; background: #f4f4f4; border-radius: 4px; }
   code { padding: 1px 5px; font-size: 0.9em; }
-  pre { padding: 0.8em 1em; overflow-x: auto; border-left: 3px solid #2563eb; font-size: 0.88em; white-space: pre-wrap; word-wrap: break-word; }
+  pre { padding: 0.9em 1.1em; overflow-x: auto; border-left: 3px solid #2563eb; font-size: 0.88em; white-space: pre-wrap; word-wrap: break-word; }
   table { border-collapse: collapse; margin: 1em 0; width: 100%; }
   th, td { padding: 6px 12px; border: 1px solid #ccc; text-align: left; vertical-align: top; }
   th { background: #f0f0f0; }
-  .note { background: #fff9db; border-left: 3px solid #f59e0b; padding: 0.7em 1em; margin: 1em 0; }
-  .box { background: #f0f7ff; border-left: 3px solid #2563eb; padding: 0.7em 1em; margin: 1em 0; }
-  .warn { background: #fee2e2; border-left: 3px solid #dc2626; padding: 0.7em 1em; margin: 1em 0; }
-  .eq { background: #fafafa; border: 1px solid #eee; padding: 0.6em 1em; margin: 1em 0; font-family: Georgia, serif; font-style: italic; text-align: center; }
+  .note { background: #fff9db; border-left: 3px solid #f59e0b; padding: 0.75em 1em; margin: 1em 0; }
+  .box { background: #f0f7ff; border-left: 3px solid #2563eb; padding: 0.75em 1em; margin: 1em 0; }
+  .warn { background: #fee2e2; border-left: 3px solid #dc2626; padding: 0.75em 1em; margin: 1em 0; }
+  .eq { background: #fafafa; border: 1px solid #eee; padding: 0.7em 1em; margin: 1em 0; font-family: Georgia, serif; text-align: center; font-style: italic; }
   a { color: #2563eb; }
   nav { background: #fafafa; padding: 1em 1.5em; border-radius: 6px; margin: 1em 0; }
   nav ol { margin: 0; padding-left: 1.4em; }
   nav a { text-decoration: none; }
   nav a:hover { text-decoration: underline; }
   .estimate { color: #666; font-size: 0.9em; font-style: italic; }
+  blockquote { border-left: 3px solid #999; padding-left: 1em; color: #555; margin: 1em 0; font-style: italic; }
 </style>
 </head>
 <body>
 
-<h1>impopₖ — Tutorial</h1>
+<h1>impopₖ — a hands-on tutorial</h1>
 
 <p>
-This tutorial walks through the complete impopₖ pipeline using the
-precomputed example datasets shipped in <code>data/examples/</code>. It
-covers the conceptual background, the four inference modes, and how to
-move from the bundled examples to your own pangenome data.
+This tutorial is a short story in six chapters. You will start from a
+clean clone of impopₖ, spend about an hour running the four bundled
+examples, and by the end you will understand what each part of the
+toolkit does, how the pieces fit together, and how to turn it on your
+own data.
 </p>
 
 <div class="box">
-<b>Estimated time:</b> ~1 hour total (15 min reading background, 30 min
-running the four examples and interpreting outputs, 15 min configuring a
-run on your own data). You need a laptop with Rust ≥ 1.70 installed; no
-GPU, no pangenome alignment, and no internet access are required for the
-first four sections.
+<b>What you need.</b> A laptop with Rust (<a href="https://rustup.rs/">rustup.rs</a>)
+and Python 3.8+. No GPU. No internet after the first clone. No pangenome
+alignment — the examples ship precomputed inputs.
+<br><br>
+<b>How long.</b> ~15 min reading, ~30 min running and poking at outputs,
+~15 min thinking about what it means. One hour total for the first
+pass.
 </div>
 
 <nav>
-<b>Contents</b>
+<b>The story</b>
 <ol>
-  <li><a href="#background">Background: what is impopₖ doing?</a> <span class="estimate">(10 min)</span></li>
-  <li><a href="#install">Installation and first build</a> <span class="estimate">(5 min)</span></li>
-  <li><a href="#pipeline">The shared data pipeline</a> <span class="estimate">(5 min)</span></li>
-  <li><a href="#mode-ibs">Mode 1 — IBS window enrichment</a> <span class="estimate">(8 min)</span></li>
-  <li><a href="#mode-ibd">Mode 2 — IBD detection (2-state HMM)</a> <span class="estimate">(10 min)</span></li>
-  <li><a href="#mode-ancestry">Mode 3 — Local ancestry (N-state HMM)</a> <span class="estimate">(10 min)</span></li>
-  <li><a href="#mode-pedigree">Mode 4 — Founder painting (pedigree)</a> <span class="estimate">(8 min)</span></li>
-  <li><a href="#mode-kinship">Mode 5 — Kinship (scalar θ and Jacquard Δ)</a> <span class="estimate">(5 min)</span></li>
-  <li><a href="#your-data">Running on your own pangenome</a> <span class="estimate">(10 min)</span></li>
-  <li><a href="#troubleshooting">Troubleshooting</a></li>
-  <li><a href="#references">References and further reading</a></li>
+  <li><a href="#ch1">Chapter 1 — Two cousins and a question</a> <span class="estimate">(10 min)</span></li>
+  <li><a href="#ch2">Chapter 2 — Get the tool running</a> <span class="estimate">(5 min)</span></li>
+  <li><a href="#ch3">Chapter 3 — The one input, the four decoders</a> <span class="estimate">(5 min)</span></li>
+  <li><a href="#ch4">Chapter 4 — Running the four modes</a> <span class="estimate">(35 min)</span>
+    <ol type="a">
+      <li><a href="#ch4a">IBS — where does the population share haplotypes?</a></li>
+      <li><a href="#ch4b">IBD — which specific segments are inherited?</a></li>
+      <li><a href="#ch4c">Ancestry — which population does each piece come from?</a></li>
+      <li><a href="#ch4d">Founder painting — same tool, individuals as states</a></li>
+      <li><a href="#ch4e">Kinship — how related are they overall?</a></li>
+    </ol>
+  </li>
+  <li><a href="#ch5">Chapter 5 — Your own data</a> <span class="estimate">(10 min)</span></li>
+  <li><a href="#ch6">Chapter 6 — When things go sideways</a></li>
+  <li><a href="#refs">References and further reading</a></li>
 </ol>
 </nav>
 
 <!-- =============================================================== -->
-<h2 id="background">1. Background: what is impopₖ doing?</h2>
+<h2 id="ch1">Chapter 1 — Two cousins and a question</h2>
 
-<h3>The biological signal</h3>
 <p>
-When two individuals share a recent common ancestor, the DNA they
-co-inherit remains nearly identical in sequence along the chromosomal
-interval that survived recombination. The more distant the ancestor,
-the more mutations and structural changes have accumulated, and the
-lower the per-base identity. This relationship is the foundation of both <b>identity-by-descent
-(IBD)</b> detection and <b>local ancestry inference (LAI)</b>:
-the length of a high-identity stretch reflects how recent the shared
-ancestor is, and its chromosomal position locates where that shared
-ancestry lives in the genome (Kingman, 1982, <i>Stochastic Processes
-and their Applications</i> 13: 235–248;
-<a href="https://doi.org/10.1534/genetics.112.148825">Thompson, 2013</a>).
+Picture two cousins. They share a grandmother. On some chromosomes,
+there is a stretch of DNA they both inherited from her, nearly letter
+for letter; on others they inherited entirely different stretches from
+their other three grandparents. If you take their genomes and slide a
+10 kilobase window along them, the shared-grandmother stretch will
+show up as a run of windows where the two sequences are almost
+identical. Outside that stretch, the identity drops back to the
+baseline similarity any two humans have.
 </p>
 
-<h3>Why existing tools require VCFs</h3>
 <p>
-Widely used tools —
-<a href="https://github.com/browning-lab/hap-ibd">hap-ibd</a>,
+That is the entire observable signal this toolkit uses.
+</p>
+
+<p>
+Two slightly different questions sit on top of it. If you ask "where
+are these two sequences identical, for whatever reason?" you are
+measuring <b>identity by state (IBS)</b>. If you ask "where are they
+identical <em>because</em> they inherited the same piece from a common
+ancestor?" you are talking about <b>identity by descent (IBD)</b>.
+IBD is a latent state you cannot observe directly; you infer it from
+IBS plus contiguity (real IBD segments are long, coincidental IBS
+matches are short and scattered). That latent-state inference is what
+the HMMs in this toolkit do.
+</p>
+
+<p>
+Existing software that answers this question — <a href="https://github.com/browning-lab/hap-ibd">hap-ibd</a>,
 <a href="https://github.com/slowkoni/rfmix">RFMix</a>,
-<a href="https://github.com/browning-lab/flare">FLARE</a> —
-operate on phased VCF genotypes. This introduces three costs: SNP
-ascertainment bias (only catalogued variants are used), loss of
-structural variation (SVs are dropped), and reliance on statistical
-phasing (whose errors concentrate at ancestry switch points).
+<a href="https://github.com/browning-lab/flare">FLARE</a> — reads phased
+VCF genotypes as input. That means someone (maybe you) had to: call
+variants from short-read data, curate them against ascertainment bias,
+statistically phase the genotypes into haplotypes, and hope the phasing
+errors did not land at exactly the points where ancestry switches.
+Every step leaks information.
 </p>
 
-<h3>The pangenome alternative</h3>
 <p>
-With
-<a href="https://humanpangenome.org/">HPRC v2</a> and similar projects,
-hundreds of haplotype-resolved assemblies exist. When they are aligned
-into a pangenome (e.g. with
-<a href="https://github.com/pangenome/pggb">PGGB</a>) or against a
-linear reference with
-<a href="https://github.com/pangenome/impg">impg</a>, the fraction of
-matching bases per genomic window is a direct, variant-free readout of
-shared ancestry. impopₖ reads that signal and runs Hidden Markov Models
-on top of it to decode IBD, local ancestry, founder haplotypes, and
-kinship — all within a single framework, changing only the number of
-hidden states.
+If you already have haplotype-resolved assemblies — and for a growing
+number of species, via the <a href="https://humanpangenome.org/">Human Pangenome Reference Consortium</a>
+and similar projects, you do — the identity signal is already visible
+in the alignments. You do not need to compress it into a SNP table
+first.
 </p>
 
 <div class="note">
-<b>What you gain.</b> No phasing step, no reference panel of variants,
-no ascertainment bias, and structural variation is implicitly carried
-in the alignment identity signal.
+<b>What you gain by skipping variants.</b> No ascertainment bias, no
+phasing step, structural variation is implicitly carried in the
+identity signal rather than discarded.
 <br><br>
-<b>What you lose.</b> Very fine per-base resolution at SNP density
-(impopₖ windows are typically 10 kb), and compute scales quadratically
-in the number of haplotypes.
+<b>What you trade off.</b> Coarser per-base resolution (windows are
+typically 10 kb), and compute scales quadratically in the number of
+haplotypes — so you work with panels of ~30–100 haplotypes, not
+thousands.
 </div>
 
 <!-- =============================================================== -->
-<h2 id="install">2. Installation and first build</h2>
+<h2 id="ch2">Chapter 2 — Get the tool running</h2>
 
-<h3>What you need</h3>
-<ul>
-  <li><b>Rust toolchain ≥ 1.70</b> — from <a href="https://rustup.rs/">rustup.rs</a>.</li>
-  <li><b>Python 3.8+</b> — used only by the kinship post-processor and the synthetic data generators.</li>
-</ul>
 <p>
-For the full pipeline starting from a pangenome (Section 9) you also
-need <a href="https://github.com/pangenome/impg">impg</a> ≥ 0.3 and
-<a href="https://github.com/refresh-bio/agc">AGC</a> ≥ 3.2. These are not
-required for this tutorial — we use precomputed identity tables.
+Everything from here on assumes you have the repository checked out
+and built. It takes about a minute.
 </p>
 
-<h3>Clone and build</h3>
 <pre><code>git clone https://github.com/MarsicoFL/IMPOPk.git
 cd IMPOPk
 cargo build --release</code></pre>
 
-<p>Build should finish in ~40–60 seconds. Confirm the five expected binaries:</p>
+<p>
+If this is the first time the Rust toolchain sees the dependencies,
+the build takes 40–60 seconds. You should end up with five binaries
+in <code>target/release/</code>:
+</p>
 
 <pre><code>ls target/release/ | grep -E '^(ibs|ibd|ibd-validate|ancestry|jacquard)$'
-# Expected output:
 # ancestry
 # ibd
 # ibd-validate
 # ibs
 # jacquard</code></pre>
 
+<p>
+If you see anything missing, stop here and check that
+<code>cargo build</code> finished without errors. Every later step
+depends on these five executables existing.
+</p>
+
+<div class="note">
+<b>Extra tools for later.</b> Chapter 5 (running on your own pangenome)
+uses <a href="https://github.com/pangenome/impg">impg</a> for pangenome
+graph queries and <a href="https://github.com/refresh-bio/agc">AGC</a>
+for compressed assembly archives. You do not need them for chapters 3
+and 4 — the bundled examples are precomputed.
+</div>
+
 <!-- =============================================================== -->
-<h2 id="pipeline">3. The shared data pipeline</h2>
+<h2 id="ch3">Chapter 3 — The one input, the four decoders</h2>
 
 <p>
-Every inference mode consumes the same primary input — a windowed
-pairwise identity TSV — and adds its own downstream HMM or
-post-processor on top:
+Every decoder in impopₖ reads the same input: a plain TSV where each
+row is a pair of haplotypes, a genomic window, and their pairwise
+sequence identity in that window. Open
+<code>data/examples/ibd/input/ibs.tsv</code> in a text editor to see
+what that looks like:
+</p>
+
+<pre><code>chrom           start    end      group.a  group.b  estimated.identity
+CHM13#0#chr12   0        10000    SIM1#1   SIM1#2   0.998019
+CHM13#0#chr12   0        10000    SIM1#1   SIM2#1   0.997927
+CHM13#0#chr12   0        10000    SIM1#1   SIM2#2   0.998248
+CHM13#0#chr12   0        10000    SIM1#1   SIM3#1   0.997895
+...</code></pre>
+
+<p>
+Six columns, one row per pair-window. The <code>chrom</code> and
+<code>start</code>/<code>end</code> come from the reference coordinate
+system; <code>group.a</code> and <code>group.b</code> are haplotype
+identifiers; <code>estimated.identity</code> is a number between 0 and
+1. That is the entire substrate the downstream tools see.
+</p>
+
+<p>
+The flow from this table to a biological answer is:
 </p>
 
 <pre><code>   Pangenome alignment (PAF) + assemblies (AGC)
-                 │
-                 │    ibs  (wraps impg similarity)
-                 ▼
-   Windowed pairwise identity TSV   ◄──── input/ibs.tsv in each example
-                 │
-   ┌─────────────┼────────────────┬─────────────────┐
-   ▼             ▼                ▼                 ▼
- (awk)          ibd            ancestry         jacquard (Δ)
-  IBS         IBD segs       painted tracts       9 coefs
-  scan                            │
-                                  ▼
-                     scripts/kinship_from_ibd.py
-                           kinship θ̂</code></pre>
-
-<p>The <code>ibs.tsv</code> format is documented in the top-level README;
-briefly:</p>
-
-<pre><code>chrom    start    end    group.a    group.b    estimated.identity    [a.length]    [b.length]</code></pre>
+                    │
+                    │    ibs   (wraps impg similarity)
+                    ▼
+       Windowed pairwise identity TSV   ◄──── what the examples ship
+                    │
+   ┌────────────────┼──────────────────┬─────────────────┐
+   ▼                ▼                  ▼                 ▼
+  (awk)            ibd              ancestry          jacquard
+ IBS scan       IBD segs         painted tracts      Δ coefs
+                                       │
+                                       ▼
+                          scripts/kinship_from_ibd.py
+                                kinship θ̂</code></pre>
 
 <p>
-All five precomputed example folders under
-<code>data/examples/</code> ship such a file. The format is the same
-whether <code>ibs</code> produced it from a real pangenome or one of
-the synthetic generators in <code>scripts/</code> did.
+You can think of the identity TSV as a kind of sufficient statistic:
+everything downstream reads it and does something specialized. In
+chapter 5 you will learn how to produce one yourself. For now, the
+bundled examples give you four different identity TSVs, each chosen to
+make one decoder easy to understand.
 </p>
 
 <!-- =============================================================== -->
-<h2 id="mode-ibs">4. Mode 1 — IBS window enrichment</h2>
-
-<h3>Concept</h3>
+<h2 id="ch4">Chapter 4 — Running the four modes</h2>
 
 <p>
-A brief vocabulary distinction first:
+Four mini-stories follow. Each one has the same shape: a question, a
+model, a command to run, a numerical answer, and a way to check the
+answer.
 </p>
 
-<ul>
-  <li><b>IBS (identity-by-state)</b> — two sequences are identical at a
-  locus, regardless of whether that identity is due to shared ancestry
-  or to independent convergent mutation. Observationally measurable.</li>
-  <li><b>IBD (identity-by-descent)</b> — two sequences are identical
-  <em>because</em> they were inherited from a common ancestor. A latent
-  state; it must be inferred from IBS plus contiguity.</li>
-</ul>
+<!-- -------- -->
+<h3 id="ch4a">4a. IBS — where does the population share haplotypes?</h3>
 
-<p>
-In this mode we stay at the IBS level: for each window, count how many
-haplotype pairs within a population share identity above a threshold
-(default 0.9999). Windows of elevated within-population sharing
-indicate either IBD clusters (e.g. nearly-fixed haplotypes under
-positive selection) or demographic bottlenecks. The paper's chr2
-<em>LCT</em> selection scan is built from exactly this quantity.
-</p>
+<p><b>The question.</b> Across a panel of related or admixed
+individuals, which 10 kb windows have an unusually high fraction of
+near-identical haplotype pairs? These windows are candidates for
+recent positive selection (a favoured haplotype spread and is now
+over-represented), bottleneck events, or shared founder effects.</p>
 
-<p>Given a pairwise identity row <i>(a, b, w)</i> with identity
-<span class="eq">S(a, b; w)</span>, the IBS-enrichment statistic in
-window <i>w</i> for a population <i>P</i> is:</p>
+<p><b>The model.</b> No HMM. For each window we simply compute</p>
 
-<div class="eq">E(w; P) = |{ (a,b) ∈ P×P : S(a,b;w) ≥ θ }| / |{ (a,b) ∈ P×P }|</div>
+<div class="eq">E(w) = #{ pairs (a,b) with S(a,b;w) ≥ θ } / #{ pairs }</div>
 
-<h3>Run the example</h3>
+<p>with θ = 0.9999 by default. This is the raw fuel for selection
+scans.</p>
+
+<p><b>The command.</b></p>
 
 <pre><code>cd data/examples/ibs
 bash run.sh</code></pre>
 
-<p>
-Input: <code>input/ibs.tsv</code> contains 100 windows of a 1 Mb slice
-of chr12 for 6 HPRC EUR haplotypes (3 individuals × 2 haps). The script
-has no HMM; it is a single <code>awk</code> pass that computes the IBS
-fraction per window.
-</p>
+<p><b>What you are running.</b> A short <code>awk</code> one-liner
+applied to a precomputed identity TSV covering a 1 Mb slice of chr12
+for 6 HPRC European haplotypes. No pangenome query, no HMM, no
+training — it is pure aggregation.</p>
 
-<h3>Interpret the output</h3>
+<p><b>The answer.</b></p>
 
-<pre><code>cat output/ibs_enrichment.tsv | head -5
+<pre><code>head -5 output/ibs_enrichment.tsv
 # chrom          start     end        n_pairs  n_ibs  frac_ibs
 # CHM13#0#chr12  15000000  15009999   15       1      0.066667
 # CHM13#0#chr12  15010000  15019999   15       3      0.200000
 # CHM13#0#chr12  15020000  15029999   15       3      0.200000
-# CHM13#0#chr12  15030000  15039999   15       3      0.200000</code></pre>
+# CHM13#0#chr12  15030000  15039999   15       3      0.200000
+# ...</code></pre>
 
 <p>
-Sort by <code>frac_ibs</code> descending to see the windows where the
-EUR panel is most shared. In a real selection scan this would be
-followed by a permutation-based null (see paper §Results), but the
-core statistic is already computed here.
+Sort by <code>frac_ibs</code> descending and the windows with the most
+within-population sharing bubble up. On a full-chromosome scan, the
+top windows coincide with well-known selection targets — for example,
+the lactase-persistence region on chromosome 2 around
+<em>LCT</em>/<em>MCM6</em>. This bundled example is only 1 Mb of a
+neutral chr12 region, so the absolute numbers are unremarkable on
+purpose: you are meant to see the mechanics, not discover biology.
 </p>
 
-<!-- =============================================================== -->
-<h2 id="mode-ibd">5. Mode 2 — IBD detection (2-state HMM)</h2>
+<p><b>Check yourself.</b> Before moving on, answer two questions in
+your head: (i) why do all windows have exactly 15 pairs? (ii) if a
+population had a recent selective sweep at one window, what would you
+expect <code>frac_ibs</code> to do there?</p>
 
-<h3>Concept</h3>
-<p>
-For each <b>ordered pair of haplotypes</b>, the <code>ibd</code> binary
-fits a 2-state Hidden Markov Model (IBD vs non-IBD) with Gaussian
-emissions. The signal the model sees per window is the raw pairwise
-identity <i>S(a, b; w)</i>:
-</p>
+<!-- -------- -->
+<h3 id="ch4b">4b. IBD — which specific segments are inherited together?</h3>
+
+<p><b>The question.</b> Given two haplotypes, find every contiguous
+chromosomal stretch they inherited from a common ancestor. Not just
+"are they related" — <em>where</em> they share DNA and how long each
+piece is.</p>
+
+<p><b>The model.</b> A two-state hidden Markov model. The observation
+at window <i>w</i> for a pair (a, b) is the identity S(a, b; w). The
+hidden state is IBD or non-IBD.</p>
 
 <ul>
-<li><b>Emissions</b> — two Gaussians, one per state. Means and
-variances are initialised from k-means on the observed identities,
-then refined by
-<a href="https://doi.org/10.1214/aoms/1177697196">Baum-Welch EM</a>.</li>
-<li><b>Transitions</b> — a small prior probability of entering IBD
-(<code>--p-enter-ibd</code>, default 1e-4) and a segment-length prior
-that scales with the chromosome.</li>
-<li><b>Decode</b> — Viterbi gives the maximum-likelihood state path,
-and a forward-backward pass gives per-window posteriors. Segments
-shorter than <code>--min-len-bp</code> (default 2 Mb) are discarded.</li>
+<li><b>Emissions</b> are Gaussians, one per state. The IBD state has a
+mean close to 1 and a small variance; the non-IBD state has a lower
+mean and wider variance. The tool initialises these with k-means on
+the observed identity distribution, then refines them by
+<a href="https://doi.org/10.1214/aoms/1177697196">Baum-Welch expectation-maximisation</a>.</li>
+<li><b>Transitions</b> encode a small prior probability of entering an
+IBD state (<code>--p-enter-ibd</code>, default 10⁻⁴) and a
+segment-length prior matching the expected coalescent recombination
+scale.</li>
+<li><b>Decoding</b> uses the Viterbi path for the maximum-likelihood
+assignment, plus a forward-backward pass for per-window posteriors.
+Short segments below <code>--min-len-bp</code> are discarded.</li>
 </ul>
 
-<h3>Run the example</h3>
+<p><b>The command.</b></p>
 
 <pre><code>cd data/examples/ibd
 bash run.sh</code></pre>
 
-<p>
-The example input is <b>synthetic</b> — produced by
-<code>scripts/generate_synthetic_ibd_example.py</code> — because public
-HPRC haplotypes are unrelated and would yield zero true IBD. The
-synthetic data contains two known IBD segments:
-</p>
+<p><b>What you are running.</b> The identity TSV in this example is
+<em>synthetic</em> — regenerable via
+<code>scripts/generate_synthetic_ibd_example.py</code> — because
+unrelated HPRC individuals have no real IBD and an empty output would
+look broken. The fabricated data has two known IBD segments:</p>
 
 <ul>
-<li><code>SIM1#1 × SIM2#1</code>: 1.25 Mb – 3.75 Mb (2.5 Mb)</li>
-<li><code>SIM1#2 × SIM3#1</code>: 0.50 Mb – 2.00 Mb (1.5 Mb)</li>
+<li><code>SIM1#1 × SIM2#1</code> between 1.25 Mb and 3.75 Mb (2.5 Mb
+long)</li>
+<li><code>SIM1#2 × SIM3#1</code> between 0.50 Mb and 2.00 Mb (1.5 Mb
+long)</li>
 </ul>
 
-<h3>Interpret the output</h3>
+<p><b>The answer.</b></p>
 
 <pre><code>cat output/ibd.tsv
 # chrom  start    end      group.a  group.b  n_windows  mean_identity  mean_posterior  min_posterior  max_posterior  lod_score
@@ -294,62 +335,68 @@ synthetic data contains two known IBD segments:
 # chr12   500000  2000000  SIM1#2   SIM3#1   150        0.999948       1.0000          1.0000          1.0000         1446.78</code></pre>
 
 <p>
-Both ground-truth segments are recovered exactly, with posterior 1.0 at
-every window and LOD scores in the thousands (log-odds of IBD vs
-non-IBD). <code>mean_identity</code> ~0.9999 matches what the generator
-wrote; <code>mean_posterior</code> is the average of per-window
-posteriors across the segment.
+Both known segments are recovered at their exact boundaries, with
+posterior probability 1.0 at every window and log-odds scores above a
+thousand. If you want to sanity-check that the tool did not just
+memorise, edit <code>scripts/generate_synthetic_ibd_example.py</code>
+to put a segment somewhere else and rerun — the decoder will track
+you.
 </p>
 
 <div class="note">
-<b>Running on real data.</b> If you swap <code>input/ibs.tsv</code> for
-a real pangenome-derived TSV (Section 9), also update
-<code>--region</code>, <code>--region-length</code>, and pick a
-population prior matching the panel (<code>AFR</code>, <code>EUR</code>,
-<code>EAS</code>, <code>CSA</code>, <code>AMR</code>, or
-<code>Generic</code>). See <code>ibd --help</code>.
+<b>How to read the output columns.</b> <code>n_windows</code> is the
+segment length in 10 kb windows. <code>mean_identity</code> is the
+observed S averaged across the segment. <code>mean_posterior</code> is
+how confident the HMM is, averaged across the segment.
+<code>lod_score</code> is the log-odds of IBD versus non-IBD; in
+practice, any value above ~5 is overwhelming evidence.
 </div>
 
-<!-- =============================================================== -->
-<h2 id="mode-ancestry">6. Mode 3 — Local ancestry (N-state HMM)</h2>
+<!-- -------- -->
+<h3 id="ch4c">4c. Ancestry — which population does each piece come from?</h3>
 
-<h3>Concept</h3>
+<p><b>The question.</b> Given a query haplotype from an admixed
+individual, assign each 10 kb window to one of <i>K</i> reference
+populations (AFR, EUR, EAS, …).</p>
+
+<p><b>The model.</b> A <i>K</i>-state HMM. For each window, for each
+candidate population <i>k</i>, we compute</p>
+
+<div class="eq">f<sub>k</sub>(w) = max { S(q, h; w) : h ∈ reference haplotypes of population k }</div>
+
+<p>— the best-case similarity of the query haplotype <i>q</i> to any
+reference haplotype in that population. Those per-population scores go
+through a softmax to become emission probabilities:</p>
+
+<div class="eq">log P(o<sub>w</sub> | s<sub>w</sub>=k) = f<sub>k</sub>(w) / τ − log Σ<sub>j</sub> exp(f<sub>j</sub>(w) / τ)</div>
+
 <p>
-For a <b>query haplotype</b> <i>q</i> and <i>K</i> reference populations
-with labelled haplotypes, the <code>ancestry</code> binary decodes each
-10 kb window into a state <i>k</i> ∈ {1, …, <i>K</i>}.
+Here τ is a softmax temperature. In the default mode
+(<code>--estimate-params</code>, used in this example) a single scalar τ
+is fit from the identity distribution across windows. An optional flag
+<code>--pairwise-emissions</code> switches to a per-pair adaptive τ
+estimated via a Bradley-Terry pairwise-contrast model, which lets the
+HMM treat closely-related population pairs differently from well-separated
+ones. Transitions use a small switch probability
+(<code>--switch-prob</code>).
 </p>
 
-<p>The per-window log-emission for state <i>k</i> is:</p>
-
-<div class="eq">log P(o_w | s_w = k) = f_k(w) / τ − log Σ<sub>j</sub> exp(f_j(w) / τ)</div>
-
-<p>where <i>f<sub>k</sub>(w) = max S(q, h; w)</i> over haplotypes
-<i>h</i> in population <i>k</i>. τ is a softmax temperature. In the
-default mode (<code>--estimate-params</code>, used in the bundled example
-below) a single scalar τ is fit from the identity distribution across
-windows. Optionally, the flag <code>--pairwise-emissions</code> switches
-to a per-pair adaptive τ estimated via a Bradley-Terry pairwise-contrast
-model, so closely-related populations get a sharper τ than
-well-separated ones. Transitions are governed by a small switch
-probability (<code>--switch-prob</code>).
-</p>
-
-<h3>Run the example</h3>
+<p><b>The command.</b></p>
 
 <pre><code>cd data/examples/ancestry
 bash run.sh</code></pre>
 
-<p>Inputs:</p>
+<p><b>The inputs.</b></p>
 <ul>
-  <li><code>input/ibs.tsv</code> — windowed identities across a 330 kb
-  slice of chr12 (33 × 10 kb windows) for a 16-haplotype panel of
-  AFR + EUR + AMR HPRC individuals.</li>
-  <li><code>input/populations.tsv</code> — mapping haplotype → population.</li>
-  <li><code>input/queries.txt</code> — the haplotypes to paint.</li>
+<li><code>input/ibs.tsv</code> — windowed identities across a 330 kb
+slice of chr12 (33 × 10 kb windows) for a 16-haplotype panel of
+AFR + EUR + AMR HPRC individuals.</li>
+<li><code>input/populations.tsv</code> — two columns mapping each
+reference haplotype to its population label.</li>
+<li><code>input/queries.txt</code> — the haplotypes you want painted.</li>
 </ul>
 
-<h3>Interpret the output</h3>
+<p><b>The answer.</b></p>
 
 <pre><code>head -5 output/ancestry.tsv
 # chrom  start     end        sample     ancestry  n_windows  mean_similarity  mean_posterior  discriminability  lod_score
@@ -357,53 +404,57 @@ bash run.sh</code></pre>
 # chr12  15000000  15329999   HG00639#1  EUR       33         0.999915         0.601676        0.000285          0.0530
 # ...</code></pre>
 
-<p>Columns you should care about:</p>
-<ul>
-<li><b>ancestry</b> — the decoded state for that tract.</li>
-<li><b>mean_posterior</b> — Viterbi-path posterior average. Values below
-~0.7 indicate that the HMM could not confidently separate states across
-the tract.</li>
-<li><b>discriminability</b> — the per-window gap between the top-two
-state probabilities. High = clear call. Low (e.g. 0.0003) = the window
-could plausibly belong to more than one population.</li>
-<li><b>lod_score</b> — log-odds of the assigned state vs the
-second-best alternative.</li>
-</ul>
-
-<div class="warn">
-<b>Small-panel caveat.</b> This bundled example uses only a 16-haplotype
-panel on a 330 kb slice of chr12, so absolute posteriors are modest and
-one of the two query haplotypes gets a low <code>mean_posterior</code>
-of 0.60. The paper's validation uses a 46-haplotype panel × 133 Mb chr12
-with 10 chimeric query haplotypes and reaches 95–97% concordance with
-RFMix / FLARE; see §Results in the manuscript.
-</div>
-
-<!-- =============================================================== -->
-<h2 id="mode-pedigree">7. Mode 4 — Founder painting (pedigree)</h2>
-
-<h3>Concept</h3>
 <p>
-The same <code>ancestry</code> binary is used — but now each
-<em>state</em> is an <b>individual founder haplotype</b>, not a
-population. For an <i>N</i>-grandparent pedigree you run the N-state
-HMM with N = number of founders. The paper validates this on the
-<a href="https://github.com/Platinum-Pedigree-Consortium/Platinum-Pedigree-Inheritance">CEPH 1463 Platinum Pedigree</a>
-(4 grandparents → 4 states) with 99.2% concordance against ground-truth
-inheritance vectors across all 22 autosomes.
+Both query haplotypes of HG00639 (a CEU individual) are painted EUR
+across the 330 kb slice — which is the right call for this
+non-admixed region. Notice the asymmetry in
+<code>mean_posterior</code>: one haplotype is called with high
+confidence (0.999), the other barely scraping through (0.60). Why?
+Because at 16 haplotypes across 330 kb the panel is tiny;
+<code>discriminability</code> (the gap between the top-two state
+probabilities) is only ~0.0003 at most windows, which means several
+populations all look almost equally good.
 </p>
 
-<h3>Run the example</h3>
+<div class="warn">
+<b>This is a toy example.</b> 16 haps × 330 kb is deliberately small
+so the tutorial stays fast. On realistic inputs — a 46-haplotype panel
+across a full 133 Mb chromosome — the same HMM reaches 95–97%
+concordance against a ground-truth simulation. You can reproduce those
+runs with the pipeline in Chapter 5.
+</div>
+
+<div class="note">
+<b>How to read the new columns.</b> <code>mean_similarity</code> is
+the average best-match identity to the called population.
+<code>discriminability</code> is the per-window gap between the top
+two population probabilities — high means a clear call, low means the
+window could plausibly belong to more than one population.
+<code>lod_score</code> is log-odds of the called state vs the
+second-best alternative.
+</div>
+
+<!-- -------- -->
+<h3 id="ch4d">4d. Founder painting — same tool, individuals as states</h3>
+
+<p>
+The same ancestry HMM works unchanged if each "state" is an
+<em>individual haplotype</em> instead of a population. That is the
+standard pedigree application: given the four grandparent haplotypes
+and one grandchild haplotype, which grandmother or grandfather did
+each 10 kb stretch come from?
+</p>
+
+<p><b>The command.</b></p>
 
 <pre><code>cd data/examples/pedigree
 bash run.sh</code></pre>
 
-<p>
-The example input is <b>synthetic</b> (generated by
-<code>scripts/generate_synthetic_pedigree_example.py</code>) and
-describes a descendant <code>CHILD</code> that is a four-block mosaic
-of founders <code>GP1</code>–<code>GP4</code>:
-</p>
+<p><b>What you are running.</b> The identity TSV is again synthetic
+(<code>scripts/generate_synthetic_pedigree_example.py</code>) because
+unrelated HPRC individuals do not form a pedigree. The fabricated
+descendant CHILD is a four-block mosaic of founders GP1–GP4, equally
+spaced:</p>
 
 <table>
 <tr><th>Region</th><th>True founder</th></tr>
@@ -413,7 +464,7 @@ of founders <code>GP1</code>–<code>GP4</code>:
 <tr><td>3.75 – 5.00 Mb</td><td>GP4</td></tr>
 </table>
 
-<h3>Interpret the output</h3>
+<p><b>The answer.</b></p>
 
 <pre><code>cat output/painting.tsv
 # chrom              start     end       sample  ancestry  n_windows  mean_similarity  ...
@@ -423,78 +474,102 @@ of founders <code>GP1</code>–<code>GP4</code>:
 # CHM13#0#chr12      3750000   5000000   CHILD   GP4       125        0.999947         ...</code></pre>
 
 <p>
-All four blocks are recovered at the exact ground-truth boundaries.
-<code>discriminability</code> is high and the posterior is > 0.99.
-The same configuration, applied to a real pedigree whose founders are
-sequenced as four independent assemblies, produces the CEPH 1463
-founder painting in the paper.
+Four tracts, at the exact boundaries, each assigned to the correct
+founder, posteriors above 0.99. Drop in a real three-generation
+pedigree and the same run produces an authentic founder painting — the
+<a href="https://github.com/Platinum-Pedigree-Consortium/Platinum-Pedigree-Inheritance">CEPH 1463 Platinum Pedigree</a>
+is the canonical validation set; its inheritance vectors give
+per-segment ground truth.
 </p>
 
-<!-- =============================================================== -->
-<h2 id="mode-kinship">8. Mode 5 — Kinship (scalar θ and Jacquard Δ)</h2>
+<!-- -------- -->
+<h3 id="ch4e">4e. Kinship — how related are they overall?</h3>
 
-<p>impopₖ reports kinship in two complementary forms.</p>
-
-<h3>8a. Scalar kinship θ̂ from detected IBD</h3>
-
-<p>The paper's formula is a straightforward summation over the four
-haplotype pairings of a diploid pair:</p>
+<p>
+Once you have IBD segments between two diploid individuals, the
+kinship coefficient θ̂ falls out as a simple sum. For a diploid pair
+(A, B) with haplotypes (A₁, A₂) and (B₁, B₂):
+</p>
 
 <div class="eq">θ̂ = Σ<sub>α,β ∈ {1,2}</sub> L<sub>IBD</sub>(A<sub>α</sub>, B<sub>β</sub>) / (4 · L)</div>
 
-<p>This is implemented as a post-processor over the <code>ibd</code>
-binary's output:</p>
+<p>
+where L<sub>IBD</sub>(A<sub>α</sub>, B<sub>β</sub>) is the total
+detected IBD length between the α-th haplotype of A and the β-th
+haplotype of B, and L is the chromosome length. For reference, full
+siblings should cluster near θ̂ = 0.25, half-siblings and grandparent
+relationships near 0.125, first cousins near 0.0625.
+</p>
+
+<p>The post-processor <code>scripts/kinship_from_ibd.py</code> takes
+the <code>ibd.tsv</code> from the previous mode and turns it into a
+per-pair kinship table:</p>
 
 <pre><code>python3 scripts/kinship_from_ibd.py \
-  --ibd          data/examples/ibd/expected_output/ibd.tsv \
-  --chrom-length 5000000</code></pre>
+    --ibd          data/examples/ibd/expected_output/ibd.tsv \
+    --chrom-length 5000000</code></pre>
 
 <pre><code># individual_a  individual_b  total_ibd_bp  theta_hat
 # SIM1          SIM2          2500000       0.125000
 # SIM1          SIM3          1500000       0.075000</code></pre>
 
 <p>
-Full siblings should score θ̂ ≈ 0.25, half-siblings and grandparent
-relationships ≈ 0.125, first cousins ≈ 0.0625. The synthetic example
-above recovers θ̂ ≈ 0.125 on a fabricated half-sibling-like pair.
+The pairs picked up from the synthetic IBD output produce θ̂ of
+0.125 and 0.075 — the first pair looks like a grandparent-grandchild
+relationship, the second a first cousin. This is only illustrative of
+the arithmetic; for real relatedness inference you want more than one
+chromosome.
 </p>
 
-<h3>8b. Full Jacquard Δ coefficients</h3>
+<h4>The Jacquard Δ variant</h4>
 
-<p>The <code>jacquard</code> binary goes beyond the scalar by returning
-the nine condensed-identity coefficients Δ<sub>1</sub> … Δ<sub>9</sub>
-for a diploid pair. It reads the IBS table (not the IBD segments) and
-the four haplotype IDs:</p>
+<p>
+If you need the full nine-state identity decomposition (useful when
+you cannot assume the individuals are outbred, or you want to detect
+inbreeding), run <code>jacquard</code> instead. It takes the IBS table
+and the four haplotype IDs of the pair and prints the nine Δ
+coefficients to stdout:
+</p>
 
 <pre><code>target/release/jacquard \
-  --ibs    data/examples/ibd/input/ibs.tsv \
-  --hap-a1 SIM1#1  --hap-a2 SIM1#2 \
-  --hap-b1 SIM2#1  --hap-b2 SIM2#2</code></pre>
+    --ibs    data/examples/ibd/input/ibs.tsv \
+    --hap-a1 SIM1#1  --hap-a2 SIM1#2 \
+    --hap-b1 SIM2#1  --hap-b2 SIM2#2</code></pre>
 
-<p>The nine deltas are printed to stdout. Use this whenever you need
-the full identity-state decomposition (e.g. to distinguish inbred and
-non-inbred relationships of the same θ).</p>
+<p>
+The nine deltas sum to one and give a richer picture than the scalar
+θ̂. For most biobank-style analyses the scalar θ̂ is what you want;
+reach for jacquard when the identity-state decomposition matters.
+</p>
 
 <!-- =============================================================== -->
-<h2 id="your-data">9. Running on your own pangenome</h2>
+<h2 id="ch5">Chapter 5 — Your own data</h2>
 
-<h3>Prerequisites</h3>
+<p>
+You have reached the point where the identity TSV feels familiar.
+Chapter 3 took it as given; this chapter shows how to produce one
+from scratch.
+</p>
+
+<h3>What you need</h3>
 <ul>
-  <li>A <b>PAF alignment</b>. For human data the
-  <a href="https://humanpangenome.org/">HPRC portal</a> provides
-  HPRCv2 PAF files against CHM13. For other species, align your
-  haplotype-resolved assemblies with
-  <a href="https://github.com/lh3/minimap2">minimap2</a>
+  <li>A <b>PAF alignment</b> of the panel you care about. For human
+  work, HPRCv2 distributes PAFs against CHM13 via the
+  <a href="https://humanpangenome.org/">HPRC data portal</a>. For
+  non-human projects you can align haplotype-resolved assemblies
+  yourself with <a href="https://github.com/lh3/minimap2">minimap2</a>
   (<code>-x asm5</code> for intra-species) or build a full pangenome
   graph with <a href="https://github.com/pangenome/pggb">PGGB</a>.</li>
-  <li>An <b>AGC archive</b> of the assemblies — see
+  <li>An <b>AGC archive</b> of the same assemblies — see
   <a href="https://github.com/refresh-bio/agc">refresh-bio/agc</a>.</li>
-  <li><a href="https://github.com/pangenome/impg">impg</a> installed.</li>
+  <li><a href="https://github.com/pangenome/impg">impg</a> installed
+  (<code>cargo install impg</code>).</li>
 </ul>
 
-<h3>1. Build your subset / population files</h3>
+<h3>Step 1. Define your panel</h3>
 
-<p><code>panel_subset.txt</code> (one haplotype or sample ID per line):</p>
+<p>A <code>panel_subset.txt</code> with one haplotype or sample ID per
+line:</p>
 
 <pre><code>HG00097#1
 HG00097#2
@@ -503,7 +578,7 @@ HG01884#2
 NA19017#1
 NA19017#2</code></pre>
 
-<p><code>populations.tsv</code> (tab-separated, two columns):</p>
+<p>A <code>populations.tsv</code> (tab-separated, two columns):</p>
 
 <pre><code>EUR    HG00097#1
 EUR    HG00097#2
@@ -512,12 +587,13 @@ AFR    HG01884#2
 AMR    NA19017#1
 AMR    NA19017#2</code></pre>
 
-<p><code>queries.txt</code> (haplotypes you want to paint):</p>
+<p>A <code>queries.txt</code> listing which haplotypes you want
+painted:</p>
 
 <pre><code>NA19017#1
 NA19017#2</code></pre>
 
-<h3>2. Compute windowed pairwise identity</h3>
+<h3>Step 2. Compute windowed pairwise identity</h3>
 
 <pre><code>ibs -a                      data/alignments/hprc_chr12.paf.gz \
     --sequence-files        data/assemblies/HPRC_r2.agc \
@@ -528,14 +604,14 @@ NA19017#2</code></pre>
     --threads               8 \
     --output                ibs_chr12.tsv</code></pre>
 
-<p>This runs <code>impg similarity</code> over every 10 kb window in the
-requested region and filters, canonicalises, and streams its output.
-Runtime scales roughly linearly with the region length and quadratically
-with panel size. Reference figures: ~8 min for a 133 Mb chromosome at
-46 haplotypes on 8 threads; memory is the dominant cost and is driven
-by <code>impg</code>'s per-window graph query.</p>
+<p>
+This drives <code>impg similarity</code> over every 10 kb window in the
+requested region, filters, canonicalises, and streams the result. As a
+rough order of magnitude: a full 133 Mb chromosome with 46 haplotypes
+on 8 threads takes about 8 minutes. Memory is the dominant cost.
+</p>
 
-<h3>3. Run the HMMs on your TSV</h3>
+<h3>Step 3. Feed the TSV to the decoders you want</h3>
 
 <pre><code># IBD
 ibd --similarity-file ibs_chr12.tsv \
@@ -557,65 +633,58 @@ python3 scripts/kinship_from_ibd.py \
         --ibd ibd_chr12.tsv \
         --chrom-length 133324548</code></pre>
 
+<p>
+That is the full pipeline. The rest of your work is panel curation
+and interpretation, not plumbing.
+</p>
+
 <!-- =============================================================== -->
-<h2 id="troubleshooting">10. Troubleshooting</h2>
+<h2 id="ch6">Chapter 6 — When things go sideways</h2>
 
 <table>
-<tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr>
+<tr><th>Symptom</th><th>Likely cause</th><th>What to do</th></tr>
 <tr>
-  <td>Build fails with <code>impg</code> linker error</td>
-  <td>System-wide <code>impg</code> version mismatch.</td>
-  <td>impopₖ does not statically depend on impg at build time — the
-  <code>ibs</code> binary calls it at runtime. Make sure
-  <code>which impg</code> returns a ≥ 0.3 binary.</td>
-</tr>
-<tr>
-  <td><code>ibd</code> reports 0 segments</td>
-  <td>No true IBD in the panel, or all segments are shorter than
+  <td><code>ibd</code> reports 0 segments.</td>
+  <td>The panel has no true IBD, or all segments are shorter than
   <code>--min-len-bp</code>.</td>
   <td>Lower <code>--min-len-bp</code> to 500 kb for exploratory runs.
-  Confirm the panel actually contains related individuals.</td>
+  Verify that the panel actually contains related individuals.</td>
 </tr>
 <tr>
   <td><code>ancestry</code> reports high
-  <code>discriminability</code> but low <code>mean_posterior</code></td>
+  <code>discriminability</code> but low <code>mean_posterior</code>.</td>
   <td>Panel too small to separate close populations.</td>
   <td>Expand the reference panel, or merge populations at the
   continental level instead of sub-continental.</td>
 </tr>
 <tr>
-  <td><code>WARNING: &gt;30% of windows are uncertain</code></td>
-  <td>Identity contrast Δ between populations is near the noise floor.</td>
-  <td>Increase window size (<code>--window-size 25000</code>) or move to
-  a continental-level contrast.</td>
+  <td><code>WARNING: &gt;30% of windows are uncertain</code>.</td>
+  <td>Identity contrast between populations is near the noise floor.</td>
+  <td>Increase window size
+  (<code>--window-size 25000</code>) or move to a continental-level
+  contrast.</td>
 </tr>
 <tr>
-  <td><code>jacquard</code>: "haplotype not found"</td>
+  <td><code>jacquard</code>: "haplotype not found".</td>
   <td>The haplotype ID in <code>--hap-a1</code> etc. does not match the
   IBS TSV <code>group.a</code>/<code>group.b</code> format.</td>
-  <td>Use the short form (<code>HG00097#1</code>). impopₖ strips
+  <td>Use the short form (e.g. <code>HG00097#1</code>). impopₖ strips
   anything after the second <code>#</code> when matching.</td>
 </tr>
 <tr>
-  <td>Out of memory on a real pangenome</td>
-  <td>Full HPRCv2 panel (~290 sequences) OOMs at ~49 GB per window with
-  the default impg behaviour.</td>
-  <td>Use a reduced panel of ~40 haplotypes (5 per population × 8
-  populations) as described in the paper's Methods. Most signals are
-  recoverable at this scale.</td>
+  <td>Out of memory on a real pangenome.</td>
+  <td>Using the full HPRCv2 panel (~290 sequences) blows past 49 GB per
+  window with default <code>impg</code> behaviour.</td>
+  <td>Use a reduced panel of ~40 haplotypes (roughly 5 per population
+  × 8 populations). Most continental signals are recoverable at this
+  scale.</td>
 </tr>
 </table>
 
 <!-- =============================================================== -->
-<h2 id="references">11. References and further reading</h2>
+<h2 id="refs">References and further reading</h2>
 
-<h3>Paper</h3>
-<ul>
-<li>Marsico <i>et al.</i> <i>Local ancestry and IBD inference directly
-from pangenome-derived alignments</i>. Manuscript in preparation.</li>
-</ul>
-
-<h3>Underlying pangenome infrastructure</h3>
+<h3>Pangenome infrastructure</h3>
 <ul>
 <li><a href="https://doi.org/10.1038/s41586-023-05896-x">Liao <i>et al.</i> (2023) — HPRC v1 draft human pangenome, <i>Nature</i></a></li>
 <li><a href="https://github.com/pangenome/impg">impg</a> — implicit pangenome graph query</li>
@@ -623,18 +692,18 @@ from pangenome-derived alignments</i>. Manuscript in preparation.</li>
 <li><a href="https://github.com/pangenome/pggb">PGGB</a> — PanGenome Graph Builder</li>
 </ul>
 
-<h3>Methods compared / cited</h3>
+<h3>Methods compared with impopₖ</h3>
 <ul>
 <li><a href="https://doi.org/10.1016/j.ajhg.2013.06.020">RFMix v2 — Maples <i>et al.</i> 2013</a></li>
 <li><a href="https://github.com/browning-lab/flare">FLARE — Browning Lab (2023)</a></li>
 <li><a href="https://doi.org/10.1016/j.ajhg.2020.05.008">hap-ibd — Zhou, Browning & Browning 2020</a></li>
-<li><a href="https://github.com/rebeccaserramari/Kyoshi">Kyoshi — Serra Mari 2025</a> (closest prior assembly-level approach)</li>
+<li><a href="https://github.com/rebeccaserramari/Kyoshi">Kyoshi — Serra Mari 2025</a></li>
 </ul>
 
 <h3>Validation data</h3>
 <ul>
-<li><a href="https://github.com/Platinum-Pedigree-Consortium/Platinum-Pedigree-Inheritance">CEPH 1463 Platinum Pedigree</a> — inheritance-vector ground truth</li>
-<li><a href="https://github.com/tskit-dev/msprime">msprime</a> — pedigree/admixture simulation</li>
+<li><a href="https://github.com/Platinum-Pedigree-Consortium/Platinum-Pedigree-Inheritance">CEPH 1463 Platinum Pedigree</a> — inheritance-vector ground truth for founder painting</li>
+<li><a href="https://github.com/tskit-dev/msprime">msprime</a> — pedigree and admixture simulation</li>
 <li><a href="https://doi.org/10.1038/s41586-023-06127-z">Bovine super-pangenome — Leonard <i>et al.</i> 2023</a></li>
 </ul>
 
@@ -642,7 +711,7 @@ from pangenome-derived alignments</i>. Manuscript in preparation.</li>
 <ul>
 <li>Kingman, J.F.C. (1982), <i>The coalescent</i>, <i>Stochastic Processes and their Applications</i> 13: 235–248 (no DOI).</li>
 <li><a href="https://doi.org/10.1534/genetics.112.148825">Thompson (2013), <i>Identity by descent: variation in meiosis, across genomes, and in populations</i>, <i>Genetics</i> 194: 301–326.</a></li>
-<li>Guo (1994, 1995), <i>Computation of identity-by-descent proportions</i>, <i>American Journal of Human Genetics</i>.</li>
+<li><a href="https://doi.org/10.1214/aoms/1177697196">Baum, Petrie, Soules & Weiss (1970) — A maximization technique occurring in the statistical analysis of probabilistic functions of Markov chains.</a></li>
 </ul>
 
 </body>

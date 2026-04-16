@@ -8,11 +8,6 @@ signal to Hidden Markov Models for IBD detection, local ancestry inference,
 and kinship estimation. It does **not** require phased VCFs, variant
 calling, or a population-specific SNP panel.
 
-The approach is described in:
-
-> Marsico et al. *Local ancestry and IBD inference directly from
-> pangenome-derived alignments*. [Manuscript in preparation.]
-
 ## What impopₖ does
 
 Given a pangenome alignment (PAF) and a haplotype-resolved assembly archive
@@ -129,7 +124,7 @@ ancestry \
 
 ### 4a. Kinship scalar from detected IBD
 
-The manuscript's kinship formula
+The kinship formula
 θ̂ = Σ<sub>α,β</sub> L<sub>IBD</sub>(A<sub>α</sub>, B<sub>β</sub>) / 4·L
 is implemented as a thin post-processor over the `ibd` output:
 
@@ -141,7 +136,6 @@ python3 scripts/kinship_from_ibd.py \
 ```
 
 Output columns: `individual_a`, `individual_b`, `total_ibd_bp`, `theta_hat`.
-This is what was used to generate Fig. 3C of the manuscript.
 
 ### 4b. Full Jacquard Δ coefficients (nine condensed states)
 

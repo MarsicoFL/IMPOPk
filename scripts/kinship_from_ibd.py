@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compute the kinship coefficient θ = Σ L_IBD / (4·L) from an ibd.tsv output.
 
-This implements the formula used in the impopk manuscript:
+This implements the textbook kinship formula as used by impopk:
     θ̂ = Σ_{α,β} L_IBD(A_α, B_β) / 4·L
 where (α, β) index the four (hap-A, hap-B) pairings of a diploid pair
 (A, B), L_IBD is the total detected IBD length per pair of haplotypes,

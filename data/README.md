@@ -136,8 +136,10 @@ Source: https://github.com/marbl/CHM13
 
 ## Validation data (optional)
 
-These datasets are only needed for reproducing the validation results
-reported in the paper.
+These datasets are only needed for reproducing the full-scale
+validation runs from scratch. The bundled examples in
+`data/examples/` demonstrate the same pipeline on small precomputed
+inputs.
 
 ### VCFs
 Phased VCF subsets for chromosomes 10, 11, and 12, used to run hap-ibd and

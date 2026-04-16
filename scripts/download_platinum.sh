@@ -13,7 +13,7 @@ set -euo pipefail
 #   Children:     NA12879, NA12881-NA12887 (offspring of NA12877+NA12878)
 #
 # Source: s3://platinum-pedigree-data/ (AWS, no authentication needed)
-# Paper: Ebler et al. (2022) "Pangenome-based genome inference..."
+# Reference: Ebler et al. (2022) "Pangenome-based genome inference..."
 # Also: https://github.com/human-pangenomics/HPP_Year1_Assemblies
 
 DATA_DIR="./data"

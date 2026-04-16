@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Example: founder painting — the ancestry HMM run with individual
-# grandparents as states instead of populations. This is the same
-# machinery used in the paper to validate against the CEPH 1463
-# platinum pedigree.
+# grandparents as states instead of populations. The same configuration
+# applies to real pedigrees (e.g. CEPH 1463 Platinum Pedigree).
 #
 # Input:  input/ibs.tsv           — synthetic pairwise identities (5 Mb) where
 #                                    CHILD is a mosaic of 4 grandparents:
