@@ -373,12 +373,10 @@ through a softmax to become emission probabilities:</p>
 <p>
 Here τ is a softmax temperature. In the default mode
 (<code>--estimate-params</code>, used in this example) a single scalar τ
-is fit from the identity distribution across windows. An optional flag
-<code>--pairwise-emissions</code> switches to a per-pair adaptive τ
-estimated via a Bradley-Terry pairwise-contrast model, which lets the
-HMM treat closely-related population pairs differently from well-separated
-ones. Transitions use a small switch probability
-(<code>--switch-prob</code>).
+is fit from the identity distribution across windows. Transitions use
+a small switch probability (<code>--switch-prob</code>). Advanced
+emission modes (e.g. per-pair adaptive temperatures) are available via
+additional flags; run <code>ancestry --help</code> to list them.
 </p>
 
 <p><b>The command.</b></p>
@@ -521,6 +519,13 @@ the arithmetic; for real relatedness inference you want more than one
 chromosome.
 </p>
 
+<p>
+Which, circling back to where this tutorial started: the two cousins
+in Chapter 1, had we fed their alignments through the same pipeline,
+would land at θ̂ ≈ 0.0625 — a number computed from a pangenome-derived
+identity table, without ever having called a variant.
+</p>
+
 <h4>The Jacquard Δ variant</h4>
 
 <p>
@@ -535,6 +540,17 @@ coefficients to stdout:
     --ibs    data/examples/ibd/input/ibs.tsv \
     --hap-a1 SIM1#1  --hap-a2 SIM1#2 \
     --hap-b1 SIM2#1  --hap-b2 SIM2#2</code></pre>
+
+<div class="note">
+<b>What you should see.</b> A short header followed by nine Δ rows.
+The first line of stderr is a <code>win_size not divisible</code>
+warning from the tool's internal grid check — this is expected on the
+synthetic 5 Mb × 10 kb example (one extra boundary bp) and does not
+affect the coefficients. On this fully-correlated synthetic pair
+<code>Δ<sub>1</sub></code> dominates; on a real pair of diploid
+individuals the nine coefficients spread out according to the pair's
+identity-state decomposition.
+</div>
 
 <p>
 The nine deltas sum to one and give a richer picture than the scalar
