@@ -53,12 +53,23 @@ cargo build --release
 Binaries are placed in `target/release/`:
 
 ```
-target/release/ibs
-target/release/ibd
-target/release/ibd-validate
-target/release/ancestry
-target/release/jacquard
+target/release/ibs          # windowed pairwise identity (wraps impg)
+target/release/ibd          # 2-state IBD HMM
+target/release/ibd-validate # compare ibd output against a gold-standard IBD TSV
+target/release/ancestry     # N-state local ancestry / founder painting HMM
+target/release/jacquard     # 9 Jacquard Δ coefficients for a diploid pair
 ```
+
+`ibd-validate` is a developer utility: given a detected-IBD TSV and a
+ground-truth TSV (same columns), it reports recall, precision, and
+boundary accuracy. Useful when tuning parameters against simulated data.
+
+### Naming
+
+Three forms of the name appear and are intentional:
+`impopₖ` is the stylised display form, `impopk` is the prose and
+code form, and `IMPOPk` is the GitHub repository slug. They all refer
+to the same project.
 
 ## Quick start (precomputed examples)
 

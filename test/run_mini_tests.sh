@@ -153,7 +153,7 @@ FAILED=$(echo "$TEST_OUT" | grep -oP '\d+ failed' | awk '{sum+=$1} END {print su
 [ "$FAILED" = "0" ] && ok "$TOTAL unit tests, 0 failures" || fail "cargo test" "$FAILED failures"
 
 echo ""
-echo "=== 11. Clippy ==="
+echo "=== 10. Clippy ==="
 if cargo clippy --workspace -- -D warnings 2>&1 | grep -q "Finished"; then
     ok "clippy clean"
 else
