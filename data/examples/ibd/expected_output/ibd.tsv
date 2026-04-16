@@ -1,1 +1,3 @@
 chrom	start	end	group.a	group.b	n_windows	mean_identity	mean_posterior	min_posterior	max_posterior	lod_score
+chr12	1250000	3750000	SIM1#1	SIM2#1	250	0.999941	1.0000	1.0000	1.0000	2280.21
+chr12	500000	2000000	SIM1#2	SIM3#1	150	0.999948	1.0000	1.0000	1.0000	1446.78

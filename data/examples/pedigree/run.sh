@@ -4,10 +4,17 @@
 # machinery used in the paper to validate against the CEPH 1463
 # platinum pedigree.
 #
-# Input:  input/ibs.tsv           — windowed pairwise identities (chr12, 5 Mb)
-#         input/populations.tsv   — 4 "populations" each = one grandparent haplotype
-#         input/queries.txt       — query haplotypes (descendants)
-# Output: output/painting.tsv     — painted haplotype tracts
+# Input:  input/ibs.tsv           — synthetic pairwise identities (5 Mb) where
+#                                    CHILD is a mosaic of 4 grandparents:
+#                                      GP1: 0.0–1.25 Mb
+#                                      GP2: 1.25–2.5 Mb
+#                                      GP3: 2.5–3.75 Mb
+#                                      GP4: 3.75–5.0 Mb
+#                                    (regenerable via
+#                                     scripts/generate_synthetic_pedigree_example.py)
+#         input/populations.tsv   — 4 "populations", each = one founder haplotype
+#         input/queries.txt       — query haplotypes (CHILD)
+# Output: output/painting.tsv     — painted haplotype tracts by founder
 set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p output

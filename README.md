@@ -32,14 +32,24 @@ and canonicalizes its output into a stable TSV format. Everything downstream
 
 ## Installation
 
-Rust 1.70+ and `impg` are required. `impg` provides the pangenome graph
-query used to compute pairwise identity.
+### Dependencies
+
+The only hard requirement to run the HMMs on precomputed inputs (see
+`data/examples/`) is a working Rust toolchain.
+
+To run the full pipeline starting from a pangenome you also need:
+
+- **[impg](https://github.com/pangenome/impg)** ≥ 0.3 — pangenome graph query
+- **[AGC](https://github.com/refresh-bio/agc)** ≥ 3.2 — compressed assembly archive (C++, used by `impg`)
+
+### Build
 
 ```bash
-# 1. Install impg (https://github.com/pangenome/impg)
-cargo install impg
+# Dependencies
+cargo install impg                                    # Rust crate
+# AGC must be built from source (C++); see its repo for instructions.
 
-# 2. Build impopk
+# impopk
 git clone https://github.com/MarsicoFL/IMPOPk.git
 cd IMPOPk
 cargo build --release
@@ -147,6 +157,67 @@ jacquard \
 
 The nine condensed-identity deltas are printed to stdout. Use this when you
 need the full identity-state decomposition rather than the scalar θ.
+
+## File formats
+
+### Input: `ibs.tsv` (produced by `ibs`)
+
+Tab-separated, one row per pair-window:
+
+```
+chrom    start    end    group.a    group.b    estimated.identity    [group.a.length]    [group.b.length]
+```
+
+- `chrom` can be either a bare chromosome (`chr12`) or a PanSN path
+  (`CHM13#0#chr12`) — downstream tools accept both.
+- `group.a`, `group.b` are haplotype identifiers. Either short form
+  (`HG00097#1`) or full PanSN contig (`HG00097#1#CM087323.1:1-248000`)
+  is accepted. The downstream HMMs strip everything after the second `#`
+  to reduce to a haplotype identity.
+- The trailing coverage-length columns are optional (present when `ibs`
+  is run with `--coverage-feature` downstream).
+
+### Input: `populations.tsv` (for `ancestry` and pedigree painting)
+
+Tab-separated, two columns, no header:
+
+```
+EUR     HG00097#1
+EUR     HG00097#2
+AFR     HG01884#1
+...
+```
+
+The first column is the state label used by the HMM; the second is the
+haplotype ID. For founder painting (pedigree mode) each founder is its
+own state — see `data/examples/pedigree/input/populations.tsv`.
+
+### Input: `queries.txt` (for `ancestry` and pedigree)
+
+One haplotype ID per line.
+
+### Input: `subset-sequence-list` (for `ibs`)
+
+One haplotype ID (or sample ID) per line. Accepted: `HG00097`,
+`HG00097#1`, or full PanSN contigs.
+
+### Output: `ibd.tsv` (from `ibd`)
+
+```
+chrom  start  end  group.a  group.b  n_windows  mean_identity  mean_posterior
+min_posterior  max_posterior  lod_score
+```
+
+### Output: `ancestry.tsv` (from `ancestry`)
+
+```
+chrom  start  end  sample  ancestry  n_windows  mean_similarity  mean_posterior
+discriminability  lod_score
+```
+
+- `discriminability`: gap between the top two state probabilities
+  (high = clear call, low = ambiguous).
+- `lod_score`: log-odds of the top state versus the next-best alternative.
 
 ## Tutorials
 
