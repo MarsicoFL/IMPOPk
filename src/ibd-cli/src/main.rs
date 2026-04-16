@@ -305,7 +305,7 @@ struct Args {
     /// columns). IBD regions have symmetric coverage (ratio ~1.0) while
     /// non-IBD regions may have asymmetric alignments (ratio < 1.0).
     /// Requires input data with group.a.length and group.b.length columns
-    /// (produced by ibs-from-paf or impg similarity).
+    /// (produced by the `ibs` wrapper around impg similarity).
     #[arg(long = "coverage-feature")]
     coverage_feature: bool,
 

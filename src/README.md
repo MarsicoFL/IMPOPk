@@ -9,8 +9,7 @@ Shared types and utilities: `Region`, `Window`, `WindowIterator`, `ColumnIndices
 
 ### ibs-cli
 Identity-by-State window detection from pangenome alignments.
-- **`ibs`**: Wrapper around `impg similarity` (requires impg + AGC)
-- **`ibs-from-paf`**: Direct PAF identity computation (self-contained, >100x faster)
+- **`ibs`**: Wrapper around `impg similarity` (requires impg + AGC). Produces the windowed pairwise identity TSV consumed by all downstream HMMs.
 
 ### ibd-cli
 IBD segment detection using Hidden Markov Models.

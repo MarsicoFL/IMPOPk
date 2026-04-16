@@ -23,7 +23,7 @@ Given a pangenome alignment (PAF) and a haplotype-resolved assembly archive
 | **IBS** | `ibs` | PAF + AGC + region + subset list | Windowed pairwise identity TSV |
 | **IBD** | `ibd` | IBS TSV + sample pairs | Detected IBD segments per pair |
 | **Local ancestry** | `ancestry` | IBS TSV + population map + query list | Painted ancestry tracts per query |
-| **Kinship** | `jacquard` | IBD segment TSV | Jacquard Δ coefficients per pair |
+| **Kinship** | `jacquard` | IBS TSV + 4 haplotype IDs | Jacquard Δ coefficients for that diploid pair |
 
 The `ibs` binary is a wrapper over `impg similarity` that filters, deduplicates,
 and canonicalizes its output into a stable TSV format. Everything downstream
@@ -78,13 +78,14 @@ full pipeline looks like this:
 
 ```bash
 ibs \
-  --alignment    data/alignments/hprc_chr12.paf.gz \
-  --sequence-files data/assemblies/HPRC_r2.agc \
-  --region       chr12:1-133324548 \
-  --size         10000 \
-  --subset-list  data/panel_subset.txt \
-  --threads      8 \
-  --output       ibs_chr12.tsv
+  -a                      data/alignments/hprc_chr12.paf.gz \
+  --sequence-files        data/assemblies/HPRC_r2.agc \
+  -r                      CHM13 \
+  --region                chr12:1-133324548 \
+  --size                  10000 \
+  --subset-sequence-list  data/panel_subset.txt \
+  --threads               8 \
+  --output                ibs_chr12.tsv
 ```
 
 ### 2. IBD detection
@@ -92,8 +93,11 @@ ibs \
 ```bash
 ibd \
   --similarity-file ibs_chr12.tsv \
-  --window-size     10000 \
-  --estimate-params \
+  --region          chr12:1-133324548 \
+  --region-length   133324548 \
+  --size            10000 \
+  --min-len-bp      2000000 \
+  --population      Generic \
   --threads         8 \
   --output          ibd_chr12.tsv
 ```
@@ -112,13 +116,19 @@ ancestry \
   --output          ancestry_chr12.tsv
 ```
 
-### 4. Kinship
+### 4. Kinship (Jacquard Δ coefficients per diploid pair)
+
+`jacquard` reads the windowed identity TSV (not IBD segments) and takes the
+four haplotypes of the pair as arguments:
 
 ```bash
 jacquard \
-  --ibd-file ibd_chr12.tsv \
-  --output   jacquard_chr12.tsv
+  --ibs    ibs_chr12.tsv \
+  --hap-a1 HG00097#1 --hap-a2 HG00097#2 \
+  --hap-b1 HG00099#1 --hap-b2 HG00099#2
 ```
+
+The nine condensed-identity deltas are printed to stdout.
 
 ## Tutorials
 

@@ -179,13 +179,14 @@ If you have a PAF alignment and an AGC file, the full pipeline is:
 </p>
 
 <pre><code># 1. Windowed pairwise identity
-ibs --alignment    data/alignments/hprc_chr12.paf.gz \
-    --sequence-files data/assemblies/HPRC_r2.agc \
-    --region       chr12:1-133324548 \
-    --size         10000 \
-    --subset-list  panel_subset.txt \
-    --threads      8 \
-    --output       ibs_chr12.tsv
+ibs -a                      data/alignments/hprc_chr12.paf.gz \
+    --sequence-files        data/assemblies/HPRC_r2.agc \
+    -r                      CHM13 \
+    --region                chr12:1-133324548 \
+    --size                  10000 \
+    --subset-sequence-list  panel_subset.txt \
+    --threads               8 \
+    --output                ibs_chr12.tsv
 
 # 2a. IBD
 ibd --similarity-file ibs_chr12.tsv \

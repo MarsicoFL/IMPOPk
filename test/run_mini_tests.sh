@@ -20,9 +20,9 @@ echo "  impopk v0.1 — Integration Test Suite"
 echo "=========================================="
 echo ""
 
-# --- 1. Binary verification (9 binaries) ---
+# --- 1. Binary verification (5 binaries) ---
 echo "=== 1. Binary verification ==="
-for bin in ibs ibs-from-paf ibs-from-tpa tpa-spatial-index tpa-validate ibd ibd-validate ancestry jacquard; do
+for bin in ibs ibd ibd-validate ancestry jacquard; do
     if $BIN/$bin --help >/dev/null 2>&1; then
         ok "$bin --help"
     else
@@ -145,16 +145,8 @@ JACQ=$($BIN/jacquard --ibs test/ibs_paf_5Mb_EUR.tsv \
 [ -n "$JACQ" ] && ok "jacquard output (9 deltas)" || fail "jacquard" "no delta output"
 echo ""
 
-# --- 9. tpa-validate ---
-echo "=== 9. tpa-validate ==="
-VERDICT=$($BIN/tpa-validate \
-    --reference test/ibs_paf_1Mb_EUR.tsv \
-    --test test/ibs_paf_1Mb_EUR.tsv 2>/dev/null | grep "VERDICT")
-echo "$VERDICT" | grep -q "PASS" && ok "tpa-validate self-check" || fail "tpa-validate" "$VERDICT"
-echo ""
-
-# --- 10. Cargo tests + clippy ---
-echo "=== 10. Workspace tests ==="
+# --- 9. Cargo tests + clippy ---
+echo "=== 9. Workspace tests ==="
 TEST_OUT=$(cargo test --workspace 2>&1)
 TOTAL=$(echo "$TEST_OUT" | grep -oP '\d+ passed' | awk '{sum+=$1} END {print sum+0}')
 FAILED=$(echo "$TEST_OUT" | grep -oP '\d+ failed' | awk '{sum+=$1} END {print sum+0}')
