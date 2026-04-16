@@ -41,10 +41,6 @@ COPY --from=deps /opt/impg/target/release/impg /usr/local/bin/
 
 # impopk binaries
 COPY --from=builder /build/target/release/ibs /usr/local/bin/
-COPY --from=builder /build/target/release/ibs-from-paf /usr/local/bin/
-COPY --from=builder /build/target/release/ibs-from-tpa /usr/local/bin/
-COPY --from=builder /build/target/release/tpa-spatial-index /usr/local/bin/
-COPY --from=builder /build/target/release/tpa-validate /usr/local/bin/
 COPY --from=builder /build/target/release/ibd /usr/local/bin/
 COPY --from=builder /build/target/release/ibd-validate /usr/local/bin/
 COPY --from=builder /build/target/release/ancestry /usr/local/bin/

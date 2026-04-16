@@ -33,14 +33,10 @@ verify-data: ## Verify downloaded data checksums
 docker: ## Build Docker image
 	docker build -t impopk .
 
-docker-test: ## Test Docker image (all 9 binaries)
+docker-test: ## Test Docker image (all 5 binaries)
 	docker run --rm impopk ibs --help
-	docker run --rm impopk ibs-from-paf --help
-	docker run --rm impopk ibs-from-tpa --help
-	docker run --rm impopk tpa-spatial-index --help
-	docker run --rm impopk tpa-validate --help
 	docker run --rm impopk ibd --help
 	docker run --rm impopk ibd-validate --help
 	docker run --rm impopk ancestry --help
 	docker run --rm impopk jacquard --help
-	@echo "All 9 binaries OK"
+	@echo "All 5 binaries OK"
