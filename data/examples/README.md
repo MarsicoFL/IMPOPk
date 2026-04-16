@@ -49,5 +49,5 @@ pangenome, see the full pipeline in the top-level `README.md`. In brief:
 ```bash
 ibs --alignment PAF --sequence-files AGC \
     --region chr12:15000000-20000000 --size 10000 \
-    --subset-list subset.txt --output input/ibs.tsv
+    --subset-sequence-list subset.txt --output input/ibs.tsv
 ```

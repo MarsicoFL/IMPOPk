@@ -35,7 +35,7 @@ ibd \
 |-----------|---------|-------------|
 | `--expected-seg-windows` | 50 | Expected IBD segment length in windows |
 | `--p-enter-ibd` | 0.0001 | P(non-IBD → IBD) per window |
-| `--min-len-bp` | 5000 | Minimum segment length (bp) |
+| `--min-len-bp` | 2000000 | Minimum segment length (bp). Default 2 Mb for reliable IBD detection. |
 | `--min-windows` | 3 | Minimum windows per segment |
 
 ## Output Format
