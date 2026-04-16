@@ -23,7 +23,8 @@ Given a pangenome alignment (PAF) and a haplotype-resolved assembly archive
 | **IBS** | `ibs` | PAF + AGC + region + subset list | Windowed pairwise identity TSV |
 | **IBD** | `ibd` | IBS TSV + sample pairs | Detected IBD segments per pair |
 | **Local ancestry** | `ancestry` | IBS TSV + population map + query list | Painted ancestry tracts per query |
-| **Kinship** | `jacquard` | IBS TSV + 4 haplotype IDs | Jacquard Δ coefficients for that diploid pair |
+| **Kinship (scalar θ)** | `scripts/kinship_from_ibd.py` | IBD segments TSV + chromosome length | θ̂ = Σ L_IBD / 4·L per diploid pair |
+| **Kinship (Δ states)** | `jacquard` | IBS TSV + 4 haplotype IDs | Nine Jacquard Δ coefficients for that pair |
 
 The `ibs` binary is a wrapper over `impg similarity` that filters, deduplicates,
 and canonicalizes its output into a stable TSV format. Everything downstream
@@ -116,7 +117,23 @@ ancestry \
   --output          ancestry_chr12.tsv
 ```
 
-### 4. Kinship (Jacquard Δ coefficients per diploid pair)
+### 4a. Kinship scalar from detected IBD
+
+The manuscript's kinship formula
+θ̂ = Σ<sub>α,β</sub> L<sub>IBD</sub>(A<sub>α</sub>, B<sub>β</sub>) / 4·L
+is implemented as a thin post-processor over the `ibd` output:
+
+```bash
+python3 scripts/kinship_from_ibd.py \
+  --ibd          ibd_chr12.tsv \
+  --chrom-length 133324548 \
+  --output       kinship_chr12.tsv
+```
+
+Output columns: `individual_a`, `individual_b`, `total_ibd_bp`, `theta_hat`.
+This is what was used to generate Fig. 3C of the manuscript.
+
+### 4b. Full Jacquard Δ coefficients (nine condensed states)
 
 `jacquard` reads the windowed identity TSV (not IBD segments) and takes the
 four haplotypes of the pair as arguments:
@@ -128,7 +145,8 @@ jacquard \
   --hap-b1 HG00099#1 --hap-b2 HG00099#2
 ```
 
-The nine condensed-identity deltas are printed to stdout.
+The nine condensed-identity deltas are printed to stdout. Use this when you
+need the full identity-state decomposition rather than the scalar θ.
 
 ## Tutorials
 
