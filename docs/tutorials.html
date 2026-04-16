@@ -71,15 +71,12 @@ When two individuals share a recent common ancestor, the DNA they
 co-inherit remains nearly identical in sequence along the chromosomal
 interval that survived recombination. The more distant the ancestor,
 the more mutations and structural changes have accumulated, and the
-lower the per-base identity. This relationship is the foundation of
-both
-<a href="https://pubmed.ncbi.nlm.nih.gov/8178819/">identity-by-descent (IBD)</a>
-detection and
-<a href="https://pubmed.ncbi.nlm.nih.gov/23750947/">local ancestry inference (LAI)</a>:
+lower the per-base identity. This relationship is the foundation of both <b>identity-by-descent
+(IBD)</b> detection and <b>local ancestry inference (LAI)</b>:
 the length of a high-identity stretch reflects how recent the shared
 ancestor is, and its chromosomal position locates where that shared
-ancestry lives in the genome
-(<a href="https://doi.org/10.1017/S0001566000014574">Kingman, 1982</a>;
+ancestry lives in the genome (Kingman, 1982, <i>Stochastic Processes
+and their Applications</i> 13: 235–248;
 <a href="https://doi.org/10.1534/genetics.112.148825">Thompson, 2013</a>).
 </p>
 
@@ -88,7 +85,7 @@ ancestry lives in the genome
 Widely used tools —
 <a href="https://github.com/browning-lab/hap-ibd">hap-ibd</a>,
 <a href="https://github.com/slowkoni/rfmix">RFMix</a>,
-<a href="https://faculty.washington.edu/browning/flare/">FLARE</a> —
+<a href="https://github.com/browning-lab/flare">FLARE</a> —
 operate on phased VCF genotypes. This introduces three costs: SNP
 ascertainment bias (only catalogued variants are used), loss of
 structural variation (SVs are dropped), and reliance on statistical
@@ -191,13 +188,27 @@ the synthetic generators in <code>scripts/</code> did.
 <h2 id="mode-ibs">4. Mode 1 — IBS window enrichment</h2>
 
 <h3>Concept</h3>
+
 <p>
-<b>IBS (identity-by-state)</b> is the simplest mode: for each window,
-count how many haplotype pairs within a population share identity above
-a threshold (default 0.9999). Windows of elevated within-population
-sharing indicate either true IBD clusters (e.g. nearly-fixed haplotypes
-under positive selection) or demographic bottlenecks. The paper's chr2
-<em>LCT</em> selection scan uses exactly this quantity.
+A brief vocabulary distinction first:
+</p>
+
+<ul>
+  <li><b>IBS (identity-by-state)</b> — two sequences are identical at a
+  locus, regardless of whether that identity is due to shared ancestry
+  or to independent convergent mutation. Observationally measurable.</li>
+  <li><b>IBD (identity-by-descent)</b> — two sequences are identical
+  <em>because</em> they were inherited from a common ancestor. A latent
+  state; it must be inferred from IBS plus contiguity.</li>
+</ul>
+
+<p>
+In this mode we stay at the IBS level: for each window, count how many
+haplotype pairs within a population share identity above a threshold
+(default 0.9999). Windows of elevated within-population sharing
+indicate either IBD clusters (e.g. nearly-fixed haplotypes under
+positive selection) or demographic bottlenecks. The paper's chr2
+<em>LCT</em> selection scan is built from exactly this quantity.
 </p>
 
 <p>Given a pairwise identity row <i>(a, b, w)</i> with identity
@@ -213,8 +224,9 @@ bash run.sh</code></pre>
 
 <p>
 Input: <code>input/ibs.tsv</code> contains 100 windows of a 1 Mb slice
-of chr12 for ~15 HPRC EUR haplotypes. The script has no HMM; it is a
-single <code>awk</code> pass that computes the IBS fraction per window.
+of chr12 for 6 HPRC EUR haplotypes (3 individuals × 2 haps). The script
+has no HMM; it is a single <code>awk</code> pass that computes the IBS
+fraction per window.
 </p>
 
 <h3>Interpret the output</h3>
@@ -313,11 +325,14 @@ with labelled haplotypes, the <code>ancestry</code> binary decodes each
 <div class="eq">log P(o_w | s_w = k) = f_k(w) / τ − log Σ<sub>j</sub> exp(f_j(w) / τ)</div>
 
 <p>where <i>f<sub>k</sub>(w) = max S(q, h; w)</i> over haplotypes
-<i>h</i> in population <i>k</i>. τ is a softmax temperature chosen
-<b>adaptively per pair of populations</b> via a Bradley-Terry
-pairwise-contrast model: closely-related populations get a sharper τ
-than well-separated ones. Transitions are governed by a small
-switch probability (<code>--switch-prob</code>).
+<i>h</i> in population <i>k</i>. τ is a softmax temperature. In the
+default mode (<code>--estimate-params</code>, used in the bundled example
+below) a single scalar τ is fit from the identity distribution across
+windows. Optionally, the flag <code>--pairwise-emissions</code> switches
+to a per-pair adaptive τ estimated via a Bradley-Terry pairwise-contrast
+model, so closely-related populations get a sharper τ than
+well-separated ones. Transitions are governed by a small switch
+probability (<code>--switch-prob</code>).
 </p>
 
 <h3>Run the example</h3>
@@ -327,8 +342,9 @@ bash run.sh</code></pre>
 
 <p>Inputs:</p>
 <ul>
-  <li><code>input/ibs.tsv</code> — windowed identities across a 50 Mb
-  stretch of chr12 for a panel of AFR + EUR + AMR HPRC haplotypes.</li>
+  <li><code>input/ibs.tsv</code> — windowed identities across a 330 kb
+  slice of chr12 (33 × 10 kb windows) for a 16-haplotype panel of
+  AFR + EUR + AMR HPRC individuals.</li>
   <li><code>input/populations.tsv</code> — mapping haplotype → population.</li>
   <li><code>input/queries.txt</code> — the haplotypes to paint.</li>
 </ul>
@@ -355,10 +371,12 @@ second-best alternative.</li>
 </ul>
 
 <div class="warn">
-<b>Small-panel caveat.</b> This bundled example uses only a 46-hap panel
-on a 50 Mb slice, so absolute posteriors are modest. The paper's
-validation uses 10 chimeras × 133 Mb chr12 and reaches 95–97%
-concordance with RFMix / FLARE; see §Results in the manuscript.
+<b>Small-panel caveat.</b> This bundled example uses only a 16-haplotype
+panel on a 330 kb slice of chr12, so absolute posteriors are modest and
+one of the two query haplotypes gets a low <code>mean_posterior</code>
+of 0.60. The paper's validation uses a 46-haplotype panel × 133 Mb chr12
+with 10 chimeric query haplotypes and reaches 95–97% concordance with
+RFMix / FLARE; see §Results in the manuscript.
 </div>
 
 <!-- =============================================================== -->
@@ -370,7 +388,7 @@ The same <code>ancestry</code> binary is used — but now each
 <em>state</em> is an <b>individual founder haplotype</b>, not a
 population. For an <i>N</i>-grandparent pedigree you run the N-state
 HMM with N = number of founders. The paper validates this on the
-<a href="https://github.com/EichlerLab/Platinum-Pedigree-Inheritance">CEPH 1463 Platinum Pedigree</a>
+<a href="https://github.com/Platinum-Pedigree-Consortium/Platinum-Pedigree-Inheritance">CEPH 1463 Platinum Pedigree</a>
 (4 grandparents → 4 states) with 99.2% concordance against ground-truth
 inheritance vectors across all 22 autosomes.
 </p>
@@ -608,21 +626,21 @@ from pangenome-derived alignments</i>. Manuscript in preparation.</li>
 <h3>Methods compared / cited</h3>
 <ul>
 <li><a href="https://doi.org/10.1016/j.ajhg.2013.06.020">RFMix v2 — Maples <i>et al.</i> 2013</a></li>
-<li><a href="https://doi.org/10.1016/j.ajhg.2023.08.004">FLARE — Browning <i>et al.</i> 2023</a></li>
+<li><a href="https://github.com/browning-lab/flare">FLARE — Browning Lab (2023)</a></li>
 <li><a href="https://doi.org/10.1016/j.ajhg.2020.05.008">hap-ibd — Zhou, Browning & Browning 2020</a></li>
 <li><a href="https://github.com/rebeccaserramari/Kyoshi">Kyoshi — Serra Mari 2025</a> (closest prior assembly-level approach)</li>
 </ul>
 
 <h3>Validation data</h3>
 <ul>
-<li><a href="https://github.com/EichlerLab/Platinum-Pedigree-Inheritance">CEPH 1463 Platinum Pedigree</a> — inheritance-vector ground truth</li>
+<li><a href="https://github.com/Platinum-Pedigree-Consortium/Platinum-Pedigree-Inheritance">CEPH 1463 Platinum Pedigree</a> — inheritance-vector ground truth</li>
 <li><a href="https://github.com/tskit-dev/msprime">msprime</a> — pedigree/admixture simulation</li>
 <li><a href="https://doi.org/10.1038/s41586-023-06127-z">Bovine super-pangenome — Leonard <i>et al.</i> 2023</a></li>
 </ul>
 
 <h3>Theoretical background</h3>
 <ul>
-<li>Kingman (1982), <i>The coalescent</i>, Stochastic Processes and their Applications 13: 235–248.</li>
+<li>Kingman, J.F.C. (1982), <i>The coalescent</i>, <i>Stochastic Processes and their Applications</i> 13: 235–248 (no DOI).</li>
 <li><a href="https://doi.org/10.1534/genetics.112.148825">Thompson (2013), <i>Identity by descent: variation in meiosis, across genomes, and in populations</i>, <i>Genetics</i> 194: 301–326.</a></li>
 <li>Guo (1994, 1995), <i>Computation of identity-by-descent proportions</i>, <i>American Journal of Human Genetics</i>.</li>
 </ul>
