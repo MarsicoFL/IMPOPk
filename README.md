@@ -1,5 +1,5 @@
 # impopₖ
-
+v.0.0.1
 **Local ancestry and IBD inference directly from pangenome-derived alignments.**
 
 `impopk` is a small suite of Rust CLI tools that compute windowed pairwise
