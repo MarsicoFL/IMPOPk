@@ -866,7 +866,7 @@ fn test_bic_two_data_points() {
 fn test_bic_extreme_weight() {
     // weight_low near 1.0 means almost all weight on low component
     let mut data = vec![0.998; 50];
-    data.extend(std::iter::repeat_n(0.9997, 50));
+    data.extend(std::iter::repeat(0.9997).take(50));
 
     let low = GaussianParams::new_unchecked(0.998, 0.0005);
     let high = GaussianParams::new_unchecked(0.9997, 0.0003);

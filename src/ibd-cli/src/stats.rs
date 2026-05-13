@@ -1029,7 +1029,7 @@ mod tests {
     fn test_bic_prefers_two_components_clear_separation() {
         // Data with clear bimodal distribution - BIC should prefer 2 components
         let mut data = vec![0.998; 50];
-        data.extend(std::iter::repeat_n(0.9997, 50));
+        data.extend(std::iter::repeat(0.9997).take(50));
 
         let low = GaussianParams::new_unchecked(0.998, 0.0005);
         let high = GaussianParams::new_unchecked(0.9997, 0.0003);

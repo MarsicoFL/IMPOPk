@@ -1348,7 +1348,7 @@ fn test_hmm_extreme_observations_near_zero() {
 fn test_hmm_mixed_extreme_observations() {
     // Mix of very high and very low values
     let mut obs = vec![0.001; 50];
-    obs.extend(std::iter::repeat_n(0.999999, 50));
+    obs.extend(std::iter::repeat(0.999999).take(50));
     let params = HmmParams::from_population(Population::EUR, 50.0, 0.0001, 5000);
     let (posteriors, ll) = forward_backward(&obs, &params);
     assert!(ll.is_finite(), "Log-likelihood should be finite");
