@@ -1,63 +1,11 @@
-//! Tests for glossophaga_populations(), parse_similarity_data() (wrapper),
-//! parse_similarity_data_with_coverage edge cases, and count_smoothing_changes
+//! Tests for parse_similarity_data() (wrapper),
+//! parse_similarity_data_with_coverage edge cases, and coverage_ratio
 //! boundary conditions.
 
 use hprc_ancestry_cli::ancestry::{
-    glossophaga_populations, parse_similarity_data, parse_similarity_data_with_coverage,
+    parse_similarity_data, parse_similarity_data_with_coverage,
     coverage_ratio,
 };
-
-// ============================================================================
-// glossophaga_populations tests
-// ============================================================================
-
-#[test]
-fn test_glossophaga_populations_count() {
-    let pops = glossophaga_populations();
-    assert_eq!(pops.len(), 3);
-}
-
-#[test]
-fn test_glossophaga_populations_names() {
-    let pops = glossophaga_populations();
-    let names: Vec<&str> = pops.iter().map(|p| p.name.as_str()).collect();
-    assert!(names.contains(&"commissarisi"));
-    assert!(names.contains(&"mutica"));
-    assert!(names.contains(&"soricina"));
-}
-
-#[test]
-fn test_glossophaga_populations_haplotypes_per_pop() {
-    let pops = glossophaga_populations();
-    for pop in &pops {
-        assert_eq!(pop.haplotypes.len(), 2, "Population {} should have 2 haplotypes", pop.name);
-    }
-}
-
-#[test]
-fn test_glossophaga_populations_haplotype_names_contain_pop() {
-    let pops = glossophaga_populations();
-    for pop in &pops {
-        for hap in &pop.haplotypes {
-            assert!(
-                hap.starts_with(&pop.name),
-                "Haplotype '{}' should start with population name '{}'",
-                hap,
-                pop.name
-            );
-        }
-    }
-}
-
-#[test]
-fn test_glossophaga_populations_no_duplicate_haplotypes() {
-    let pops = glossophaga_populations();
-    let all_haps: Vec<&str> = pops.iter().flat_map(|p| p.haplotypes.iter().map(|h| h.as_str())).collect();
-    let mut unique = all_haps.clone();
-    unique.sort();
-    unique.dedup();
-    assert_eq!(all_haps.len(), unique.len(), "All haplotype names should be unique");
-}
 
 // ============================================================================
 // parse_similarity_data tests (wrapper around parse_similarity_data_column)

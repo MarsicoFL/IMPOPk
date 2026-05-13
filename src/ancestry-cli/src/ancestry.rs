@@ -889,33 +889,6 @@ pub fn estimate_admixture_proportions(
     }
 }
 
-/// Define bat populations for Glossophaga case study
-pub fn glossophaga_populations() -> Vec<AncestralPopulation> {
-    vec![
-        AncestralPopulation {
-            name: "commissarisi".to_string(),
-            haplotypes: vec![
-                "commissarisi#HAP1".to_string(),
-                "commissarisi#HAP2".to_string(),
-            ],
-        },
-        AncestralPopulation {
-            name: "mutica".to_string(),
-            haplotypes: vec![
-                "mutica#A".to_string(),
-                "mutica#B".to_string(),
-            ],
-        },
-        AncestralPopulation {
-            name: "soricina".to_string(),
-            haplotypes: vec![
-                "soricina#HAP1".to_string(),
-                "soricina#HAP2".to_string(),
-            ],
-        },
-    ]
-}
-
 /// Filter ancestry segments by minimum LOD score.
 ///
 /// Removes segments whose LOD score is below the threshold.
@@ -933,25 +906,17 @@ mod tests {
     #[test]
     fn test_extract_sample_id() {
         assert_eq!(
-            extract_sample_id("TBG_5116#1#h1tg000001l:0-5000"),
-            "TBG_5116#1"
+            extract_sample_id("HG00097#1#h1tg000001l:0-5000"),
+            "HG00097#1"
         );
         assert_eq!(
-            extract_sample_id("commissarisi#HAP1#scaffold73:14346-25666"),
-            "commissarisi#HAP1"
+            extract_sample_id("popA#HAP1#scaffold73:14346-25666"),
+            "popA#HAP1"
         );
         assert_eq!(
-            extract_sample_id("mutica#A"),
-            "mutica#A"
+            extract_sample_id("popB#A"),
+            "popB#A"
         );
-    }
-
-    #[test]
-    fn test_glossophaga_populations() {
-        let pops = glossophaga_populations();
-        assert_eq!(pops.len(), 3);
-        assert_eq!(pops[0].name, "commissarisi");
-        assert_eq!(pops[0].haplotypes.len(), 2);
     }
 
     #[test]

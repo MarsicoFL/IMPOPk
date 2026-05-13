@@ -12,15 +12,16 @@
 //! - **Emissions**: P(similarities | ancestry) - higher similarity expected for matching ancestry
 //! - **Transitions**: Matrix modeling ancestral switches (e.g., ancient recombination)
 //!
-//! ## Example: Glossophaga bats
+//! ## Inputs
 //!
-//! Three ancestral species with 2 haplotypes each:
-//! - State 0: G. commissarisi (HAP1, HAP2)
-//! - State 1: G. mutica (A, B)
-//! - State 2: G. soricina (HAP1, HAP2)
+//! - `--similarity-file`: per-window pairwise identity TSV produced by `ibs`
+//! - `--populations`: TSV mapping ancestral population labels to reference
+//!   haplotype IDs (one row per haplotype)
+//! - `--query-samples`: list of query haplotype IDs to paint
 //!
-//! For each TBG sample window, we compute similarities against all 6 reference
-//! haplotypes, then use the HMM to infer the most likely ancestral species.
+//! For each query haplotype window, similarities to every reference haplotype
+//! are aggregated per population (see `EmissionModel`) and fed to the HMM,
+//! which decodes the most likely ancestry assignment per window.
 
 pub mod hmm;
 pub mod ancestry;

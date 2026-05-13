@@ -42,7 +42,7 @@ fn validate_non_negative_f64(val: &str) -> Result<f64, String> {
 use hprc_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation, EmissionModel,
     AncestryGeneticMap, DecodingMethod, LearnedParams,
-    extract_ancestry_segments, forward_backward, glossophaga_populations,
+    extract_ancestry_segments, forward_backward,
     forward_backward_with_genetic_map, viterbi_with_genetic_map,
     posterior_decode_with_genetic_map,
     precompute_log_emissions, smooth_log_emissions_weighted, smooth_observations,
@@ -1178,12 +1178,10 @@ fn main() -> Result<()> {
         .ok();
 
     // Load populations
-    let populations = if let Some(pop_file) = &args.populations {
-        load_populations(pop_file)?
-    } else {
-        eprintln!("WARNING: No --populations file provided, using built-in defaults");
-        glossophaga_populations()
-    };
+    let pop_file = args.populations.as_ref().ok_or_else(|| {
+        anyhow::anyhow!("--populations is required (TSV: pop_name, haplotype_id)")
+    })?;
+    let populations = load_populations(pop_file)?;
 
     eprintln!("Populations: {:?}", populations.iter().map(|p| &p.name).collect::<Vec<_>>());
 

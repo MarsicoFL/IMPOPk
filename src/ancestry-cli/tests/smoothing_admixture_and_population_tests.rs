@@ -1,10 +1,10 @@
 //! Tests for smooth_states, count_smoothing_changes, estimate_admixture_proportions,
-//! load_population_samples, load_populations_from_dir, glossophaga_populations,
+//! load_population_samples, load_populations_from_dir,
 //! and filter_segments_by_min_lod.
 
 use hprc_ancestry_cli::ancestry::{
     count_smoothing_changes, estimate_admixture_proportions, filter_segments_by_min_lod,
-    glossophaga_populations, load_population_samples, load_populations_from_dir, smooth_states,
+    load_population_samples, load_populations_from_dir, smooth_states,
     AncestrySegment,
 };
 use std::path::Path;
@@ -288,43 +288,6 @@ fn admixture_mean_tract_length() {
     // n_switches = 2 (AFR→EUR, EUR→AFR)
     assert_eq!(result.n_switches, 2);
     assert!(result.mean_tract_length_bp > 0.0);
-}
-
-// ── glossophaga_populations ─────────────────────────────────────────────
-
-#[test]
-fn glossophaga_returns_populations() {
-    let pops = glossophaga_populations();
-    assert!(!pops.is_empty(), "Should return at least one population");
-}
-
-#[test]
-fn glossophaga_populations_have_names_and_haplotypes() {
-    let pops = glossophaga_populations();
-    for pop in &pops {
-        assert!(!pop.name.is_empty(), "Population name should not be empty");
-        assert!(
-            !pop.haplotypes.is_empty(),
-            "Population {} should have haplotypes",
-            pop.name
-        );
-    }
-}
-
-#[test]
-fn glossophaga_haplotypes_are_unique_within_population() {
-    let pops = glossophaga_populations();
-    for pop in &pops {
-        let mut seen = std::collections::HashSet::new();
-        for hap in &pop.haplotypes {
-            assert!(
-                seen.insert(hap.clone()),
-                "Duplicate haplotype {} in population {}",
-                hap,
-                pop.name
-            );
-        }
-    }
 }
 
 // ── load_population_samples ─────────────────────────────────────────────

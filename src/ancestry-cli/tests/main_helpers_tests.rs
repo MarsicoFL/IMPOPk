@@ -31,23 +31,23 @@ fn parse_region(
 
 #[test]
 fn parse_region_with_coordinates() {
-    let (chrom, start, end) = parse_region("chr10:1000-2000", "soricina#HAP1", None).unwrap();
-    assert_eq!(chrom, "soricina#HAP1#chr10");
+    let (chrom, start, end) = parse_region("chr10:1000-2000", "HG00097#1", None).unwrap();
+    assert_eq!(chrom, "HG00097#1#chr10");
     assert_eq!(start, 1000);
     assert_eq!(end, 2000);
 }
 
 #[test]
 fn parse_region_chromosome_only_with_length() {
-    let (chrom, start, end) = parse_region("chr10", "soricina#HAP1", Some(248956422)).unwrap();
-    assert_eq!(chrom, "soricina#HAP1#chr10");
+    let (chrom, start, end) = parse_region("chr10", "HG00097#1", Some(248956422)).unwrap();
+    assert_eq!(chrom, "HG00097#1#chr10");
     assert_eq!(start, 1);
     assert_eq!(end, 248956422);
 }
 
 #[test]
 fn parse_region_chromosome_only_without_length_errors() {
-    assert!(parse_region("chr10", "soricina#HAP1", None).is_err());
+    assert!(parse_region("chr10", "HG00097#1", None).is_err());
 }
 
 #[test]
@@ -120,12 +120,12 @@ fn parse_bed_regions_basic() {
     let path = dir.path().join("test.bed");
     fs::write(&path, "chr10\t1000\t2000\nchr11\t5000\t6000\n").unwrap();
 
-    let regions = parse_bed_regions(&path, "soricina#HAP1").unwrap();
+    let regions = parse_bed_regions(&path, "HG00097#1").unwrap();
     assert_eq!(regions.len(), 2);
-    assert_eq!(regions[0].0, "soricina#HAP1#chr10");
+    assert_eq!(regions[0].0, "HG00097#1#chr10");
     assert_eq!(regions[0].1, 1001); // 0-based→1-based
     assert_eq!(regions[0].2, 2000);
-    assert_eq!(regions[1].0, "soricina#HAP1#chr11");
+    assert_eq!(regions[1].0, "HG00097#1#chr11");
 }
 
 #[test]
@@ -135,7 +135,7 @@ fn parse_bed_regions_with_reference_prefix() {
     // If chrom already has #, don't double-prefix
     fs::write(&path, "ref#HAP1#chr10\t0\t1000\n").unwrap();
 
-    let regions = parse_bed_regions(&path, "soricina#HAP1").unwrap();
+    let regions = parse_bed_regions(&path, "HG00097#1").unwrap();
     assert_eq!(regions[0].0, "ref#HAP1#chr10"); // kept as-is
 }
 

@@ -3725,7 +3725,7 @@ pub fn estimate_switch_prob(
 ///
 /// With more populations in the softmax, the probability mass is spread across
 /// more states, reducing discriminability. Temperature should decrease to
-/// compensate. Uses k=3 as reference (Glossophaga validation case).
+/// compensate. Uses k=3 as reference.
 ///
 /// Based on extreme value theory: the expected maximum of k softmax outputs
 /// scales as √(2 ln k). To maintain the same discrimination level across
@@ -10227,33 +10227,33 @@ mod tests {
     fn make_test_populations() -> Vec<AncestralPopulation> {
         vec![
             AncestralPopulation {
-                name: "commissarisi".to_string(),
-                haplotypes: vec!["commissarisi#HAP1".to_string(), "commissarisi#HAP2".to_string()],
+                name: "popA".to_string(),
+                haplotypes: vec!["popA#HAP1".to_string(), "popA#HAP2".to_string()],
             },
             AncestralPopulation {
-                name: "mutica".to_string(),
-                haplotypes: vec!["mutica#A".to_string(), "mutica#B".to_string()],
+                name: "popB".to_string(),
+                haplotypes: vec!["popB#A".to_string(), "popB#B".to_string()],
             },
             AncestralPopulation {
-                name: "soricina".to_string(),
-                haplotypes: vec!["soricina#HAP1".to_string(), "soricina#HAP2".to_string()],
+                name: "popC".to_string(),
+                haplotypes: vec!["popC#HAP1".to_string(), "popC#HAP2".to_string()],
             },
         ]
     }
 
-    fn make_observation(start: u64, comm: f64, muti: f64, sori: f64) -> AncestryObservation {
+    fn make_observation(start: u64, a: f64, b: f64, c: f64) -> AncestryObservation {
         AncestryObservation {
-            chrom: "super15".to_string(),
+            chrom: "chr1".to_string(),
             start,
             end: start + 5000,
-            sample: "TBG_5116#1".to_string(),
+            sample: "QUERY_1#1".to_string(),
             similarities: [
-                ("commissarisi#HAP1".to_string(), comm),
-                ("commissarisi#HAP2".to_string(), comm - 0.01),
-                ("mutica#A".to_string(), muti),
-                ("mutica#B".to_string(), muti - 0.01),
-                ("soricina#HAP1".to_string(), sori),
-                ("soricina#HAP2".to_string(), sori - 0.01),
+                ("popA#HAP1".to_string(), a),
+                ("popA#HAP2".to_string(), a - 0.01),
+                ("popB#A".to_string(), b),
+                ("popB#B".to_string(), b - 0.01),
+                ("popC#HAP1".to_string(), c),
+                ("popC#HAP2".to_string(), c - 0.01),
             ].into_iter().collect(),
             coverage_ratios: None,
             haplotype_consistency_bonus: None,
@@ -10280,12 +10280,12 @@ mod tests {
         let pops = make_test_populations();
         let params = AncestryHmmParams::new(pops, 0.001);
 
-        // Create observations strongly favoring commissarisi
+        // Create observations strongly favoring popA
         let obs = vec![make_observation(0, 0.98, 0.85, 0.88)];
 
         let states = viterbi(&obs, &params);
         assert_eq!(states.len(), 1);
-        assert_eq!(states[0], 0); // commissarisi
+        assert_eq!(states[0], 0); // popA
     }
 
     #[test]
@@ -10293,22 +10293,22 @@ mod tests {
         let pops = make_test_populations();
         let params = AncestryHmmParams::new(pops, 0.01); // Higher switch prob for test
 
-        // Create sequence: commissarisi -> mutica -> mutica
+        // Create sequence: popA -> popB -> popB
         let obs = vec![
-            make_observation(0, 0.95, 0.80, 0.82),      // comm clear winner
-            make_observation(5000, 0.95, 0.80, 0.82),   // comm
-            make_observation(10000, 0.75, 0.95, 0.80),  // muti clear winner
-            make_observation(15000, 0.75, 0.95, 0.80),  // muti
-            make_observation(20000, 0.75, 0.95, 0.80),  // muti
+            make_observation(0, 0.95, 0.80, 0.82),      // popA clear winner
+            make_observation(5000, 0.95, 0.80, 0.82),   // popA
+            make_observation(10000, 0.75, 0.95, 0.80),  // popB clear winner
+            make_observation(15000, 0.75, 0.95, 0.80),  // popB
+            make_observation(20000, 0.75, 0.95, 0.80),  // popB
         ];
 
         let states = viterbi(&obs, &params);
         assert_eq!(states.len(), 5);
-        assert_eq!(states[0], 0); // commissarisi
-        assert_eq!(states[1], 0); // commissarisi
-        assert_eq!(states[2], 1); // mutica
-        assert_eq!(states[3], 1); // mutica
-        assert_eq!(states[4], 1); // mutica
+        assert_eq!(states[0], 0); // popA
+        assert_eq!(states[1], 0); // popA
+        assert_eq!(states[2], 1); // popB
+        assert_eq!(states[3], 1); // popB
+        assert_eq!(states[4], 1); // popB
     }
 
     #[test]
@@ -10339,21 +10339,21 @@ mod tests {
 
         // Each window strongly favors one population (very strong signal)
         let obs = vec![
-            make_observation(0, 0.99, 0.50, 0.50),     // comm overwhelmingly wins
-            make_observation(5000, 0.50, 0.99, 0.50),  // muti overwhelmingly wins
-            make_observation(10000, 0.50, 0.50, 0.99), // sori overwhelmingly wins
+            make_observation(0, 0.99, 0.50, 0.50),     // popA overwhelmingly wins
+            make_observation(5000, 0.50, 0.99, 0.50),  // popB overwhelmingly wins
+            make_observation(10000, 0.50, 0.50, 0.99), // popC overwhelmingly wins
         ];
 
         let states = viterbi(&obs, &params);
-        assert_eq!(states[0], 0, "Window 0 should be commissarisi");
-        assert_eq!(states[1], 1, "Window 1 should be mutica");
-        assert_eq!(states[2], 2, "Window 2 should be soricina");
+        assert_eq!(states[0], 0, "Window 0 should be popA");
+        assert_eq!(states[1], 1, "Window 1 should be popB");
+        assert_eq!(states[2], 2, "Window 2 should be popC");
 
         let posteriors = forward_backward(&obs, &params);
         // Each window should have high posterior for the winning state
-        assert!(posteriors[0][0] > 0.8, "Posterior for comm at t=0: {}", posteriors[0][0]);
-        assert!(posteriors[1][1] > 0.8, "Posterior for muti at t=1: {}", posteriors[1][1]);
-        assert!(posteriors[2][2] > 0.8, "Posterior for sori at t=2: {}", posteriors[2][2]);
+        assert!(posteriors[0][0] > 0.8, "Posterior for popA at t=0: {}", posteriors[0][0]);
+        assert!(posteriors[1][1] > 0.8, "Posterior for popB at t=1: {}", posteriors[1][1]);
+        assert!(posteriors[2][2] > 0.8, "Posterior for popC at t=2: {}", posteriors[2][2]);
     }
 
     #[test]
@@ -10379,14 +10379,14 @@ mod tests {
 
         let obs = make_observation(0, 0.70, 0.95, 0.85);
 
-        // mutica (state 1) should have highest emission
-        let log_em_comm = params.log_emission(&obs, 0);
-        let log_em_muti = params.log_emission(&obs, 1);
-        let log_em_sori = params.log_emission(&obs, 2);
+        // popB (state 1) should have highest emission
+        let log_em_a = params.log_emission(&obs, 0);
+        let log_em_b = params.log_emission(&obs, 1);
+        let log_em_c = params.log_emission(&obs, 2);
 
-        assert!(log_em_muti > log_em_sori, "mutica emission should be > soricina");
-        assert!(log_em_muti > log_em_comm, "mutica emission should be > commissarisi");
-        assert!(log_em_sori > log_em_comm, "soricina emission should be > commissarisi");
+        assert!(log_em_b > log_em_c, "popB emission should be > popC");
+        assert!(log_em_b > log_em_a, "popB emission should be > popA");
+        assert!(log_em_c > log_em_a, "popC emission should be > popA");
     }
 
     #[test]
@@ -10990,8 +10990,8 @@ mod tests {
         let mut params = AncestryHmmParams::new(pops, 0.01); // Moderate switch prob
         params.set_temperature(0.03);
 
-        // Region 1 (windows 0-4): clearly commissarisi
-        // Region 2 (windows 5-9): clearly mutica
+        // Region 1 (windows 0-4): clearly popA
+        // Region 2 (windows 5-9): clearly popB
         let mut obs = Vec::new();
         for w in 0..5 {
             obs.push(make_observation(w * 5000, 0.96, 0.80, 0.82));
@@ -11009,7 +11009,7 @@ mod tests {
 
         // Should get >= 70% concordance (7 out of 10 windows)
         assert!(total_correct >= 7,
-            "Expected >= 70% concordance, got {}/10 correct (region1: {}/5 comm, region2: {}/5 muti)",
+            "Expected >= 70% concordance, got {}/10 correct (region1: {}/5 popA, region2: {}/5 popB)",
             total_correct, correct_region1, correct_region2);
     }
 
@@ -11153,12 +11153,12 @@ mod tests {
         // Low switch prob = Viterbi strongly favors staying in majority state
         let params = AncestryHmmParams::new(pops, 0.001);
 
-        // 10 windows of commissarisi, then 2 windows of mutica signal, then 8 more commissarisi
+        // 10 windows of popA, then 2 windows of popB signal, then 8 more popA
         let mut obs = Vec::new();
         for w in 0..10 {
             obs.push(make_observation(w * 5000, 0.95, 0.83, 0.82));
         }
-        // Two windows where mutica has highest similarity (minority tract)
+        // Two windows where popB has highest similarity (minority tract)
         obs.push(make_observation(50000, 0.83, 0.95, 0.82));
         obs.push(make_observation(55000, 0.83, 0.95, 0.82));
         for w in 12..20 {
@@ -11168,15 +11168,15 @@ mod tests {
         let viterbi_states = viterbi(&obs, &params);
         let posterior_states = posterior_decode(&obs, &params);
 
-        // Viterbi may call everything as commissarisi (state 0) due to switch penalty
-        // Posterior should detect the mutica windows (state 1)
-        let viterbi_mutica = viterbi_states.iter().filter(|&&s| s == 1).count();
-        let posterior_mutica = posterior_states.iter().filter(|&&s| s == 1).count();
+        // Viterbi may call everything as popA (state 0) due to switch penalty
+        // Posterior should detect the popB windows (state 1)
+        let viterbi_popB = viterbi_states.iter().filter(|&&s| s == 1).count();
+        let posterior_popB = posterior_states.iter().filter(|&&s| s == 1).count();
 
-        // Posterior decoding should detect at least as many mutica windows as Viterbi
-        assert!(posterior_mutica >= viterbi_mutica,
-            "Posterior ({} mutica) should detect >= Viterbi ({} mutica)",
-            posterior_mutica, viterbi_mutica);
+        // Posterior decoding should detect at least as many popB windows as Viterbi
+        assert!(posterior_popB >= viterbi_popB,
+            "Posterior ({} popB) should detect >= Viterbi ({} popB)",
+            posterior_popB, viterbi_popB);
     }
 
     #[test]
@@ -11198,7 +11198,7 @@ mod tests {
         let states = posterior_decode(&obs, &params);
 
         assert_eq!(states.len(), 1);
-        // commissarisi (state 0) has highest similarity
+        // popA (state 0) has highest similarity
         assert_eq!(states[0], 0);
     }
 
@@ -11252,13 +11252,13 @@ mod tests {
         let params = AncestryHmmParams::new(pops, 0.005);
 
         let mut obs = Vec::new();
-        // 8 clear commissarisi windows
+        // 8 clear popA windows
         for w in 0..8 {
             obs.push(make_observation(w * 5000, 0.95, 0.83, 0.82));
         }
-        // 1 noisy window where mutica barely wins
+        // 1 noisy window where popB barely wins
         obs.push(make_observation(40000, 0.88, 0.89, 0.82));
-        // 6 more commissarisi
+        // 6 more popA
         for w in 9..15 {
             obs.push(make_observation(w * 5000, 0.95, 0.83, 0.82));
         }
@@ -11299,7 +11299,7 @@ mod tests {
         let pops = make_test_populations();
         let mut params = AncestryHmmParams::new(pops, 0.001);
 
-        // Create observations with systematic bias: commissarisi always higher
+        // Create observations with systematic bias: popA always higher
         let obs: Vec<AncestryObservation> = (0..20)
             .map(|w| make_observation(w * 5000, 0.95, 0.85, 0.88))
             .collect();
@@ -11312,9 +11312,9 @@ mod tests {
         assert_eq!(norm.means.len(), 3);
         assert_eq!(norm.stds.len(), 3);
 
-        // commissarisi should have highest mean
+        // popA should have highest mean
         assert!(norm.means[0] > norm.means[1],
-            "commissarisi mean ({}) should be > mutica mean ({})",
+            "popA mean ({}) should be > popB mean ({})",
             norm.means[0], norm.means[1]);
 
         // All stds should be positive
@@ -11692,33 +11692,33 @@ mod tests {
 
     fn make_observation_with_coverage(
         start: u64,
-        comm: f64,
-        muti: f64,
-        sori: f64,
-        comm_cov: f64,
-        muti_cov: f64,
-        sori_cov: f64,
+        a: f64,
+        b: f64,
+        c: f64,
+        a_cov: f64,
+        b_cov: f64,
+        c_cov: f64,
     ) -> AncestryObservation {
         AncestryObservation {
-            chrom: "super15".to_string(),
+            chrom: "chr1".to_string(),
             start,
             end: start + 5000,
-            sample: "TBG_5116#1".to_string(),
+            sample: "QUERY_1#1".to_string(),
             similarities: [
-                ("commissarisi#HAP1".to_string(), comm),
-                ("commissarisi#HAP2".to_string(), comm - 0.01),
-                ("mutica#A".to_string(), muti),
-                ("mutica#B".to_string(), muti - 0.01),
-                ("soricina#HAP1".to_string(), sori),
-                ("soricina#HAP2".to_string(), sori - 0.01),
+                ("popA#HAP1".to_string(), a),
+                ("popA#HAP2".to_string(), a - 0.01),
+                ("popB#A".to_string(), b),
+                ("popB#B".to_string(), b - 0.01),
+                ("popC#HAP1".to_string(), c),
+                ("popC#HAP2".to_string(), c - 0.01),
             ].into_iter().collect(),
             coverage_ratios: Some([
-                ("commissarisi#HAP1".to_string(), comm_cov),
-                ("commissarisi#HAP2".to_string(), comm_cov * 0.95),
-                ("mutica#A".to_string(), muti_cov),
-                ("mutica#B".to_string(), muti_cov * 0.95),
-                ("soricina#HAP1".to_string(), sori_cov),
-                ("soricina#HAP2".to_string(), sori_cov * 0.95),
+                ("popA#HAP1".to_string(), a_cov),
+                ("popA#HAP2".to_string(), a_cov * 0.95),
+                ("popB#A".to_string(), b_cov),
+                ("popB#B".to_string(), b_cov * 0.95),
+                ("popC#HAP1".to_string(), c_cov),
+                ("popC#HAP2".to_string(), c_cov * 0.95),
             ].into_iter().collect()),
             haplotype_consistency_bonus: None,
         }
@@ -11753,7 +11753,7 @@ mod tests {
         let mut params_cov = AncestryHmmParams::new(pops, 0.001);
         params_cov.set_coverage_weight(1.0);
 
-        // Coverage strongly favors commissarisi (state 0)
+        // Coverage strongly favors popA (state 0)
         let obs = make_observation_with_coverage(0, 0.90, 0.89, 0.88, 0.95, 0.60, 0.50);
 
         // Compare log-emission ratio between state 0 and state 1
@@ -11802,26 +11802,26 @@ mod tests {
         let mut params = AncestryHmmParams::new(pops, 0.001);
         params.set_coverage_weight(1.0);
 
-        // 10 windows: commissarisi identity similar to mutica, but coverage strongly favors commissarisi
+        // 10 windows: popA identity similar to popB, but coverage strongly favors popA
         let obs: Vec<AncestryObservation> = (0..10)
             .map(|w| make_observation_with_coverage(
                 w * 5000,
-                0.92,  // commissarisi identity
-                0.91,  // mutica identity (very close)
-                0.83,  // soricina identity
-                0.95,  // commissarisi coverage (high — symmetric alignment)
-                0.60,  // mutica coverage (low — asymmetric)
-                0.50,  // soricina coverage (low)
+                0.92,  // popA identity
+                0.91,  // popB identity (very close)
+                0.83,  // popC identity
+                0.95,  // popA coverage (high — symmetric alignment)
+                0.60,  // popB coverage (low — asymmetric)
+                0.50,  // popC coverage (low)
             ))
             .collect();
 
         let states = viterbi(&obs, &params);
         assert_eq!(states.len(), 10);
 
-        // With coverage favoring commissarisi, most states should be 0
+        // With coverage favoring popA, most states should be 0
         let count_0 = states.iter().filter(|&&s| s == 0).count();
         assert!(count_0 >= 8,
-            "Expected mostly state 0 (commissarisi), got {}/10", count_0);
+            "Expected mostly state 0 (popA), got {}/10", count_0);
     }
 
     #[test]
@@ -13876,7 +13876,7 @@ mod tests {
         // Simulate well-separated populations (like sim data) with realistic noise
         let pops = make_test_populations();
         let obs: Vec<AncestryObservation> = (0..500).map(|i| {
-            // Base: comm=0.99, muti=0.96, sori=0.93 with per-window variation
+            // Base: popA=0.99, popB=0.96, popC=0.93 with per-window variation
             // Use deterministic noise based on window index
             let noise_c = (i as f64 * 0.7).sin() * 0.005;
             let noise_m = (i as f64 * 1.3).sin() * 0.008;
@@ -14071,9 +14071,9 @@ mod tests {
         let pops = make_test_populations();
         // Only 10 observations (threshold is <50)
         let obs = make_deconv_observations(10, &[
-            ("commissarisi#HAP1", 0.99), ("commissarisi#HAP2", 0.98),
-            ("mutica#A", 0.95), ("mutica#B", 0.94),
-            ("soricina#HAP1", 0.90), ("soricina#HAP2", 0.89),
+            ("popA#HAP1", 0.99), ("popA#HAP2", 0.98),
+            ("popB#A", 0.95), ("popB#B", 0.94),
+            ("popC#HAP1", 0.90), ("popC#HAP2", 0.89),
         ]);
         let (result, map) = deconvolve_admixed_populations(&obs, &pops, 0.5);
         assert_eq!(result.len(), pops.len(), "Should return original with <50 obs");
@@ -14086,7 +14086,7 @@ mod tests {
     fn test_deconvolve_single_population() {
         let single = vec![make_test_populations()[0].clone()];
         let obs = make_deconv_observations(100, &[
-            ("commissarisi#HAP1", 0.99), ("commissarisi#HAP2", 0.98),
+            ("popA#HAP1", 0.99), ("popA#HAP2", 0.98),
         ]);
         let (result, map) = deconvolve_admixed_populations(&obs, &single, 0.5);
         assert_eq!(result.len(), 1, "Single pop should not deconvolve");
@@ -14096,11 +14096,11 @@ mod tests {
     #[test]
     fn test_deconvolve_well_separated_populations() {
         let pops = make_test_populations();
-        // Large separation: comm=0.99, muti=0.85, sori=0.70 → high Cohen's d
+        // Large separation: popA=0.99, popB=0.85, popC=0.70 → high Cohen's d
         let obs = make_deconv_observations(100, &[
-            ("commissarisi#HAP1", 0.99), ("commissarisi#HAP2", 0.98),
-            ("mutica#A", 0.85), ("mutica#B", 0.84),
-            ("soricina#HAP1", 0.70), ("soricina#HAP2", 0.69),
+            ("popA#HAP1", 0.99), ("popA#HAP2", 0.98),
+            ("popB#A", 0.85), ("popB#B", 0.84),
+            ("popC#HAP1", 0.70), ("popC#HAP2", 0.69),
         ]);
         let (result, map) = deconvolve_admixed_populations(&obs, &pops, 0.01);
         // Well-separated: no deconvolution should occur
@@ -14193,9 +14193,9 @@ mod tests {
         // All haplotypes from original populations must appear in output
         let pops = make_test_populations();
         let obs = make_deconv_observations(100, &[
-            ("commissarisi#HAP1", 0.99), ("commissarisi#HAP2", 0.98),
-            ("mutica#A", 0.95), ("mutica#B", 0.94),
-            ("soricina#HAP1", 0.90), ("soricina#HAP2", 0.89),
+            ("popA#HAP1", 0.99), ("popA#HAP2", 0.98),
+            ("popB#A", 0.95), ("popB#B", 0.94),
+            ("popC#HAP1", 0.90), ("popC#HAP2", 0.89),
         ]);
         let (result, _map) = deconvolve_admixed_populations(&obs, &pops, 0.5);
         let mut orig_haps: Vec<String> = pops.iter()
@@ -14875,7 +14875,7 @@ mod tests {
 
     #[test]
     fn test_pop_distances_ordering() {
-        // comm=0.99, muti=0.96, sori=0.93 → comm-muti distance < comm-sori distance
+        // popA=0.99, popB=0.96, popC=0.93 → popA-popB distance < popA-popC distance
         let pops = make_test_populations();
         let obs = (0..10).map(|i| {
             make_observation(i as u64 * 5000, 0.99, 0.96, 0.93)
@@ -14883,13 +14883,13 @@ mod tests {
         let dists = compute_population_distances(&obs, &pops, &EmissionModel::Max);
         // |0.99 - 0.96| = 0.03, |0.99 - 0.93| = 0.06
         assert!(dists[0][1] < dists[0][2],
-            "comm-muti ({}) should be closer than comm-sori ({})", dists[0][1], dists[0][2]);
+            "popA-popB ({}) should be closer than popA-popC ({})", dists[0][1], dists[0][2]);
     }
 
     #[test]
     fn test_distance_weighted_transitions_close_pair_higher() {
         let pops = make_test_populations();
-        // comm=0.99, muti=0.97, sori=0.90 → D[muti,comm]=0.02, D[muti,sori]=0.07
+        // popA=0.99, popB=0.97, popC=0.90 → D[popB,popA]=0.02, D[popB,popC]=0.07
         let obs = (0..10).map(|i| {
             make_observation(i as u64 * 5000, 0.99, 0.97, 0.90)
         }).collect::<Vec<_>>();
@@ -14900,9 +14900,9 @@ mod tests {
         let mut params = AncestryHmmParams::new(pops, 0.05);
         set_distance_weighted_transitions(&mut params, &dists, &proportions, &switch_rates);
 
-        // muti→comm transition should be higher than muti→sori (muti is closer to comm)
+        // popB→popA transition should be higher than popB→popC (popB is closer to popA)
         assert!(params.transitions[1][0] > params.transitions[1][2],
-            "muti→comm ({:.6}) should be > muti→sori ({:.6})",
+            "popB→popA ({:.6}) should be > popB→popC ({:.6})",
             params.transitions[1][0], params.transitions[1][2]);
     }
 
@@ -15158,16 +15158,16 @@ mod tests {
     #[test]
     fn test_reference_purity_basic() {
         let pops = make_test_populations();
-        // comm has highest similarity → its refs should have high purity
+        // popA has highest similarity → its refs should have high purity
         let obs = (0..10).map(|i| {
             make_observation(i as u64 * 5000, 0.99, 0.90, 0.85)
         }).collect::<Vec<_>>();
         let purity = compute_reference_purity(&obs, &pops);
-        // comm haplotypes should have higher purity than muti/sori
-        let comm_purity = purity.get("commissarisi#HAP1").cloned().unwrap_or(0.0);
-        let muti_purity = purity.get("mutica#A").cloned().unwrap_or(0.0);
-        assert!(comm_purity > 0.0, "comm purity should be positive");
-        assert!(muti_purity > 0.0, "muti purity should be positive");
+        // popA haplotypes should have higher purity than popB/popC
+        let a_purity = purity.get("popA#HAP1").cloned().unwrap_or(0.0);
+        let b_purity = purity.get("popB#A").cloned().unwrap_or(0.0);
+        assert!(a_purity > 0.0, "popA purity should be positive");
+        assert!(b_purity > 0.0, "popB purity should be positive");
     }
 
     #[test]
@@ -15229,7 +15229,7 @@ mod tests {
     fn test_within_pop_variance_basic() {
         let pops = make_test_populations();
         // HAP1=0.99, HAP2=0.98 → small variance
-        // mutica A=0.96, B=0.95 → small variance
+        // popB A=0.96, B=0.95 → small variance
         let obs = vec![make_observation(0, 0.99, 0.96, 0.93)];
         let variances = compute_within_pop_variance(&obs, &pops);
         assert_eq!(variances.len(), 1);
@@ -15244,11 +15244,11 @@ mod tests {
     #[test]
     fn test_within_pop_variance_high_variance_pop() {
         let pops = make_test_populations();
-        // Create observation where commissarisi has high variance (HAP1=0.99, HAP2=0.80)
+        // Create observation where popA has high variance (HAP1=0.99, HAP2=0.80)
         let mut obs = make_observation(0, 0.99, 0.96, 0.93);
-        obs.similarities.insert("commissarisi#HAP2".to_string(), 0.80);
+        obs.similarities.insert("popA#HAP2".to_string(), 0.80);
         let variances = compute_within_pop_variance(&[obs], &pops);
-        // commissarisi variance should be much larger than others
+        // popA variance should be much larger than others
         assert!(variances[0][0] > variances[0][1],
             "high-variance pop ({}) should have larger variance than normal ({})",
             variances[0][0], variances[0][1]);
@@ -15436,24 +15436,24 @@ mod tests {
     #[test]
     fn test_loo_robust_penalizes_outlier() {
         let pops = make_test_populations();
-        // commissarisi has one outlier: HAP1=0.99, HAP2=0.80
+        // popA has one outlier: HAP1=0.99, HAP2=0.80
         // LOO min: leaving out HAP1 → max(0.80) = 0.80; leaving out HAP2 → max(0.99) = 0.99
         // min(0.80, 0.99) = 0.80
-        // mutica is consistent: A=0.96, B=0.95 → LOO min = 0.95
+        // popB is consistent: A=0.96, B=0.95 → LOO min = 0.95
         let mut obs = make_observation(0, 0.99, 0.96, 0.93);
-        obs.similarities.insert("commissarisi#HAP2".to_string(), 0.80);
+        obs.similarities.insert("popA#HAP2".to_string(), 0.80);
         let loo_result = compute_loo_robust_emissions(&[obs.clone()], &pops, &EmissionModel::Max, 0.01);
-        // commissarisi's LOO score (0.80) < mutica's LOO score (0.95)
-        // So in LOO emissions, mutica should have higher probability than commissarisi
-        // (opposite of standard where commissarisi's 0.99 max would win)
+        // popA's LOO score (0.80) < popB's LOO score (0.95)
+        // So in LOO emissions, popB should have higher probability than popA
+        // (opposite of standard where popA's 0.99 max would win)
         let standard_emissions = precompute_log_emissions(&[obs.clone()],
             &AncestryHmmParams::new(pops.clone(), 0.001));
-        // Standard: commissarisi wins (0.99 max)
+        // Standard: popA wins (0.99 max)
         assert!(standard_emissions[0][0] > standard_emissions[0][1],
-            "standard should favor commissarisi");
-        // LOO: mutica wins (0.95 LOO vs 0.80 LOO)
+            "standard should favor popA");
+        // LOO: popB wins (0.95 LOO vs 0.80 LOO)
         assert!(loo_result[0][1] > loo_result[0][0],
-            "LOO should favor mutica over outlier-dependent commissarisi: {} vs {}",
+            "LOO should favor popB over outlier-dependent popA: {} vs {}",
             loo_result[0][1], loo_result[0][0]);
     }
 
