@@ -14,8 +14,13 @@
 //!   SmallIndel           : 2 branches; one is the "skip" (one step lands on
 //!                          the other branch's start), the other is a chain
 //!                          of 1-50 nodes with no internal branch points
-//!   Microsatellite       : ≥3 branches, all 1-bp same letter, each walks
-//!                          along a same-letter simple chain to a common exit
+//!   Microsatellite       : ≥3 branches whose simple-chain sequences (walked
+//!                          up to the BFS-found sink) all decompose as `M^k`
+//!                          for some shared motif `M` of length 1-6 bp. Picks
+//!                          the shortest motif length that works. Detects
+//!                          mono-, di-, tri-, tetra-, penta- and hexa-
+//!                          nucleotide STRs/VNTRs. (The panarg Python
+//!                          reference only detected mononucleotide tracts.)
 //!   Complex              : anything else
 
 use std::collections::HashSet;
@@ -56,6 +61,7 @@ impl BubbleType {
 
 const MAX_INDEL_LEN: usize = 50;
 const MAX_MICROSAT_STEPS: usize = 200;
+const MAX_MOTIF_LEN: usize = 6;
 
 /// Single-base sequence of a node, or empty if missing.
 fn node_base(graph: &Graph, n: NodeId) -> &[u8] {
@@ -72,10 +78,17 @@ pub fn classify(bubble: &Bubble, graph: &Graph) -> BubbleType {
     if succs.len() < 2 {
         return BubbleType::Complex;
     }
+    // bubble.sink == bubble.source signals "BFS didn't converge"; pass None
+    // so microsat/indel checks know there's no usable bubble boundary.
+    let sink = if bubble.sink != bubble.source {
+        Some(bubble.sink)
+    } else {
+        None
+    };
     if let Some(t) = try_snp(graph, succs) {
         return t;
     }
-    if let Some(t) = try_microsatellite(graph, succs) {
+    if let Some(t) = try_microsatellite(graph, succs, sink) {
         return t;
     }
     if let Some(t) = try_small_indel(graph, succs) {
@@ -123,41 +136,96 @@ fn try_snp(graph: &Graph, succs: &[NodeId]) -> Option<BubbleType> {
 /// Microsatellite: ≥3 branches, all immediate successors are 1-bp same letter,
 /// each walks along a same-letter chain (with single-out interior nodes) to a
 /// common exit node.
-fn try_microsatellite(graph: &Graph, succs: &[NodeId]) -> Option<BubbleType> {
+fn try_microsatellite(
+    graph: &Graph,
+    succs: &[NodeId],
+    sink: Option<NodeId>,
+) -> Option<BubbleType> {
     if succs.len() < 3 {
         return None;
     }
-    if !succs.iter().all(|&s| is_single_base(graph, s)) {
-        return None;
-    }
-    let target = node_base(graph, succs[0])[0];
-    if !succs.iter().all(|&s| node_base(graph, s)[0] == target) {
-        return None;
-    }
-    let mut exits: HashSet<NodeId> = HashSet::new();
+    // We need a BFS-found sink to bound the walk; otherwise the chain may
+    // run on past the bubble.
+    let sink = sink?;
+
+    // Walk each branch as a simple single-out chain up to the sink.
+    let mut sequences: Vec<Vec<u8>> = Vec::with_capacity(succs.len());
     for &s in succs {
-        let mut cur = s;
-        for _ in 0..MAX_MICROSAT_STEPS {
-            let nxt = graph.successors(cur);
-            if nxt.len() != 1 {
-                return None;
-            }
-            let nn = nxt[0];
-            let nn_seq = node_base(graph, nn);
-            let nn_single_out = graph.successors(nn).len() == 1;
-            if nn_seq.len() == 1 && nn_seq[0] == target && nn_single_out {
-                cur = nn;
-                continue;
-            }
-            exits.insert(nn);
-            break;
+        let seq = walk_branch_to_sink(graph, s, sink, MAX_MICROSAT_STEPS)?;
+        sequences.push(seq);
+    }
+
+    // Find the shortest motif M (1..=6 bp) such that every non-empty branch
+    // sequence is exactly M^k for some k ≥ 1. Empty branches always pass.
+    for motif_len in 1..=MAX_MOTIF_LEN {
+        if is_consistent_motif(&sequences, motif_len) {
+            return Some(BubbleType::Microsatellite);
         }
     }
-    if exits.len() == 1 {
-        Some(BubbleType::Microsatellite)
-    } else {
-        None
+    None
+}
+
+/// Walk from `start` toward `sink` through single-out interior nodes. The
+/// walk stops cleanly when the next step lands on `sink` (sink's bases are
+/// excluded from the returned sequence). Returns None if the walk encounters
+/// a multi-out node before reaching the sink (the chain isn't simple), or
+/// if `max_steps` runs out.
+///
+/// If `start == sink` the branch is empty and the function returns
+/// `Some((vec![], sink))` semantically — here just the empty Vec.
+fn walk_branch_to_sink(
+    graph: &Graph,
+    start: NodeId,
+    sink: NodeId,
+    max_steps: usize,
+) -> Option<Vec<u8>> {
+    if start == sink {
+        return Some(Vec::new());
     }
+    let mut seq: Vec<u8> = Vec::new();
+    let mut cur = start;
+    for _ in 0..max_steps {
+        seq.extend_from_slice(node_base(graph, cur));
+        let nxt = graph.successors(cur);
+        if nxt.len() != 1 {
+            return None; // chain branches before reaching sink
+        }
+        let nn = nxt[0];
+        if nn == sink {
+            return Some(seq);
+        }
+        cur = nn;
+    }
+    None
+}
+
+/// True iff every non-empty sequence is exactly `M^k` for some `k ≥ 1`, where
+/// `M` is the prefix of length `motif_len` from the shortest non-empty
+/// sequence. Empty sequences trivially pass.
+fn is_consistent_motif(seqs: &[Vec<u8>], motif_len: usize) -> bool {
+    let shortest = seqs.iter().filter(|s| !s.is_empty()).min_by_key(|s| s.len());
+    let Some(shortest) = shortest else {
+        return false;
+    };
+    if shortest.len() < motif_len {
+        return false;
+    }
+    let motif = &shortest[..motif_len];
+    for s in seqs {
+        if s.is_empty() {
+            continue;
+        }
+        if s.len() % motif_len != 0 {
+            return false;
+        }
+        let k = s.len() / motif_len;
+        for i in 0..k {
+            if &s[i * motif_len..(i + 1) * motif_len] != motif {
+                return false;
+            }
+        }
+    }
+    true
 }
 
 /// Small indel: 2 branches; one is the "skip" (one step lands on the other
@@ -299,6 +367,62 @@ mod tests {
             &[(1, 2), (1, 3), (1, 4), (1, 5), (2, 3), (3, 4), (4, 5), (5, 6)],
         );
         assert_eq!(classify_from_source(&g, 1), BubbleType::Microsatellite);
+    }
+
+    #[test]
+    fn microsatellite_ta_dinucleotide() {
+        // A TA-repeat STR with 4 length classes: 0 (skip), TA, TATA, TATATA.
+        // Source 1 connects to four entry points along the chain (offsets 0, 2, 4, 6).
+        // Layout (each node is 1 bp):
+        //   1 → 8 (sink, skip = 0 TA)
+        //   1 → 6 → 7 → 8 (= TA)
+        //   1 → 4 → 5 → 6 → 7 → 8 (= TATA)
+        //   1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 (= TATATA)
+        let g = mk_graph(
+            &[(1, b"L"),
+              (2, b"T"), (3, b"A"),
+              (4, b"T"), (5, b"A"),
+              (6, b"T"), (7, b"A"),
+              (8, b"R")],
+            &[(1, 2), (1, 4), (1, 6), (1, 8),
+              (2, 3), (3, 4),
+              (4, 5), (5, 6),
+              (6, 7), (7, 8)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Microsatellite);
+    }
+
+    #[test]
+    fn microsatellite_cag_trinucleotide() {
+        // CAG-repeat STR with 3 length classes: 0, CAG, CAGCAG.
+        let g = mk_graph(
+            &[(1, b"L"),
+              (2, b"C"), (3, b"A"), (4, b"G"),
+              (5, b"C"), (6, b"A"), (7, b"G"),
+              (8, b"R")],
+            &[(1, 2), (1, 5), (1, 8),
+              (2, 3), (3, 4), (4, 5),
+              (5, 6), (6, 7), (7, 8)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Microsatellite);
+    }
+
+    #[test]
+    fn near_microsatellite_inconsistent_motif_is_complex() {
+        // 3 branches with sequences "AT", "ATAT" but the third is "AC" (broken motif).
+        // No M^k works across all three → not a microsat.
+        let g = mk_graph(
+            &[(1, b"L"),
+              (2, b"A"), (3, b"T"),    // "AT"
+              (4, b"A"), (5, b"T"),    // "AT" prefix of "ATAT"
+              (6, b"A"), (7, b"C"),    // "AC" (different)
+              (8, b"R")],
+            &[(1, 2), (1, 4), (1, 6),
+              (2, 3), (3, 8),
+              (4, 5), (5, 8),
+              (6, 7), (7, 8)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Complex);
     }
 
     #[test]
