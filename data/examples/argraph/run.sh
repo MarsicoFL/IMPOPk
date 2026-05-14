@@ -19,6 +19,7 @@ mkdir -p output
 
 ARG_BIN=${ARG_BIN:-../../../target/release/argraph}
 
+# 1. Bubble classification (one row per top-level bubble).
 "$ARG_BIN" classify \
     --gfa  input/pangenome.gfa \
     --output output/bubbles.tsv
@@ -29,5 +30,21 @@ awk -F'\t' 'NR>1 {c[$5]++} END {for (k in c) printf "  %-10s %d\n", k, c[k]}' \
     output/bubbles.tsv | sort
 
 echo
-echo "First rows:"
+echo "First rows (bubble structure + classification):"
 column -t -s $'\t' output/bubbles.tsv | head -10
+
+# 2. Sites emission (tsinfer-ready): per-bubble row with reference position,
+#    per-haplotype branch indices, allele labels, ancestral branch index.
+"$ARG_BIN" emit-sites \
+    --gfa input/pangenome.gfa \
+    --output  output/sites.tsv \
+    --panel-out output/panel.txt
+
+echo
+echo "Sites TSV (microsat + indel rows):"
+awk -F'\t' 'NR==1 || $6=="microsat" || $6=="indel"' output/sites.tsv \
+    | column -t -s $'\t'
+
+echo
+echo "Panel order (first 5 haplotypes):"
+head -5 output/panel.txt

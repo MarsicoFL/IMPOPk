@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 
-use impopk_argraph::{classify, enumerate_bubbles, Graph};
+use impopk_argraph::{build_site, classify, enumerate_bubbles, Graph, Panel, MISSING_GENOTYPE};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -44,6 +44,29 @@ enum Cmd {
         #[arg(long, default_value = "200")]
         max_depth: usize,
     },
+    /// Emit a tsinfer-ready sites TSV plus the panel order. One row per
+    /// bubble; genotypes column is comma-separated per-haplotype branch
+    /// indices in panel order, with -1 for haplotypes that do not pass
+    /// through the bubble source.
+    EmitSites {
+        /// Input GFA.
+        #[arg(long)]
+        gfa: PathBuf,
+        /// Output sites TSV path (`-` for stdout).
+        #[arg(long, default_value = "-")]
+        output: String,
+        /// Output panel.txt with one panel haplotype name per line, in the
+        /// same order as the `genotypes` column. Defaults to <output>.panel
+        /// when `--output` is a file; required when `--output -`.
+        #[arg(long)]
+        panel_out: Option<PathBuf>,
+        /// Path-name prefix that marks the reference. Default: CHM13.
+        #[arg(long, default_value = "CHM13")]
+        reference: String,
+        /// Max BFS depth.
+        #[arg(long, default_value = "200")]
+        max_depth: usize,
+    },
 }
 
 fn main() -> Result<()> {
@@ -51,6 +74,9 @@ fn main() -> Result<()> {
     match args.cmd {
         Cmd::Classify { gfa, output, max_depth } => classify_cmd(&gfa, &output, max_depth),
         Cmd::Stats { gfa, max_depth } => stats_cmd(&gfa, max_depth),
+        Cmd::EmitSites { gfa, output, panel_out, reference, max_depth } => {
+            emit_sites_cmd(&gfa, &output, panel_out.as_deref(), &reference, max_depth)
+        }
     }
 }
 
@@ -104,6 +130,107 @@ fn classify_cmd(gfa: &std::path::Path, output: &str, max_depth: usize) -> Result
             t.mu_event(),
             lens_str,
             bfs_closed
+        )?;
+    }
+    Ok(())
+}
+
+fn emit_sites_cmd(
+    gfa: &std::path::Path,
+    output: &str,
+    panel_out: Option<&std::path::Path>,
+    reference: &str,
+    max_depth: usize,
+) -> Result<()> {
+    let graph = Graph::parse(gfa).context("parsing GFA")?;
+    let panel = Panel::from_graph(&graph, reference);
+    eprintln!(
+        "loaded {} segments, {} paths ({} panel + {} reference)",
+        graph.seq.len(),
+        graph.paths.len(),
+        panel.names.len(),
+        if panel.reference.is_some() { 1 } else { 0 },
+    );
+    if panel.reference.is_none() {
+        eprintln!(
+            "warning: no path matching prefix '{}' — ref_pos and ancestral_branch will be NA",
+            reference
+        );
+    }
+
+    let bubbles = enumerate_bubbles(&graph, max_depth);
+    eprintln!("found {} bubbles", bubbles.len());
+
+    // Resolve panel.txt path.
+    let panel_path: Option<PathBuf> = match (panel_out, output) {
+        (Some(p), _) => Some(p.to_path_buf()),
+        (None, "-") => None, // stdout sites + stdout panel doesn't work; only emit sites.
+        (None, path) => Some(PathBuf::from(format!("{}.panel", path))),
+    };
+    if let Some(p) = &panel_path {
+        let mut pw = BufWriter::new(File::create(p).context("creating panel file")?);
+        for name in &panel.names {
+            writeln!(pw, "{}", name)?;
+        }
+        pw.flush()?;
+        eprintln!("wrote panel: {}", p.display());
+    } else {
+        eprintln!("warning: --output is stdout and --panel-out not given; panel order discarded");
+    }
+
+    // Sites TSV.
+    let writer: Box<dyn Write> = if output == "-" {
+        Box::new(BufWriter::new(std::io::stdout()))
+    } else {
+        Box::new(BufWriter::new(File::create(output).context("creating sites file")?))
+    };
+    let mut w = writer;
+    writeln!(
+        w,
+        "bubble_id\tsource\tsink\tref_pos\tn_branches\ttype\tmu\talleles\tancestral\tgenotypes\tbfs_closed"
+    )?;
+    for (i, b) in bubbles.into_iter().enumerate() {
+        let site = build_site(b, &graph, &panel);
+        let sink_str = if site.bfs_closed {
+            site.sink.to_string()
+        } else {
+            "NA".to_string()
+        };
+        let ref_pos_str = site
+            .ref_pos
+            .map(|p| p.to_string())
+            .unwrap_or_else(|| "NA".to_string());
+        let ancestral_str = site
+            .ancestral_branch
+            .map(|a| a.to_string())
+            .unwrap_or_else(|| "NA".to_string());
+        let alleles_str = site.alleles.join(",");
+        let genotypes_str = site
+            .genotypes
+            .iter()
+            .map(|&g| {
+                if g == MISSING_GENOTYPE {
+                    "-1".to_string()
+                } else {
+                    g.to_string()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        writeln!(
+            w,
+            "{}\t{}\t{}\t{}\t{}\t{}\t{:.2e}\t{}\t{}\t{}\t{}",
+            i,
+            site.source,
+            sink_str,
+            ref_pos_str,
+            site.alleles.len(),
+            site.bubble_type.as_str(),
+            site.mu,
+            alleles_str,
+            ancestral_str,
+            genotypes_str,
+            site.bfs_closed
         )?;
     }
     Ok(())
