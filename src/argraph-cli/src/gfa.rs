@@ -86,7 +86,7 @@ impl Graph {
                     let mut nodes = Vec::new();
                     for token in path_str.split(',') {
                         // Strip optional strand suffix (+ or -).
-                        let token = token.trim_end_matches(|c: char| c == '+' || c == '-');
+                        let token = token.trim_end_matches(['+', '-']);
                         let id: NodeId = token
                             .parse()
                             .with_context(|| format!("parsing path node on line {}", i + 1))?;

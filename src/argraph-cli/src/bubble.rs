@@ -7,6 +7,7 @@
 //! v0.1: top-level bubbles only — bubbles nested inside a branch are not
 //! enumerated separately. Sufficient for impg-emitted GFAs of short regions.
 
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 use crate::gfa::{Graph, NodeId};
@@ -48,7 +49,7 @@ pub fn find_bubble(graph: &Graph, source: NodeId, max_depth: usize) -> Option<Bu
         frontier[i].push(s);
     }
 
-    for _step in 0..max_depth {
+    for step in 0..max_depth {
         // Candidates: nodes present in every branch's reachable set.
         let candidates: Vec<NodeId> = depth[0]
             .keys()
@@ -62,19 +63,19 @@ pub fn find_bubble(graph: &Graph, source: NodeId, max_depth: usize) -> Option<Bu
                 .iter()
                 .min_by_key(|n_| depth.iter().map(|d| d[n_]).max().unwrap_or(usize::MAX))
                 .unwrap();
-            let branches = reconstruct_branches(&parents, &depth, succs, sink);
+            let branches = reconstruct_branches(&parents, succs, sink);
             return Some(Bubble { source, sink, branches });
         }
 
         // Expand all frontiers by one step.
+        let cur_depth = step + 1;
         let mut next_frontier: Vec<Vec<NodeId>> = vec![Vec::new(); n];
         let mut any_progress = false;
         for i in 0..n {
-            let cur_depth = _step + 1;
             for &node in &frontier[i] {
                 for &m in graph.successors(node) {
-                    if !depth[i].contains_key(&m) {
-                        depth[i].insert(m, cur_depth);
+                    if let Entry::Vacant(e) = depth[i].entry(m) {
+                        e.insert(cur_depth);
                         parents[i].insert(m, node);
                         next_frontier[i].push(m);
                         any_progress = true;
@@ -92,7 +93,6 @@ pub fn find_bubble(graph: &Graph, source: NodeId, max_depth: usize) -> Option<Bu
 
 fn reconstruct_branches(
     parents: &[HashMap<NodeId, NodeId>],
-    depth: &[HashMap<NodeId, usize>],
     succs: &[NodeId],
     sink: NodeId,
 ) -> Vec<Vec<NodeId>> {
@@ -115,17 +115,14 @@ fn reconstruct_branches(
             }
         }
         path.reverse();
-        // path now starts at succs[i] and ends at sink. Internal = drop sink.
-        if let Some(&last) = path.last() {
-            if last == sink {
-                path.pop();
-            }
+        // path now starts at succs[i] and ends at sink. Drop the sink so the
+        // branch is just the internal nodes.
+        if path.last() == Some(&sink) {
+            path.pop();
         }
-        // Safety: ensure path[0] == succs[i]
+        // Sanity: path[0] should be succs[i]. If not, the BFS state was
+        // inconsistent — fall back to an empty branch rather than panic.
         if path.first() != Some(&succs[i]) {
-            // Reconstruction failed; emit empty branch as fallback.
-            // Should not happen given how depth/parents were populated.
-            let _ = depth; // silence unused
             branches.push(Vec::new());
             continue;
         }
