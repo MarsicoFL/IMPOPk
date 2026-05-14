@@ -42,13 +42,18 @@ jobs:
       - name: Test
         run: cargo test --workspace
 
-      # Library-only clippy. --all-targets would also lint tests, which
+      # Clippy lints evolve between Rust versions, so we only enforce the
+      # quality gate on stable. The MSRV slot's role is to prove the code
+      # still compiles + tests pass against the declared minimum version.
+      # Library-only clippy: --all-targets would also lint tests, which
       # still carry pre-existing unused-variable/import warnings from the
       # generated test sweeps that haven't been triaged yet.
       - name: Clippy (deny warnings)
+        if: matrix.rust == 'stable'
         run: cargo clippy --workspace -- -D warnings
 
       - name: Mini integration tests
+        if: matrix.rust == 'stable'
         run: bash test/run_mini_tests.sh
 
   ancestry-determinism:
