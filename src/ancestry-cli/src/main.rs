@@ -1885,7 +1885,13 @@ fn main() -> Result<()> {
     };
     let effective_data = if purity_scores.is_some() { &purity_weighted_data } else { &similarity_data };
 
-    let results: Vec<_> = effective_data.par_iter()
+    // Iterate samples in lexicographic order so that par_iter().collect()
+    // produces results in a deterministic order across runs (HashMap iteration
+    // order is randomized).
+    let mut sorted_data: Vec<(&String, &Vec<AncestryObservation>)> = effective_data.iter().collect();
+    sorted_data.sort_by(|a, b| a.0.cmp(b.0));
+
+    let results: Vec<_> = sorted_data.into_par_iter()
         .map(|(sample, observations)| {
             if observations.len() < 3 {
                 eprintln!("  {} - too few observations ({})", sample, observations.len());
