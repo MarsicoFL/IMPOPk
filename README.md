@@ -1,6 +1,12 @@
 # impopₖ
-v.0.0.1
-**Local ancestry and IBD inference directly from pangenome-derived alignments.**
+
+[![CI](https://github.com/MarsicoFL/IMPOPk/actions/workflows/ci.yml/badge.svg)](https://github.com/MarsicoFL/IMPOPk/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![MSRV](https://img.shields.io/badge/MSRV-1.74-blue.svg)](Cargo.toml)
+[![Code size](https://img.shields.io/github/languages/code-size/MarsicoFL/IMPOPk)](https://github.com/MarsicoFL/IMPOPk)
+[![Last commit](https://img.shields.io/github/last-commit/MarsicoFL/IMPOPk)](https://github.com/MarsicoFL/IMPOPk/commits/main)
+
+**v0.1.0 — Local ancestry and IBD inference directly from pangenome-derived alignments.**
 
 `impopk` is a small suite of Rust CLI tools that compute windowed pairwise
 sequence identity from haplotype-resolved assembly alignments and feed that
@@ -70,6 +76,20 @@ Three forms of the name appear and are intentional:
 `impopₖ` is the stylised display form, `impopk` is the prose and
 code form, and `IMPOPk` is the GitHub repository slug. They all refer
 to the same project.
+
+### Build & distribution
+
+| | |
+|---|---|
+| Build system | Cargo workspace (5 crates, `cargo build --release`) |
+| Stripped release size | `ibs` 1.1 MB · `ibd` 1.3 MB · `ancestry` 2.8 MB · `jacquard` 0.9 MB |
+| MSRV | Rust 1.74 (enforced by CI on every PR) |
+| Test suite | 5500+ tests via `cargo test --workspace`; end-to-end `bash test/run_mini_tests.sh` |
+| Dependencies (lib) | `clap`, `anyhow`, `rayon`, `serde` (workspace only), `thiserror` (common) |
+| External tools (full pipeline) | `impg` ≥ 0.3, `AGC` ≥ 3.2 |
+| Container | `Dockerfile` multi-stage build bundling AGC + impg + impopk |
+| Distribution today | source only — build from `git clone` |
+| Distribution planned | GitHub Releases with prebuilt static binaries per OS |
 
 ## Quick start (precomputed examples)
 
