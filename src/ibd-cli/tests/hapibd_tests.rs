@@ -10,7 +10,7 @@
 //! - Multiple chromosomes → filter by chr works
 //! - Sample pair filtering → correct subset
 
-use hprc_ibd::hapibd::*;
+use impopk_ibd::hapibd::*;
 
 // --- Empty and header-only inputs ---
 

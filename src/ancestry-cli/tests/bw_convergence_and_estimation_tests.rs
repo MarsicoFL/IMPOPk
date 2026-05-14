@@ -4,7 +4,7 @@
 //! Focus: convergence guarantees, numerical stability with extreme inputs,
 //! and consistency between standard and genetic-map-aware algorithms.
 
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryGeneticMap, AncestryHmmParams, AncestryObservation,
     estimate_temperature, estimate_temperature_normalized,
     estimate_switch_prob, forward_backward, forward_backward_with_genetic_map, posterior_decode,

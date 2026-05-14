@@ -1,7 +1,7 @@
 //! Tests for LOD scores, quality scores, posterior std, state refinement,
 //! auxiliary emissions, and coverage ratio edge cases.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     compute_per_window_lod, coverage_ratio, estimate_auxiliary_emissions,
     extract_ibd_segments_with_posteriors, infer_ibd_with_aux_features, refine_states_with_posteriors,
     segment_lod_score, segment_posterior_std, segment_quality_score, HmmParams,

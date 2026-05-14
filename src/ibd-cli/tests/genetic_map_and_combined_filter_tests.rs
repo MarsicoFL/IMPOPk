@@ -3,7 +3,7 @@
 //! component decomposition, refine_states_with_posteriors multi-pass extension, and
 //! infer_ibd_with_training pipeline variants.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     extract_ibd_segments_with_lod, infer_ibd,
     infer_ibd_with_training, refine_states_with_posteriors, segment_lod_score,
     segment_quality_score, segment_posterior_std, compute_per_window_lod,

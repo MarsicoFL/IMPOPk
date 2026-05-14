@@ -2,15 +2,15 @@
 //! emission model error paths, LOD scores, and switch_point_accuracy.
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryGeneticMap, AncestryHmmParams, AncestryObservation,
     EmissionModel,
 };
-use hprc_ancestry_cli::ancestry::{
+use impopk_ancestry_cli::ancestry::{
     compute_per_window_ancestry_lod, coverage_ratio, parse_similarity_data_with_coverage,
     segment_ancestry_lod,
 };
-use hprc_ancestry_cli::concordance::switch_point_accuracy;
+use impopk_ancestry_cli::concordance::switch_point_accuracy;
 
 // ── EmissionModel::from_str error arms ──────────────────────────────────
 

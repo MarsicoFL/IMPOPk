@@ -3,8 +3,8 @@
 //! Tests the full pipeline: parse RFMix output → convert to windows → compute concordance metrics.
 //! Uses synthetic but realistic data to verify the pipeline works end-to-end.
 
-use hprc_ancestry_cli::concordance::*;
-use hprc_ancestry_cli::rfmix::*;
+use impopk_ancestry_cli::concordance::*;
+use impopk_ancestry_cli::rfmix::*;
 
 /// Simulate a scenario where our ancestry calls match RFMix 9/10 windows.
 #[test]

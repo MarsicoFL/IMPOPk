@@ -1,4 +1,4 @@
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     aggregate_observations, infer_ibd, infer_ibd_multi_scale,
     extract_ibd_segments, HmmParams, Population,
 };

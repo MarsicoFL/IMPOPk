@@ -3,7 +3,7 @@
 //! Validates that MPEL decode produces smooth paths on long observation
 //! sequences (100-500+ windows) with varying SNR regimes.
 
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     AncestryHmmParams, AncestralPopulation, AncestryObservation,
     forward_backward, mpel_decode_from_posteriors, posterior_decode, viterbi,
 };

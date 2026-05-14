@@ -7,7 +7,7 @@
 //! - emission bounds: non-IBD mean clamped, std clamped
 //! - Transition rows sum to 1
 
-use hprc_ibd::hmm::{HmmParams, Population};
+use impopk_ibd::hmm::{HmmParams, Population};
 
 fn make_params() -> HmmParams {
     HmmParams::from_population(Population::EUR, 100.0, 0.001, 10000)

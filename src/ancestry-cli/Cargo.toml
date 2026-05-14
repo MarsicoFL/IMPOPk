@@ -1,5 +1,5 @@
 [package]
-name = "hprc-ancestry-cli"
+name = "impopk-ancestry-cli"
 version = "0.1.0"
 edition = "2021"
 authors = ["Franco Marsico"]
@@ -7,7 +7,7 @@ description = "Local ancestry inference using HMM for pangenome data"
 license = "MIT"
 
 [lib]
-name = "hprc_ancestry_cli"
+name = "impopk_ancestry_cli"
 path = "src/lib.rs"
 
 [[bin]]
@@ -20,7 +20,7 @@ clap = { version = "4.4", features = ["derive"] }
 rayon = "1.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-hprc-common = { path = "../common" }
+impopk-common = { path = "../common" }
 
 [dev-dependencies]
 assert_cmd = "2.0"

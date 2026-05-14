@@ -4,7 +4,7 @@
 //! agree_scale (well-separated pops get higher boost) and per-pair disagree_scale
 //! (close pairs get less suppression, distant pairs get more).
 
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     PerPopAgreementScales,
     blend_log_emissions_per_pop_agreement,
     blend_log_emissions_per_pop_hybrid,
@@ -495,7 +495,7 @@ fn compute_scales_agree_scales_clamped_to_range() {
 
 #[test]
 fn per_pop_agreement_with_uniform_scales_matches_agreement() {
-    use hprc_ancestry_cli::blend_log_emissions_agreement;
+    use impopk_ancestry_cli::blend_log_emissions_agreement;
 
     let agree_scale = 1.5;
     let disagree_scale = 0.2;

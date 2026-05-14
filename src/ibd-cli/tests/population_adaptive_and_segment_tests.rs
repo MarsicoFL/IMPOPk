@@ -2,8 +2,8 @@
 //! Segment::fraction_called edge cases, IdentityTrack methods, and
 //! Population-specific parameter ordering invariants.
 
-use hprc_ibd::hmm::{HmmParams, Population};
-use hprc_ibd::segment::{IdentityTrack, Segment, segment_length_distribution};
+use impopk_ibd::hmm::{HmmParams, Population};
+use impopk_ibd::segment::{IdentityTrack, Segment, segment_length_distribution};
 
 // ============================================================
 // from_population_adaptive: per-population parameter ordering

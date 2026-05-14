@@ -1,7 +1,7 @@
 /// Tests for IBD emission smoothing (smooth_log_emissions) and
 /// the distance/genetic-map _from_log_emit variants.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     precompute_log_emissions, smooth_log_emissions,
     viterbi, viterbi_from_log_emit,
     viterbi_with_distances, viterbi_with_distances_from_log_emit,

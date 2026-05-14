@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation, EmissionModel,
     DecodingMethod, estimate_temperature, estimate_temperature_normalized,
     estimate_switch_prob, viterbi, forward_backward, posterior_decode,

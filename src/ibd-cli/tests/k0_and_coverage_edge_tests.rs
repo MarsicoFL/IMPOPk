@@ -7,12 +7,12 @@
 //! - Boundary values (0, 1, u64::MAX)
 //! - Numerical stability under extreme posteriors
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     augment_with_k0, coverage_ratio, estimate_auxiliary_emissions, estimate_k0_emissions,
     forward_backward_from_log_emit, infer_ibd_with_aux_features, k0_log_pmf,
     precompute_log_emissions, viterbi_from_log_emit, HmmParams, Population,
 };
-use hprc_ibd::stats::GaussianParams;
+use impopk_ibd::stats::GaussianParams;
 
 // =====================================================================
 // coverage_ratio edge cases

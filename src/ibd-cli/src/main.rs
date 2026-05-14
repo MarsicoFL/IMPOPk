@@ -46,27 +46,23 @@ fn validate_positive_f64(val: &str) -> Result<f64, String> {
 }
 use rayon::prelude::*;
 
-use hprc_common::ColumnIndices;
-use hprc_ibd::hmm::{
+use impopk_common::ColumnIndices;
+use impopk_ibd::hmm::{
     infer_ibd, infer_ibd_with_training, infer_ibd_multi_scale,
     infer_ibd_with_aux_features, coverage_ratio, estimate_auxiliary_emissions, augment_with_k0,
     extract_ibd_segments_with_lod,
     extract_ibd_segments_composite, estimate_ibd_emission_std,
-    forward_backward_with_distances, viterbi_with_distances,
-    forward_backward_with_genetic_map, viterbi_with_genetic_map,
-    forward_backward_with_distances_from_log_emit, viterbi_with_distances_from_log_emit,
-    forward_backward_with_genetic_map_from_log_emit, viterbi_with_genetic_map_from_log_emit,
     forward_backward_from_log_emit, viterbi_from_log_emit,
     precompute_log_emissions, smooth_log_emissions,
     refine_states_with_posteriors, bridge_ibd_gaps, merge_nearby_ibd_segments,
     refine_states_adaptive, bridge_ibd_gaps_adaptive,
     refine_segment_boundaries,
-    GeneticMap, HmmParams, Population,
+    HmmParams, Population,
 };
-use hprc_ibd::stats::GaussianParams;
-use hprc_ibd::{Region, WindowIterator};
+use impopk_ibd::stats::GaussianParams;
+use impopk_ibd::{Region, WindowIterator};
 
-type RegionResult = (HashMap<(String, String), Vec<WindowRecord>>, Option<GeneticMap>);
+type RegionResult = HashMap<(String, String), Vec<WindowRecord>>;
 
 #[derive(Parser, Debug)]
 #[command(name = "ibd", version, about = "IBD segment detection using HMM",
@@ -88,7 +84,6 @@ RECOMMENDED PARAMETER PRESETS:
     - Baum-Welch 20 iters: convergence analysis shows 10 iters leave ~35% residual error
     - Bridge-gaps 2-3: prevents segment splitting from noisy windows within true IBD
     - LOD filtering: use --min-lod 3-5 for high-confidence segments
-    - Distance-aware and genetic-map transitions have no effect (emission model is bottleneck)
 ")]
 struct Args {
     #[arg(long = "sequence-files", required_unless_present = "similarity_file")]
@@ -183,19 +178,6 @@ struct Args {
     /// Adjusts P(enter IBD) and expected segment length based on population
     #[arg(long = "adaptive-transitions", default_value = "false")]
     adaptive_transitions: bool,
-
-    /// Use distance-aware HMM transitions
-    /// Adjusts transition probabilities based on physical distance between windows,
-    /// accounting for gaps in pangenome coverage
-    #[arg(long = "distance-aware", default_value = "false")]
-    distance_aware: bool,
-
-    /// Genetic map file (PLINK format) for recombination-aware transitions.
-    /// When provided with --distance-aware, uses genetic distance (cM) instead
-    /// of physical distance (bp) for transition probability scaling.
-    /// Format: chr pos_bp rate_cM_Mb pos_cM (whitespace-separated)
-    #[arg(long = "genetic-map")]
-    genetic_map: Option<String>,
 
     /// Output IBD segments in BED format (compatible with bedtools).
     /// Format: chrom start end name score strand
@@ -721,8 +703,6 @@ fn process_pair(
     collect_posteriors: bool,
     baum_welch_iters: usize,
     adaptive_transitions: bool,
-    distance_aware: bool,
-    genetic_map: Option<&GeneticMap>,
     identity_floor: f64,
     emission_context: usize,
     mask_regions: &[(String, u64, u64)],
@@ -812,7 +792,7 @@ fn process_pair(
     // In logit space, the ~0.0007 raw separation becomes ~1.2, dramatically
     // improving discrimination for the Gaussian emission model.
     let observations: Vec<f64> = if logit_emissions {
-        hprc_ibd::stats::logit_transform_observations(&raw_observations)
+        impopk_ibd::stats::logit_transform_observations(&raw_observations)
     } else {
         raw_observations.clone()
     };
@@ -846,9 +826,9 @@ fn process_pair(
         }
     }
 
-    // Run inference: choose between distance-aware and standard pipeline.
-    // When logit_emissions is active, use baum_welch_logit (logit-space bounds)
-    // instead of standard baum_welch (raw-space bounds 0.999-1.0).
+    // Run inference. When logit_emissions is active, use baum_welch_logit
+    // (logit-space bounds) instead of standard baum_welch (raw-space bounds
+    // 0.999-1.0).
     let bw_ok = !logit_emissions; // Standard BW only valid in raw space
 
     // Logit-space BW training: runs before the inference dispatch since it
@@ -861,35 +841,13 @@ fn process_pair(
     }
     let inference = if k0_indicators.is_some() {
         // K=0 auxiliary feature active: unified precomputed-emission path.
-        // Handles all feature combinations (coverage, emission_context,
-        // distance_aware, genetic_map) via precomputed log-emissions with
-        // K=0 Bernoulli augmentation added AFTER smoothing.
-
-        // Standard (non-logit) BW training when applicable
-        let window_positions: Vec<(u64, u64)> = if distance_aware {
-            records.iter().map(|r| (r.start, r.end)).collect()
-        } else {
-            Vec::new()
-        };
+        // Handles coverage and emission_context via precomputed log-emissions
+        // with K=0 Bernoulli augmentation added AFTER smoothing.
         if bw_ok && baum_welch_iters > 0 && observations.len() >= 10 {
-            if distance_aware {
-                if let Some(gmap) = genetic_map {
-                    params.baum_welch_with_genetic_map(
-                        &observations, &window_positions, gmap, baum_welch_iters,
-                        1e-6, Some(population), window_size,
-                    );
-                } else {
-                    params.baum_welch_with_distances(
-                        &observations, &window_positions, baum_welch_iters,
-                        1e-6, Some(population), window_size,
-                    );
-                }
-            } else {
-                params.baum_welch(
-                    &observations, baum_welch_iters, 1e-6,
-                    Some(population), window_size,
-                );
-            }
+            params.baum_welch(
+                &observations, baum_welch_iters, 1e-6,
+                Some(population), window_size,
+            );
         }
 
         // Build combined log-emissions
@@ -897,19 +855,7 @@ fn process_pair(
 
         // Add coverage ratio emissions if present
         if let Some(ref cov_ratios) = coverage_ratios {
-            let initial_post = if distance_aware {
-                if let Some(gmap) = genetic_map {
-                    forward_backward_with_genetic_map_from_log_emit(
-                        &log_emit, &params, &window_positions, gmap, window_size,
-                    ).0
-                } else {
-                    forward_backward_with_distances_from_log_emit(
-                        &log_emit, &params, &window_positions,
-                    ).0
-                }
-            } else {
-                forward_backward_from_log_emit(&log_emit, &params).0
-            };
+            let initial_post = forward_backward_from_log_emit(&log_emit, &params).0;
             let aux_emit = estimate_auxiliary_emissions(cov_ratios, &initial_post);
             for (i, &aux_val) in cov_ratios.iter().enumerate() {
                 log_emit[i][0] += aux_emit[0].log_pdf(aux_val);
@@ -927,50 +873,15 @@ fn process_pair(
         // K=0 augmentation: AFTER smoothing (discrete, should not be smoothed).
         {
             let k0_inds = k0_indicators.as_deref().unwrap();
-            let initial_post = if distance_aware {
-                if let Some(gmap) = genetic_map {
-                    forward_backward_with_genetic_map_from_log_emit(
-                        &log_emit, &params, &window_positions, gmap, window_size,
-                    ).0
-                } else {
-                    forward_backward_with_distances_from_log_emit(
-                        &log_emit, &params, &window_positions,
-                    ).0
-                }
-            } else {
-                forward_backward_from_log_emit(&log_emit, &params).0
-            };
+            let initial_post = forward_backward_from_log_emit(&log_emit, &params).0;
             augment_with_k0(&mut log_emit, k0_inds, &initial_post);
         }
 
-        // Dispatch to appropriate inference variant
-        if distance_aware {
-            if let Some(gmap) = genetic_map {
-                let mut states = viterbi_with_genetic_map_from_log_emit(
-                    &log_emit, &params, &window_positions, gmap, window_size,
-                );
-                let (posteriors, log_likelihood) = forward_backward_with_genetic_map_from_log_emit(
-                    &log_emit, &params, &window_positions, gmap, window_size,
-                );
-                refine_states_with_posteriors(&mut states, &posteriors, 0.5, 0.2);
-                hprc_ibd::hmm::IbdInferenceResult { states, posteriors, log_likelihood }
-            } else {
-                let mut states = viterbi_with_distances_from_log_emit(
-                    &log_emit, &params, &window_positions,
-                );
-                let (posteriors, log_likelihood) = forward_backward_with_distances_from_log_emit(
-                    &log_emit, &params, &window_positions,
-                );
-                refine_states_with_posteriors(&mut states, &posteriors, 0.5, 0.2);
-                hprc_ibd::hmm::IbdInferenceResult { states, posteriors, log_likelihood }
-            }
-        } else {
-            let mut states = viterbi_from_log_emit(&log_emit, &params);
-            let (posteriors, log_likelihood) = forward_backward_from_log_emit(&log_emit, &params);
-            refine_states_with_posteriors(&mut states, &posteriors, 0.5, 0.2);
-            hprc_ibd::hmm::IbdInferenceResult { states, posteriors, log_likelihood }
-        }
-    } else if coverage_ratios.is_some() && !distance_aware {
+        let mut states = viterbi_from_log_emit(&log_emit, &params);
+        let (posteriors, log_likelihood) = forward_backward_from_log_emit(&log_emit, &params);
+        refine_states_with_posteriors(&mut states, &posteriors, 0.5, 0.2);
+        impopk_ibd::hmm::IbdInferenceResult { states, posteriors, log_likelihood }
+    } else if coverage_ratios.is_some() {
         // Multi-feature pipeline with coverage ratio auxiliary feature
         let (res, _aux_emit) = infer_ibd_with_aux_features(
             &observations,
@@ -981,114 +892,6 @@ fn process_pair(
             coverage_ratios.as_deref(),
         );
         res
-    } else if distance_aware {
-        // Distance-aware: use per-window positions for transition scaling
-        let window_positions: Vec<(u64, u64)> = records.iter()
-            .map(|r| (r.start, r.end))
-            .collect();
-
-        // Estimate auxiliary emissions from coverage ratios if available.
-        // Uses an initial distance-aware FB pass on primary emissions to get
-        // posteriors, then fits per-state Gaussians on coverage ratios.
-        let aux_emission: Option<[GaussianParams; 2]> = if let Some(ref cov_ratios) = coverage_ratios {
-            let primary_emit = precompute_log_emissions(&observations, &params);
-            let initial_posteriors = if let Some(gmap) = genetic_map {
-                let (p, _) = forward_backward_with_genetic_map_from_log_emit(
-                    &primary_emit, &params, &window_positions, gmap, window_size,
-                );
-                p
-            } else {
-                let (p, _) = forward_backward_with_distances_from_log_emit(
-                    &primary_emit, &params, &window_positions,
-                );
-                p
-            };
-            Some(estimate_auxiliary_emissions(cov_ratios, &initial_posteriors))
-        } else {
-            None
-        };
-
-        if let Some(gmap) = genetic_map {
-            // Recombination-aware pipeline using genetic map
-            if bw_ok && baum_welch_iters > 0 && observations.len() >= 10 {
-                params.baum_welch_with_genetic_map(
-                    &observations, &window_positions, gmap, baum_welch_iters,
-                    1e-6, Some(population), window_size,
-                );
-            }
-            // Use pre-computed log emissions when coverage or smoothing is needed
-            let use_log_emit = emission_context > 0 || coverage_ratios.is_some();
-            if use_log_emit {
-                let mut raw_emit = precompute_log_emissions(&observations, &params);
-                // Add auxiliary coverage emissions
-                if let (Some(ref cov_ratios), Some(ref aux_emit)) = (&coverage_ratios, &aux_emission) {
-                    for (i, &aux_val) in cov_ratios.iter().enumerate() {
-                        raw_emit[i][0] += aux_emit[0].log_pdf(aux_val);
-                        raw_emit[i][1] += aux_emit[1].log_pdf(aux_val);
-                    }
-                }
-                let log_emit = if emission_context > 0 {
-                    smooth_log_emissions(&raw_emit, emission_context)
-                } else {
-                    raw_emit
-                };
-                let mut states = viterbi_with_genetic_map_from_log_emit(
-                    &log_emit, &params, &window_positions, gmap, window_size,
-                );
-                let (posteriors, log_likelihood) = forward_backward_with_genetic_map_from_log_emit(
-                    &log_emit, &params, &window_positions, gmap, window_size,
-                );
-                refine_states_with_posteriors(&mut states, &posteriors, 0.5, 0.2);
-                hprc_ibd::hmm::IbdInferenceResult { states, posteriors, log_likelihood }
-            } else {
-                let mut states = viterbi_with_genetic_map(
-                    &observations, &params, &window_positions, gmap, window_size,
-                );
-                let (posteriors, log_likelihood) = forward_backward_with_genetic_map(
-                    &observations, &params, &window_positions, gmap, window_size,
-                );
-                refine_states_with_posteriors(&mut states, &posteriors, 0.5, 0.2);
-                hprc_ibd::hmm::IbdInferenceResult { states, posteriors, log_likelihood }
-            }
-        } else {
-            // Physical distance-aware pipeline (no genetic map)
-            if bw_ok && baum_welch_iters > 0 && observations.len() >= 10 {
-                params.baum_welch_with_distances(
-                    &observations, &window_positions, baum_welch_iters,
-                    1e-6, Some(population), window_size,
-                );
-            }
-            let use_log_emit = emission_context > 0 || coverage_ratios.is_some();
-            if use_log_emit {
-                let mut raw_emit = precompute_log_emissions(&observations, &params);
-                if let (Some(ref cov_ratios), Some(ref aux_emit)) = (&coverage_ratios, &aux_emission) {
-                    for (i, &aux_val) in cov_ratios.iter().enumerate() {
-                        raw_emit[i][0] += aux_emit[0].log_pdf(aux_val);
-                        raw_emit[i][1] += aux_emit[1].log_pdf(aux_val);
-                    }
-                }
-                let log_emit = if emission_context > 0 {
-                    smooth_log_emissions(&raw_emit, emission_context)
-                } else {
-                    raw_emit
-                };
-                let mut states = viterbi_with_distances_from_log_emit(
-                    &log_emit, &params, &window_positions,
-                );
-                let (posteriors, log_likelihood) = forward_backward_with_distances_from_log_emit(
-                    &log_emit, &params, &window_positions,
-                );
-                refine_states_with_posteriors(&mut states, &posteriors, 0.5, 0.2);
-                hprc_ibd::hmm::IbdInferenceResult { states, posteriors, log_likelihood }
-            } else {
-                let mut states = viterbi_with_distances(&observations, &params, &window_positions);
-                let (posteriors, log_likelihood) = forward_backward_with_distances(
-                    &observations, &params, &window_positions,
-                );
-                refine_states_with_posteriors(&mut states, &posteriors, 0.5, 0.2);
-                hprc_ibd::hmm::IbdInferenceResult { states, posteriors, log_likelihood }
-            }
-        }
     } else if emission_context > 0 {
         // Standard pipeline with emission smoothing
         if bw_ok && baum_welch_iters > 0 && observations.len() >= 10 {
@@ -1102,7 +905,7 @@ fn process_pair(
         let mut states = viterbi_from_log_emit(&log_emit, &params);
         let (posteriors, log_likelihood) = forward_backward_from_log_emit(&log_emit, &params);
         refine_states_with_posteriors(&mut states, &posteriors, 0.5, 0.2);
-        hprc_ibd::hmm::IbdInferenceResult { states, posteriors, log_likelihood }
+        impopk_ibd::hmm::IbdInferenceResult { states, posteriors, log_likelihood }
     } else if bw_ok && baum_welch_iters > 0 {
         if multi_scale {
             // BW training at base resolution, then multi-scale inference
@@ -1123,7 +926,7 @@ fn process_pair(
     };
 
     // Destructure inference result
-    let hprc_ibd::hmm::IbdInferenceResult {
+    let impopk_ibd::hmm::IbdInferenceResult {
         mut states,
         posteriors: inf_posteriors,
         log_likelihood: _,
@@ -1300,16 +1103,12 @@ fn call_ibd_segments(
     args: &Args,
     population: Population,
     collect_posteriors: bool,
-    genetic_map: Option<&GeneticMap>,
     mask_regions: &[(String, u64, u64)],
     min_windows: usize,
 ) -> AllPairsResult {
     eprintln!("Running HMM on {} pairs in parallel with population {:?}...", pair_data.len(), population);
     if args.posterior_threshold > 0.0 {
         eprintln!("Filtering segments with mean P(IBD) >= {:.2}", args.posterior_threshold);
-    }
-    if genetic_map.is_some() {
-        eprintln!("Using recombination-aware transitions from genetic map");
     }
 
     // Compute per-haplotype contrast baselines if requested
@@ -1348,8 +1147,6 @@ fn call_ibd_segments(
                 collect_posteriors,
                 args.baum_welch_iters,
                 args.adaptive_transitions,
-                args.distance_aware,
-                genetic_map,
                 args.identity_floor,
                 args.emission_context,
                 mask_regions,
@@ -1492,11 +1289,6 @@ fn run() -> Result<()> {
     let collect_posteriors = args.output_posteriors.is_some();
     let mut total_segments = 0usize;
 
-    // Validate genetic map flag
-    if args.genetic_map.is_some() && !args.distance_aware {
-        eprintln!("Warning: --genetic-map requires --distance-aware to have effect; enabling distance-aware mode");
-    }
-
     // Parse mask regions
     let mask_regions = if let Some(ref mask_path) = args.mask_bed {
         let regions = parse_mask_bed(mask_path)?;
@@ -1524,7 +1316,7 @@ fn run() -> Result<()> {
         let sim_file = args.similarity_file.as_deref().unwrap();
         eprintln!("Reading pre-computed similarities from {}", sim_file);
         let pair_data = collect_identities_from_file(sim_file)?;
-        vec![(pair_data, None)]
+        vec![pair_data]
     } else {
         let mut results = Vec::new();
         for (i, region) in regions.iter().enumerate() {
@@ -1548,31 +1340,16 @@ fn run() -> Result<()> {
                 out.flush()?;
             }
 
-            let genetic_map = if let Some(ref gmap_path) = args.genetic_map {
-                match GeneticMap::from_file(gmap_path, &region.chrom) {
-                    Ok(gmap) => {
-                        eprintln!("  Loaded genetic map: {} entries for {}", gmap.len(), region.chrom);
-                        Some(gmap)
-                    }
-                    Err(e) => {
-                        eprintln!("  Warning: could not load genetic map for {}: {}", region.chrom, e);
-                        None
-                    }
-                }
-            } else {
-                None
-            };
-
-            results.push((pair_data, genetic_map));
+            results.push(pair_data);
         }
         results
     };
 
     // Process each batch of pair data
-    for (pair_data, genetic_map) in &region_results {
+    for pair_data in &region_results {
         eprintln!("  Processing {} pairs", pair_data.len());
 
-        let result = call_ibd_segments(pair_data.clone(), &args, population, collect_posteriors, genetic_map.as_ref(), &mask_regions, effective_min_windows);
+        let result = call_ibd_segments(pair_data.clone(), &args, population, collect_posteriors, &mask_regions, effective_min_windows);
 
         for seg in &result.segments {
             if let Some(k0f) = seg.k0_fraction {

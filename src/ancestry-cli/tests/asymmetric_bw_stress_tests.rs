@@ -9,7 +9,7 @@
 //! - Clamps diagonal to [0.9, 0.9999] for K≥3
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
     viterbi, forward_backward,
 };

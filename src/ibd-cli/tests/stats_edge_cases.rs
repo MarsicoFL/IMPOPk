@@ -9,7 +9,7 @@
 //! - OnlineStats with zero values and large count
 //! - logit/inv_logit with negative inputs
 
-use hprc_ibd::stats::{
+use impopk_ibd::stats::{
     bic_model_selection, em_two_component, em_two_component_map, gaussian_to_logit_space,
     inv_logit, logit, trimmed_mean, GaussianParams, OnlineStats, LOGIT_CAP,
 };

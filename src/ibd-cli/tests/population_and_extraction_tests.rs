@@ -1,7 +1,7 @@
 //! Tests for Population methods, compute_per_window_lod, and segment extraction
 //! with posterior/LOD filtering. These cover previously untested public functions.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     compute_per_window_lod, extract_ibd_segments_with_lod, extract_ibd_segments_with_posteriors,
     segment_lod_score, HmmParams, Population,
 };

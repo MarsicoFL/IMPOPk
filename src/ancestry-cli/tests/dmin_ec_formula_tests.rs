@@ -13,7 +13,7 @@
 //! - D_ref=0.014 calibration point
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryObservation, auto_configure_pairwise_params,
 };
 

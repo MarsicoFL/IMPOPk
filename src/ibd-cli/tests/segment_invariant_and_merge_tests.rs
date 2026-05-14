@@ -2,7 +2,7 @@
 //!
 //! Cycle 48: Properties that must hold after merging and distribution analysis.
 
-use hprc_ibd::segment::*;
+use impopk_ibd::segment::*;
 
 // ============================================================================
 // Helpers

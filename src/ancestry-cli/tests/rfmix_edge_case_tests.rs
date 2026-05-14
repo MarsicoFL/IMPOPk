@@ -3,7 +3,7 @@
 //! Tests parse_population_header format variations, malformed data,
 //! rfmix_to_windows boundary conditions, and rfmix_window_starts edge cases.
 
-use hprc_ancestry_cli::rfmix::{
+use impopk_ancestry_cli::rfmix::{
     parse_rfmix_msp_content, rfmix_to_windows, rfmix_window_starts, RfmixResult, RfmixSegment,
 };
 

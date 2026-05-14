@@ -13,4 +13,4 @@
 //! 3. This TSV feeds directly into `ibd` and `ancestry`.
 
 // Re-export common types for convenience
-pub use hprc_common::{HprcError as IbsError, Region, Result, Window, WindowIterator};
+pub use impopk_common::{ImpopkError as IbsError, Region, Result, Window, WindowIterator};

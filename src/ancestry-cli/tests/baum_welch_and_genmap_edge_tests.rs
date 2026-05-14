@@ -13,7 +13,7 @@
 
 use std::io::Write;
 
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryGeneticMap, AncestryHmmParams, AncestryObservation,
     estimate_switch_prob, forward_backward_with_genetic_map,
 };

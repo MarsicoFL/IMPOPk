@@ -10,11 +10,11 @@
 //! - count_smoothing_changes on identical vs all-different inputs
 //! - coverage_ratio boundary values
 
-use hprc_ancestry_cli::ancestry::{
+use impopk_ancestry_cli::ancestry::{
     count_smoothing_changes, coverage_ratio, estimate_admixture_proportions,
     extract_ancestry_segments, filter_segments_by_min_lod, AncestrySegment,
 };
-use hprc_ancestry_cli::hmm::{AncestralPopulation, AncestryHmmParams, AncestryObservation};
+use impopk_ancestry_cli::hmm::{AncestralPopulation, AncestryHmmParams, AncestryObservation};
 
 // ══════════════════════════════════════════════════════════════════════
 // Helper to create a test observation
@@ -83,7 +83,7 @@ fn per_window_ancestry_lod_returns_zero_when_all_emissions_neg_inf() {
 
     // Observation with no matching haplotypes → log_emission will be very low
     let obs = make_obs("chr1", 0, 10000, &[("unknown_hap", 0.999)]);
-    let lod = hprc_ancestry_cli::ancestry::compute_per_window_ancestry_lod(&obs, &params, 0);
+    let lod = impopk_ancestry_cli::ancestry::compute_per_window_ancestry_lod(&obs, &params, 0);
     assert!(
         lod.is_finite(),
         "LOD should be finite when emissions are uninformative, got {}",
@@ -100,7 +100,7 @@ fn segment_ancestry_lod_single_window() {
     let params = make_params(&["EUR", "AFR"], &[&["eur1"], &["afr1"]]);
 
     let obs = vec![make_obs("chr1", 0, 10000, &[("eur1", 0.999), ("afr1", 0.990)])];
-    let lod = hprc_ancestry_cli::ancestry::segment_ancestry_lod(&obs, &params, 0, 0, 0);
+    let lod = impopk_ancestry_cli::ancestry::segment_ancestry_lod(&obs, &params, 0, 0, 0);
     assert!(lod.is_finite(), "single-window LOD should be finite");
 }
 

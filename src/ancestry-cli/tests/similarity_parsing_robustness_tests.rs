@@ -4,7 +4,7 @@
 //! parse_similarity_data_with_coverage, extract_sample_id,
 //! coverage_ratio, and admixture proportion estimation.
 
-use hprc_ancestry_cli::ancestry::{
+use impopk_ancestry_cli::ancestry::{
     parse_similarity_data, parse_similarity_data_column, parse_similarity_data_with_coverage,
     coverage_ratio, estimate_admixture_proportions, AncestrySegment,
     load_population_samples, load_populations_from_dir,

@@ -8,7 +8,7 @@
 //! - CV_D heterogeneity (mixed close/distant pairs)
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryObservation, auto_configure_pairwise_params,
 };
 

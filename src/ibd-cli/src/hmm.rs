@@ -32,7 +32,7 @@
 //! ## Example
 //!
 //! ```rust
-//! use hprc_ibd::hmm::{HmmParams, Population, viterbi, extract_ibd_segments};
+//! use impopk_ibd::hmm::{HmmParams, Population, viterbi, extract_ibd_segments};
 //!
 //! // Identity observations from sliding windows
 //! let observations = vec![
@@ -197,7 +197,7 @@ pub const IBD_EMISSION: GaussianParams = GaussianParams {
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::HmmParams;
+/// use impopk_ibd::hmm::HmmParams;
 ///
 /// // Create parameters expecting 50-window IBD segments
 /// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
@@ -252,7 +252,7 @@ impl HmmParams {
     /// ## Example
     ///
     /// ```rust
-    /// use hprc_ibd::hmm::HmmParams;
+    /// use impopk_ibd::hmm::HmmParams;
     ///
     /// // Conservative settings: expect long segments, rare IBD transitions
     /// let params = HmmParams::from_expected_length(100.0, 0.00001, 5000);
@@ -287,7 +287,7 @@ impl HmmParams {
     /// ## Example
     ///
     /// ```rust
-    /// use hprc_ibd::hmm::{HmmParams, Population};
+    /// use impopk_ibd::hmm::{HmmParams, Population};
     ///
     /// // For European samples with 5kb windows
     /// let params = HmmParams::from_population(Population::EUR, 50.0, 0.0001, 5000);
@@ -349,7 +349,7 @@ impl HmmParams {
     /// ## Example
     ///
     /// ```rust
-    /// use hprc_ibd::hmm::HmmParams;
+    /// use impopk_ibd::hmm::HmmParams;
     ///
     /// let mut params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
     ///
@@ -721,7 +721,7 @@ impl HmmParams {
     /// ## Example
     ///
     /// ```rust
-    /// use hprc_ibd::hmm::{HmmParams, Population};
+    /// use impopk_ibd::hmm::{HmmParams, Population};
     ///
     /// let mut params = HmmParams::from_population(Population::EUR, 50.0, 0.0001, 5000);
     ///
@@ -941,7 +941,7 @@ impl HmmParams {
     /// ## Example
     ///
     /// ```rust
-    /// use hprc_ibd::hmm::{HmmParams, Population};
+    /// use impopk_ibd::hmm::{HmmParams, Population};
     ///
     /// let mut params = HmmParams::from_population(Population::AFR, 50.0, 0.0001, 5000);
     /// let observations = vec![0.998, 0.9985, 0.999, 0.9997, 0.9998, 0.9996, 0.998, 0.997];
@@ -1665,7 +1665,7 @@ impl HmmParams {
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::{HmmParams, forward};
+/// use impopk_ibd::hmm::{HmmParams, forward};
 ///
 /// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
 /// let obs = vec![0.998, 0.999, 0.9995, 0.9998];
@@ -2510,7 +2510,7 @@ pub fn viterbi_with_genetic_map(
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::{HmmParams, backward};
+/// use impopk_ibd::hmm::{HmmParams, backward};
 ///
 /// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
 /// let obs = vec![0.998, 0.999, 0.9995, 0.9998];
@@ -2587,7 +2587,7 @@ pub fn backward(observations: &[f64], params: &HmmParams) -> Vec<[f64; 2]> {
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::{HmmParams, forward_backward};
+/// use impopk_ibd::hmm::{HmmParams, forward_backward};
 ///
 /// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
 /// let obs = vec![0.998, 0.997, 0.9998, 0.9999, 0.9997, 0.998];
@@ -2661,7 +2661,7 @@ pub struct IbdInferenceResult {
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::{HmmParams, infer_ibd};
+/// use impopk_ibd::hmm::{HmmParams, infer_ibd};
 ///
 /// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
 /// let obs = vec![0.998, 0.997, 0.9998, 0.9999, 0.9997, 0.998];
@@ -2707,7 +2707,7 @@ pub fn infer_ibd(observations: &[f64], params: &HmmParams) -> IbdInferenceResult
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::{HmmParams, Population, infer_ibd_with_training};
+/// use impopk_ibd::hmm::{HmmParams, Population, infer_ibd_with_training};
 ///
 /// let mut params = HmmParams::from_population(Population::AFR, 50.0, 0.0001, 5000);
 /// let obs = vec![0.998, 0.9985, 0.999, 0.9997, 0.9998, 0.9996, 0.998, 0.997];
@@ -2763,7 +2763,7 @@ pub fn infer_ibd_with_training(
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::aggregate_observations;
+/// use impopk_ibd::hmm::aggregate_observations;
 ///
 /// let obs = vec![0.998, 0.997, 0.999, 0.996, 0.998, 0.997];
 /// let agg = aggregate_observations(&obs, 2);
@@ -3079,7 +3079,7 @@ pub fn segment_posterior_std(posteriors: &[f64], start_idx: usize, end_idx: usiz
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::{HmmParams, infer_ibd, extract_ibd_segments_with_posteriors};
+/// use impopk_ibd::hmm::{HmmParams, infer_ibd, extract_ibd_segments_with_posteriors};
 ///
 /// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
 /// let obs = vec![0.998, 0.9998, 0.9999, 0.9997, 0.9998, 0.998];
@@ -3128,7 +3128,7 @@ pub fn extract_ibd_segments_with_posteriors(
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::{HmmParams, infer_ibd, extract_ibd_segments_with_lod};
+/// use impopk_ibd::hmm::{HmmParams, infer_ibd, extract_ibd_segments_with_lod};
 ///
 /// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
 /// let obs = vec![0.998, 0.9998, 0.9999, 0.9997, 0.9998, 0.998];
@@ -3247,7 +3247,7 @@ pub fn extract_ibd_segments_with_lod(
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::{HmmParams, infer_ibd, refine_states_with_posteriors};
+/// use impopk_ibd::hmm::{HmmParams, infer_ibd, refine_states_with_posteriors};
 ///
 /// let params = HmmParams::from_expected_length(50.0, 0.0001, 5000);
 /// let obs = vec![0.998, 0.9998, 0.9999, 0.9997, 0.998];
@@ -3493,7 +3493,7 @@ pub struct RefinedBoundary {
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::{IbdSegmentWithPosterior, RefinedBoundary, refine_segment_boundaries};
+/// use impopk_ibd::hmm::{IbdSegmentWithPosterior, RefinedBoundary, refine_segment_boundaries};
 ///
 /// let segments = vec![IbdSegmentWithPosterior {
 ///     start_idx: 2, end_idx: 4, n_windows: 3,
@@ -3626,7 +3626,7 @@ pub fn refine_segment_boundaries(
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::{HmmParams, viterbi};
+/// use impopk_ibd::hmm::{HmmParams, viterbi};
 ///
 /// // For demonstration, use balanced priors (p_enter_ibd = 0.5)
 /// let params = HmmParams::from_expected_length(10.0, 0.5, 5000);
@@ -3816,7 +3816,7 @@ pub fn viterbi_with_distances(
 /// ## Example
 ///
 /// ```rust
-/// use hprc_ibd::hmm::extract_ibd_segments;
+/// use impopk_ibd::hmm::extract_ibd_segments;
 ///
 /// // State sequence with two IBD regions
 /// let states = vec![0, 0, 1, 1, 1, 0, 0, 1, 1, 0];

@@ -7,13 +7,13 @@
 
 use std::collections::HashMap;
 
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
     CrossValidationResult,
     cross_validate, cross_validate_kfold,
 };
 
-use hprc_ancestry_cli::concordance::{
+use impopk_ancestry_cli::concordance::{
     ancestry_confusion_matrix, ancestries_to_segments, extract_switch_points,
     per_population_concordance, per_population_segment_jaccard,
     per_population_segment_precision_recall, per_window_ancestry_concordance,

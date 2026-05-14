@@ -39,7 +39,7 @@ fn validate_non_negative_f64(val: &str) -> Result<f64, String> {
     }
 }
 
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation, EmissionModel,
     AncestryGeneticMap, DecodingMethod, LearnedParams,
     extract_ancestry_segments, forward_backward,
@@ -3373,7 +3373,7 @@ fn main() -> Result<()> {
                 }).collect();
 
                 // Merge adjacent segments with same ancestry (from split populations)
-                let mut merged_segs: Vec<hprc_ancestry_cli::AncestrySegment> = Vec::new();
+                let mut merged_segs: Vec<impopk_ancestry_cli::AncestrySegment> = Vec::new();
                 for seg in remapped_segs.drain(..) {
                     if let Some(last) = merged_segs.last_mut() {
                         if last.ancestry_idx == seg.ancestry_idx
@@ -3544,7 +3544,7 @@ fn main() -> Result<()> {
     // Multi-pulse demographic inference (T80)
     // --demographic-output implies --demographic-inference
     if args.demographic_inference || args.demographic_output.is_some() {
-        let all_segments: Vec<&hprc_ancestry_cli::AncestrySegment> = results.iter()
+        let all_segments: Vec<&impopk_ancestry_cli::AncestrySegment> = results.iter()
             .flat_map(|(_, segs, _)| segs.iter())
             .collect();
 
@@ -3594,7 +3594,7 @@ fn main() -> Result<()> {
 
 #[allow(clippy::type_complexity)]
 fn print_diagnostics(
-    results: &[(String, Vec<hprc_ancestry_cli::AncestrySegment>, Vec<Vec<f64>>)],
+    results: &[(String, Vec<impopk_ancestry_cli::AncestrySegment>, Vec<Vec<f64>>)],
     params: &AncestryHmmParams,
     populations: &[AncestralPopulation],
 ) {
@@ -3950,7 +3950,7 @@ fn compute_similarities(
 #[allow(clippy::type_complexity)]
 fn validate_against_rfmix(
     rfmix_path: &std::path::Path,
-    results: &[(String, Vec<hprc_ancestry_cli::AncestrySegment>, Vec<Vec<f64>>)],
+    results: &[(String, Vec<impopk_ancestry_cli::AncestrySegment>, Vec<Vec<f64>>)],
     similarity_data: &std::collections::HashMap<String, Vec<AncestryObservation>>,
     our_pop_names: &[String],
     validate_output: &Option<PathBuf>,

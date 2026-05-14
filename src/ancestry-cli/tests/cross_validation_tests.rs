@@ -4,7 +4,7 @@
 //! k-fold cross-validation on reference haplotypes to detect population bias.
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
     CrossValidationResult, cross_validate, cross_validate_kfold,
 };

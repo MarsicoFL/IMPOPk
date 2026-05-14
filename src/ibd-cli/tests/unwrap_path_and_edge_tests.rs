@@ -1,18 +1,18 @@
 //! Tests targeting unwrap()-bearing code paths and edge cases in segment.rs,
 //! concordance.rs, and stats.rs that haven't been exercised yet.
 
-use hprc_ibd::segment::{
+use impopk_ibd::segment::{
     detect_segments_rle, format_segment_bed, merge_segments, segment_length_distribution,
     segment_length_histogram, IdentityTrack, RleParams, Segment,
 };
 
-use hprc_ibd::concordance::{
+use impopk_ibd::concordance::{
     boundary_accuracy, extract_haplotype_index, extract_sample_id, f1_score, length_correlation,
     matched_segments, per_window_concordance, segment_overlap_bp, segments_jaccard,
     segments_precision_recall, MatchedInterval,
 };
 
-use hprc_ibd::stats::{
+use impopk_ibd::stats::{
     bic_model_selection, em_two_component, em_two_component_map, gaussian_to_logit_space,
     inv_logit, kmeans_1d, logit, logit_transform_observations, trimmed_mean, GaussianParams,
     OnlineStats, LOGIT_CAP,

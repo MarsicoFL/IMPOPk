@@ -1,6 +1,6 @@
 //! Tests for posterior-based boundary refinement (refine_segment_boundaries)
 
-use hprc_ibd::hmm::{IbdSegmentWithPosterior, refine_segment_boundaries};
+use impopk_ibd::hmm::{IbdSegmentWithPosterior, refine_segment_boundaries};
 
 fn make_segment(start: usize, end: usize, mean_post: f64) -> IbdSegmentWithPosterior {
     IbdSegmentWithPosterior {

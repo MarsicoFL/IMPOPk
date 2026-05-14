@@ -11,7 +11,7 @@
 
 
 
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation, EmissionModel,
     auto_detect_groups, compute_distance_transitions, compute_hierarchical_emissions,
     compute_pairwise_log_emissions, compute_rank_log_emissions, dampen_low_confidence_emissions,

@@ -1,11 +1,11 @@
 /// Tests for HmmParams::estimate_emissions — the only public function
 /// without direct test coverage. Also includes cross-algorithm consistency
 /// tests that verify agreement between different HMM inference paths.
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     forward, forward_backward, forward_backward_from_log_emit, forward_from_log_emit,
     infer_ibd, precompute_log_emissions, viterbi, viterbi_from_log_emit, HmmParams, Population,
 };
-use hprc_ibd::stats::GaussianParams;
+use impopk_ibd::stats::GaussianParams;
 
 // ============================================================================
 // HmmParams::estimate_emissions — basic functionality

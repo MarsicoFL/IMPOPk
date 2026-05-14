@@ -2,11 +2,11 @@
 //! parse_similarity_data header paths, rfmix parsing, filter_segments_by_min_lod,
 //! estimate_admixture_proportions, and rfmix_to_windows/rfmix_window_starts.
 
-use hprc_ancestry_cli::ancestry::{
+use impopk_ancestry_cli::ancestry::{
     coverage_ratio, count_smoothing_changes, estimate_admixture_proportions,
     filter_segments_by_min_lod, smooth_states, AncestrySegment,
 };
-use hprc_ancestry_cli::rfmix::{
+use impopk_ancestry_cli::rfmix::{
     parse_rfmix_msp_content, rfmix_to_windows, rfmix_window_starts, RfmixResult, RfmixSegment,
 };
 
@@ -536,7 +536,7 @@ fn test_rfmix_window_starts_same_start_and_end() {
 
 #[test]
 fn test_parse_similarity_data_empty_input() {
-    use hprc_ancestry_cli::ancestry::parse_similarity_data;
+    use impopk_ancestry_cli::ancestry::parse_similarity_data;
     let lines: Vec<String> = vec![];
     let query = vec!["sample#1".to_string()];
     let refs = vec!["ref#1".to_string()];
@@ -547,7 +547,7 @@ fn test_parse_similarity_data_empty_input() {
 
 #[test]
 fn test_parse_similarity_data_header_only() {
-    use hprc_ancestry_cli::ancestry::parse_similarity_data;
+    use impopk_ancestry_cli::ancestry::parse_similarity_data;
     let lines = vec![
         "chrom\tstart\tend\tgroup.a\tgroup.b\testimated.identity".to_string(),
     ];
@@ -560,7 +560,7 @@ fn test_parse_similarity_data_header_only() {
 
 #[test]
 fn test_parse_similarity_data_missing_column() {
-    use hprc_ancestry_cli::ancestry::parse_similarity_data;
+    use impopk_ancestry_cli::ancestry::parse_similarity_data;
     let lines = vec![
         // Missing "estimated.identity" column
         "chrom\tstart\tend\tgroup.a\tgroup.b".to_string(),
@@ -574,7 +574,7 @@ fn test_parse_similarity_data_missing_column() {
 
 #[test]
 fn test_parse_similarity_data_valid_row() {
-    use hprc_ancestry_cli::ancestry::parse_similarity_data;
+    use impopk_ancestry_cli::ancestry::parse_similarity_data;
     let lines = vec![
         "chrom\tstart\tend\tgroup.a\tgroup.b\testimated.identity".to_string(),
         "chr1\t0\t10000\tsample#1#scaffold:0-10000\tref#1#scaffold:0-10000\t0.999".to_string(),
@@ -590,7 +590,7 @@ fn test_parse_similarity_data_valid_row() {
 
 #[test]
 fn test_parse_similarity_data_skips_non_query_ref() {
-    use hprc_ancestry_cli::ancestry::parse_similarity_data;
+    use impopk_ancestry_cli::ancestry::parse_similarity_data;
     let lines = vec![
         "chrom\tstart\tend\tgroup.a\tgroup.b\testimated.identity".to_string(),
         // Both are refs, neither is query → should be skipped
@@ -604,7 +604,7 @@ fn test_parse_similarity_data_skips_non_query_ref() {
 
 #[test]
 fn test_parse_similarity_data_reversed_query_ref_order() {
-    use hprc_ancestry_cli::ancestry::parse_similarity_data;
+    use impopk_ancestry_cli::ancestry::parse_similarity_data;
     let lines = vec![
         "chrom\tstart\tend\tgroup.a\tgroup.b\testimated.identity".to_string(),
         // group.a is ref, group.b is query (reversed)
@@ -619,7 +619,7 @@ fn test_parse_similarity_data_reversed_query_ref_order() {
 
 #[test]
 fn test_parse_similarity_data_duplicate_keeps_max() {
-    use hprc_ancestry_cli::ancestry::parse_similarity_data;
+    use impopk_ancestry_cli::ancestry::parse_similarity_data;
     let lines = vec![
         "chrom\tstart\tend\tgroup.a\tgroup.b\testimated.identity".to_string(),
         "chr1\t0\t10000\tsample#1#s1:0\tref#1#s1:0\t0.990".to_string(),

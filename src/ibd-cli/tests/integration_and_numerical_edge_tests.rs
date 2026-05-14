@@ -11,19 +11,19 @@
 //! - forward → backward → forward_backward consistency on edge data
 //! - Baum-Welch convergence with extreme initial params
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     extract_ibd_segments, forward, forward_backward, infer_ibd, infer_ibd_with_training, viterbi,
     HmmParams, Population,
 };
-use hprc_ibd::segment::{
+use impopk_ibd::segment::{
     detect_segments_rle, merge_segments, segment_length_histogram, IdentityTrack, RleParams,
     Segment,
 };
-use hprc_ibd::stats::{
+use impopk_ibd::stats::{
     bic_model_selection, em_two_component, em_two_component_map, kmeans_1d, trimmed_mean,
     GaussianParams,
 };
-use hprc_ibd::concordance::boundary_accuracy;
+use impopk_ibd::concordance::boundary_accuracy;
 
 /// Helper: create HmmParams with reasonable defaults for testing.
 fn test_params() -> HmmParams {

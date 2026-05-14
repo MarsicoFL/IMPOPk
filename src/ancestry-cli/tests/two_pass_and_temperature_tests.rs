@@ -1,7 +1,7 @@
 //! Tests for two-pass ancestry inference and population temperature scaling.
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
     scale_temperature_for_populations,
     estimate_proportions_from_states, estimate_per_state_switch_rates,

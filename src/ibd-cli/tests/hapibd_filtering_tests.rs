@@ -4,7 +4,7 @@
 //! - unique_pairs
 //! - HapIbdSegment methods
 
-use hprc_ibd::hapibd::*;
+use impopk_ibd::hapibd::*;
 
 fn make_segment(s1: &str, h1: u8, s2: &str, h2: u8, chr: &str, start: u64, end: u64, lod: f64) -> HapIbdSegment {
     HapIbdSegment {

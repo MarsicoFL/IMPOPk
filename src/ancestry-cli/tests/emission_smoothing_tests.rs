@@ -1,7 +1,7 @@
 //! Tests for raw observation smoothing, SNR-weighted emission smoothing, and contrast normalization.
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     smooth_log_emissions, smooth_log_emissions_weighted, contrast_normalize_emissions,
     smooth_observations, AncestryObservation,
 };

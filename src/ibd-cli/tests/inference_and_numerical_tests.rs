@@ -9,12 +9,12 @@
 //! - GeneticMap edge cases not covered elsewhere
 //! - HmmParams::from_population_logit p_enter_ibd boundaries
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     backward, forward, forward_backward, infer_ibd, infer_ibd_with_training,
     precompute_log_emissions, segment_lod_score, viterbi,
     GeneticMap, HmmParams, Population,
 };
-use hprc_ibd::stats::logit_transform_observations;
+use impopk_ibd::stats::logit_transform_observations;
 
 // === infer_ibd_with_training edge cases ===
 

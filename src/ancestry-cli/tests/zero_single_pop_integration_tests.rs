@@ -12,7 +12,7 @@
 //! The zero-population case is pathological (CLI validates ≥2 pops), but these
 //! tests ensure library-level safety for programmatic use.
 
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation, EmissionModel,
     forward_backward, viterbi,
 };

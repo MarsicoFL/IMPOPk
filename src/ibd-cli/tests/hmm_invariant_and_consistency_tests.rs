@@ -7,8 +7,8 @@
 //! - Distance/genetic-map variants produce valid results
 //! - Logit emission estimation edge cases
 
-use hprc_ibd::hmm::*;
-use hprc_ibd::stats::*;
+use impopk_ibd::hmm::*;
+use impopk_ibd::stats::*;
 
 // ============================================================================
 // Helper: create standard test params

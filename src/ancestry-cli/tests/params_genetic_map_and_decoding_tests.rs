@@ -3,7 +3,7 @@
 //! and EmissionModel aggregate edge cases via log_emission.
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     AncestralPopulation, AncestryGeneticMap, AncestryHmmParams, AncestryObservation,
     DecodingMethod, EmissionModel, viterbi, posterior_decode,
     forward_backward_with_genetic_map, viterbi_with_genetic_map,

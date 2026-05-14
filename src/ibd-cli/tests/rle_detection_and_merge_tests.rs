@@ -4,7 +4,7 @@
 //! detect_segments_rle: RLE-based segment detection from identity tracks
 //! merge_segments: overlapping segment merging with proportional identity estimation
 
-use hprc_ibd::segment::{detect_segments_rle, merge_segments, IdentityTrack, RleParams, Segment};
+use impopk_ibd::segment::{detect_segments_rle, merge_segments, IdentityTrack, RleParams, Segment};
 
 // ============================================================================
 // Helper

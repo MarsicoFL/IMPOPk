@@ -12,14 +12,14 @@
 //! - extract_ancestry_segments: alternating states produce multiple segments
 //! - parse_rfmix_msp_content: data line with extra trailing fields
 
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     EmissionModel, AncestryHmmParams, AncestryObservation, AncestralPopulation,
 };
-use hprc_ancestry_cli::rfmix::{
+use impopk_ancestry_cli::rfmix::{
     parse_rfmix_msp_content, rfmix_to_windows, rfmix_window_starts,
     RfmixResult, RfmixSegment,
 };
-use hprc_ancestry_cli::ancestry::{
+use impopk_ancestry_cli::ancestry::{
     extract_ancestry_segments, estimate_admixture_proportions, smooth_states,
     count_smoothing_changes, filter_segments_by_min_lod, AncestrySegment,
 };

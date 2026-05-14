@@ -678,7 +678,7 @@ fn mean_var_three_pairs_variance_correct() {
 // =====================================================================
 // logit / inv_logit roundtrip tests (using library functions)
 // =====================================================================
-use hprc_ibd::stats::{logit, inv_logit, logit_transform_observations, LOGIT_CAP};
+use impopk_ibd::stats::{logit, inv_logit, logit_transform_observations, LOGIT_CAP};
 
 #[test]
 fn logit_inv_logit_roundtrip_mid() {

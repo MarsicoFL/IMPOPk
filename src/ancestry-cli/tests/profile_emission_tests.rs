@@ -1,6 +1,6 @@
 //! Tests for population profile emission learning and blending.
 
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
     learn_population_profiles, compute_profile_log_emissions, blend_log_emissions,
     precompute_log_emissions,

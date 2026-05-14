@@ -11,7 +11,7 @@
 use std::collections::HashMap;
 use std::panic;
 
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation, EmissionModel,
     PopulationNormalization, estimate_temperature, estimate_temperature_normalized,
     estimate_switch_prob, forward_backward, viterbi,

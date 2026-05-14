@@ -1,13 +1,13 @@
 //! Tests for distance-dependent transitions, population-adaptive/logit constructors,
 //! trimmed_mean, bic_model_selection, and forward/backward/viterbi_with_distances.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     distance_dependent_log_transition, forward_backward_with_distances, forward_with_distances,
     backward_with_distances, viterbi_with_distances, forward, backward, viterbi,
     forward_backward, recombination_aware_log_transition,
     GeneticMap, HmmParams, Population,
 };
-use hprc_ibd::stats::{bic_model_selection, trimmed_mean, GaussianParams};
+use impopk_ibd::stats::{bic_model_selection, trimmed_mean, GaussianParams};
 
 // ── distance_dependent_log_transition ───────────────────────────────────
 

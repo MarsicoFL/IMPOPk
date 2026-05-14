@@ -5,7 +5,7 @@
 //!
 //! These test edge cases NOT covered by the existing unit tests in hmm.rs.
 
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     AncestralPopulation, AncestryGeneticMap, AncestryHmmParams, AncestryObservation,
     DecodingMethod, forward_backward, forward_backward_with_genetic_map, posterior_decode,
     posterior_decode_with_genetic_map, viterbi, viterbi_with_genetic_map,

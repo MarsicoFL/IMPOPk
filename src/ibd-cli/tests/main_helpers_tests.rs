@@ -252,7 +252,7 @@ fn validate_positive_f64_negative_rejected() {
 // ── parse_bed_regions (reimplemented) ──────────────────────────────────
 
 /// Reimplementation of parse_bed_regions from ibd-cli main.rs
-fn parse_bed_regions(bed_path: &str) -> anyhow::Result<Vec<hprc_common::Region>> {
+fn parse_bed_regions(bed_path: &str) -> anyhow::Result<Vec<impopk_common::Region>> {
     use std::io::{BufRead, BufReader};
     let file = std::fs::File::open(bed_path)?;
     let reader = BufReader::new(file);
@@ -273,7 +273,7 @@ fn parse_bed_regions(bed_path: &str) -> anyhow::Result<Vec<hprc_common::Region>>
         let end: u64 = fields[2].parse()?;
 
         // BED is 0-based half-open; Region is 1-based inclusive
-        regions.push(hprc_common::Region {
+        regions.push(impopk_common::Region {
             chrom,
             start: start + 1,
             end,

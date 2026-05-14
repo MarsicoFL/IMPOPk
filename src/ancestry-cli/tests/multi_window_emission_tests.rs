@@ -2,7 +2,7 @@
 /// and temperature auto-scaling functions.
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
     precompute_log_emissions, smooth_log_emissions,
     viterbi_from_log_emissions, forward_backward_from_log_emissions,
@@ -233,7 +233,7 @@ fn test_viterbi_from_log_emissions_matches_standard() {
         make_obs(vec![("hapA1", 0.997), ("hapB1", 0.996)]),
     ];
 
-    let standard = hprc_ancestry_cli::viterbi(&observations, &params);
+    let standard = impopk_ancestry_cli::viterbi(&observations, &params);
     let precomputed = precompute_log_emissions(&observations, &params);
     let from_emissions = viterbi_from_log_emissions(&precomputed, &params);
 
@@ -277,7 +277,7 @@ fn test_fb_from_log_emissions_matches_standard() {
         make_obs(vec![("hapA1", 0.997), ("hapB1", 0.996)]),
     ];
 
-    let standard = hprc_ancestry_cli::forward_backward(&observations, &params);
+    let standard = impopk_ancestry_cli::forward_backward(&observations, &params);
     let precomputed = precompute_log_emissions(&observations, &params);
     let from_emissions = forward_backward_from_log_emissions(&precomputed, &params);
 

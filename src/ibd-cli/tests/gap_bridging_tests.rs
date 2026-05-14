@@ -4,7 +4,7 @@
 //! critical for IBD F1 improvement by preventing segment splitting
 //! from noisy windows within true IBD regions.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     bridge_ibd_gaps, merge_nearby_ibd_segments, IbdSegmentWithPosterior,
     HmmParams, Population, infer_ibd_with_training, extract_ibd_segments_with_lod,
     refine_states_with_posteriors,

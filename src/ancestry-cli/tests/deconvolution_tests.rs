@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryObservation,
     deconvolve_admixed_populations,
 };

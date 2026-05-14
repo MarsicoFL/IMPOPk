@@ -7,7 +7,7 @@
 //! These tests verify the full ancestry pipeline works end-to-end.
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
     EmissionModel, forward_backward, posterior_decode, viterbi,
     CrossValidationResult, cross_validate,

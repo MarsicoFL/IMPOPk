@@ -17,7 +17,7 @@
 //! ## Example
 //!
 //! ```rust,ignore
-//! use hprc_ibd::hapibd::{parse_hapibd_file, hapibd_segments_for_pair};
+//! use impopk_ibd::hapibd::{parse_hapibd_file, hapibd_segments_for_pair};
 //!
 //! let segments = parse_hapibd_file("results.ibd").unwrap();
 //! let pair_segs = hapibd_segments_for_pair(&segments, "HG00733", "NA12878");

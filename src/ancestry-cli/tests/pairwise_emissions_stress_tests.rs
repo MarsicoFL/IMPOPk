@@ -3,7 +3,7 @@
 //! Tests scalability to many populations, temperature adaptation behavior,
 //! and comparison with standard softmax emissions.
 
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     AncestralPopulation, AncestryObservation, EmissionModel,
     compute_pairwise_log_emissions, precompute_log_emissions,
     AncestryHmmParams,

@@ -1,16 +1,16 @@
 //! Tests for logit-space emissions, standalone forward/backward algorithms,
 //! and segment histogram edge cases.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     backward, backward_with_distances, backward_with_genetic_map, forward, forward_with_distances,
     forward_with_genetic_map, GeneticMap, HmmParams,
 };
-use hprc_ibd::segment::{segment_length_histogram, Segment};
+use impopk_ibd::segment::{segment_length_histogram, Segment};
 // ── from_population_logit ────────────────────────────────────────────────
 
 #[test]
 fn from_population_logit_creates_valid_params() {
-    use hprc_ibd::hmm::Population;
+    use impopk_ibd::hmm::Population;
     let params = HmmParams::from_population_logit(Population::EUR, 50.0, 0.001, 5000);
     // Transition rows sum to 1
     for row in &params.transition {
@@ -32,20 +32,20 @@ fn from_population_logit_creates_valid_params() {
 #[test]
 #[should_panic(expected = "p_enter_ibd must be in range")]
 fn from_population_logit_panics_on_zero_p_enter() {
-    use hprc_ibd::hmm::Population;
+    use impopk_ibd::hmm::Population;
     let _ = HmmParams::from_population_logit(Population::EUR, 50.0, 0.0, 5000);
 }
 
 #[test]
 #[should_panic(expected = "p_enter_ibd must be in range")]
 fn from_population_logit_panics_on_one_p_enter() {
-    use hprc_ibd::hmm::Population;
+    use impopk_ibd::hmm::Population;
     let _ = HmmParams::from_population_logit(Population::EUR, 50.0, 1.0, 5000);
 }
 
 #[test]
 fn from_population_logit_clamps_expected_windows() {
-    use hprc_ibd::hmm::Population;
+    use impopk_ibd::hmm::Population;
     // Very small expected_ibd_windows → p_stay_ibd clamped to 0.5
     let params = HmmParams::from_population_logit(Population::AFR, 1.0, 0.01, 5000);
     // p_stay should be clamped to minimum 0.5
@@ -56,7 +56,7 @@ fn from_population_logit_clamps_expected_windows() {
 
 #[test]
 fn estimate_emissions_logit_low_variance_ibd_branch() {
-    use hprc_ibd::hmm::Population;
+    use impopk_ibd::hmm::Population;
     let mut params = HmmParams::from_population_logit(Population::EUR, 50.0, 0.001, 5000);
     let ibd_prior_mean = params.emission[1].mean;
 
@@ -76,7 +76,7 @@ fn estimate_emissions_logit_low_variance_ibd_branch() {
 
 #[test]
 fn estimate_emissions_logit_low_variance_non_ibd_branch() {
-    use hprc_ibd::hmm::Population;
+    use impopk_ibd::hmm::Population;
     let mut params = HmmParams::from_population_logit(Population::EUR, 50.0, 0.001, 5000);
     let ibd_prior_mean = params.emission[1].mean;
 
@@ -103,7 +103,7 @@ fn estimate_emissions_logit_low_variance_non_ibd_branch() {
 
 #[test]
 fn estimate_emissions_logit_too_few_observations() {
-    use hprc_ibd::hmm::Population;
+    use impopk_ibd::hmm::Population;
     let mut params = HmmParams::from_population_logit(Population::EUR, 50.0, 0.001, 5000);
     let original = params.clone();
     // Only 5 observations (<10), should return early without modifying
@@ -453,7 +453,7 @@ fn forward_with_distances_large_gap_between_windows() {
 
 #[test]
 fn logit_params_viterbi_produces_valid_states() {
-    use hprc_ibd::hmm::{viterbi, Population};
+    use impopk_ibd::hmm::{viterbi, Population};
 
     let params = HmmParams::from_population_logit(Population::EUR, 50.0, 0.001, 5000);
     // Generate observations in logit space (high values = high identity)

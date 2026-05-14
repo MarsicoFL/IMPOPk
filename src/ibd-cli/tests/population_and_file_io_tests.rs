@@ -1,8 +1,8 @@
 //! Tests for Population per-variant constants, GeneticMap::from_file error paths,
 //! and parse_hapibd_file I/O operations.
 
-use hprc_ibd::hapibd::parse_hapibd_file;
-use hprc_ibd::hmm::{GeneticMap, Population};
+use impopk_ibd::hapibd::parse_hapibd_file;
+use impopk_ibd::hmm::{GeneticMap, Population};
 use std::io::Write;
 
 // ============================================================================

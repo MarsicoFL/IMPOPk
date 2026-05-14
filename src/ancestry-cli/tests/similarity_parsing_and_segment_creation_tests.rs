@@ -4,16 +4,16 @@
 
 use std::collections::HashMap;
 
-use hprc_ancestry_cli::ancestry::{
+use impopk_ancestry_cli::ancestry::{
     coverage_ratio, count_smoothing_changes, estimate_admixture_proportions,
     extract_ancestry_segments, filter_segments_by_min_lod, parse_similarity_data,
     parse_similarity_data_column, parse_similarity_data_with_coverage, smooth_states,
     AdmixtureProportions,
 };
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
 };
-use hprc_ancestry_cli::rfmix::{
+use impopk_ancestry_cli::rfmix::{
     parse_rfmix_msp_content, rfmix_to_windows, rfmix_window_starts, RfmixResult, RfmixSegment,
 };
 

@@ -3,7 +3,7 @@
 //! Complements `hybrid_pairwise_tests.rs` (13 tests by algo_dev) with
 //! boundary, NaN/Inf, degenerate-input, and stress scenarios.
 
-use hprc_ancestry_cli::blend_log_emissions_hybrid;
+use impopk_ancestry_cli::blend_log_emissions_hybrid;
 
 // ============================================================================
 // Negative parameter clamping

@@ -4,7 +4,7 @@
 //! with the full ancestry HMM pipeline (Viterbi, forward-backward, Baum-Welch).
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestryHmmParams, AncestryObservation, AncestralPopulation, EmissionModel,
     parse_similarity_data_with_coverage, coverage_ratio,
     extract_ancestry_segments, estimate_admixture_proportions,

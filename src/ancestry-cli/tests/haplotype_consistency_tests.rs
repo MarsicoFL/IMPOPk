@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
     apply_haplotype_consistency, forward_backward,
     precompute_log_emissions, viterbi,

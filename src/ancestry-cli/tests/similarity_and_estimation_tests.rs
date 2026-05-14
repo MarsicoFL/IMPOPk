@@ -1,8 +1,8 @@
 //! Tests for parse_similarity_data_column(), estimate_temperature(),
 //! estimate_temperature_normalized(), estimate_switch_prob(), and EmissionModel::TopK.
 
-use hprc_ancestry_cli::ancestry::parse_similarity_data_column;
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::ancestry::parse_similarity_data_column;
+use impopk_ancestry_cli::hmm::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation, EmissionModel,
     estimate_switch_prob, estimate_temperature, estimate_temperature_normalized,
 };
@@ -384,7 +384,7 @@ fn test_estimate_temp_normalized_with_normalization() {
 fn test_estimate_temp_normalized_empty_obs() {
     let pops = two_pop();
     let mut params = AncestryHmmParams::new(pops, 0.001);
-    params.normalization = Some(hprc_ancestry_cli::hmm::PopulationNormalization {
+    params.normalization = Some(impopk_ancestry_cli::hmm::PopulationNormalization {
         means: vec![0.9, 0.8],
         stds: vec![0.01, 0.01],
     });
@@ -452,7 +452,7 @@ fn test_topk_via_hmm_emission() {
     let obs = make_obs(20, 0.95, 0.85);
 
     // Viterbi with Max and TopK(1) should produce identical state sequences
-    use hprc_ancestry_cli::hmm::viterbi;
+    use impopk_ancestry_cli::hmm::viterbi;
     let states_max = viterbi(&obs, &params_max);
     let states_top1 = viterbi(&obs, &params_top1);
     assert_eq!(states_max, states_top1, "TopK(1) should produce same states as Max");

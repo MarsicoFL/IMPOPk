@@ -7,8 +7,8 @@
 //! These tests verify that the full pipeline (estimate → infer → extract)
 //! correctly recovers known IBD segments from synthetic data.
 
-use hprc_ibd::hmm::*;
-use hprc_ibd::stats::GaussianParams;
+use impopk_ibd::hmm::*;
+use impopk_ibd::stats::GaussianParams;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helpers

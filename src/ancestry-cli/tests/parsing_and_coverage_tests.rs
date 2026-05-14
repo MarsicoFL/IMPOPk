@@ -2,7 +2,7 @@
 //! parse_similarity_data_with_coverage edge cases, and coverage_ratio
 //! boundary conditions.
 
-use hprc_ancestry_cli::ancestry::{
+use impopk_ancestry_cli::ancestry::{
     parse_similarity_data, parse_similarity_data_with_coverage,
     coverage_ratio,
 };

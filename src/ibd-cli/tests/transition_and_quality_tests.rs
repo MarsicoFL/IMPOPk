@@ -3,7 +3,7 @@
 //!
 //! These cover untested edge cases identified in cycle 15 gap analysis.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     coverage_ratio, distance_dependent_log_transition, recombination_aware_log_transition,
     segment_quality_score, GeneticMap, HmmParams, IbdSegmentWithPosterior, Population,
 };

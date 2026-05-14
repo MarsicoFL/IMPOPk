@@ -1,5 +1,5 @@
 [package]
-name = "hprc-ibd"
+name = "impopk-ibd"
 version = "0.1.0"
 edition = "2021"
 authors = ["Franco Marsico"]
@@ -9,7 +9,7 @@ keywords = ["bioinformatics", "pangenome", "IBD", "HMM", "HPRC"]
 categories = ["science", "command-line-utilities"]
 
 [lib]
-name = "hprc_ibd"
+name = "impopk_ibd"
 path = "src/lib.rs"
 
 [[bin]]
@@ -24,7 +24,7 @@ path = "src/bin/validate.rs"
 anyhow = "1.0"
 clap = { version = "4.4", features = ["derive"] }
 rayon = "1.8"
-hprc-common = { path = "../common" }
+impopk-common = { path = "../common" }
 
 [dev-dependencies]
 assert_cmd = "2.0"

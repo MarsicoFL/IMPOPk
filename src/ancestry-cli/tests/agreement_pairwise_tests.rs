@@ -4,7 +4,7 @@
 //! emissions as the quality signal, rather than margin-based confidence (which
 //! amplifies coherent bias via the Stein paradox).
 
-use hprc_ancestry_cli::blend_log_emissions_agreement;
+use impopk_ancestry_cli::blend_log_emissions_agreement;
 
 // ============================================================================
 // Basic agreement / disagreement behavior

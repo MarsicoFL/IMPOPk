@@ -21,7 +21,7 @@
 //! ## Example
 //!
 //! ```rust,ignore
-//! use hprc_ibd::segment::{RleParams, IdentityTrack, detect_segments_rle};
+//! use impopk_ibd::segment::{RleParams, IdentityTrack, detect_segments_rle};
 //!
 //! // Create identity track for a haplotype pair
 //! let track = IdentityTrack {

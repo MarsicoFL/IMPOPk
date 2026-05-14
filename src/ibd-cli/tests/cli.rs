@@ -307,8 +307,6 @@ fn test_ibd_help_contains_all_flags() {
         "--min-windows",
         "--baum-welch-iters",
         "--posterior-threshold",
-        "--distance-aware",
-        "--genetic-map",
         "--adaptive-transitions",
         "--output-bed",
         "--output-posteriors",

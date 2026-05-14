@@ -13,16 +13,13 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use clap::Parser;
 
-use hprc_ibd::concordance;
-use hprc_ibd::hapibd;
-use hprc_ibd::hmm::{
+use impopk_ibd::concordance;
+use impopk_ibd::hapibd;
+use impopk_ibd::hmm::{
     coverage_ratio, extract_ibd_segments_with_lod, infer_ibd_with_aux_features,
-    infer_ibd_with_training, forward_backward_with_distances,
-    forward_backward_with_genetic_map, refine_states_with_posteriors,
-    viterbi_with_distances, viterbi_with_genetic_map, GeneticMap, HmmParams,
-    IbdInferenceResult, Population,
+    infer_ibd_with_training, HmmParams, Population,
 };
-use hprc_ibd::stats::logit_transform_observations;
+use impopk_ibd::stats::logit_transform_observations;
 
 fn validate_probability(val: &str) -> Result<f64, String> {
     let v: f64 = val.parse().map_err(|_| format!("'{}' is not a valid number", val))?;
@@ -83,16 +80,6 @@ struct Args {
     /// Use population-adaptive transition probabilities
     #[arg(long = "adaptive-transitions", default_value = "false")]
     adaptive_transitions: bool,
-
-    /// Use distance-aware HMM transitions.
-    /// Scales transition probabilities by physical distance between windows.
-    #[arg(long = "distance-aware", default_value = "false")]
-    distance_aware: bool,
-
-    /// Genetic map file (PLINK format) for recombination-aware transitions.
-    /// Format: chr pos_bp rate_cM_Mb pos_cM (whitespace-separated)
-    #[arg(long = "genetic-map")]
-    genetic_map: Option<PathBuf>,
 
     /// Minimum identity threshold for including a window in HMM inference.
     /// Windows with identity below this threshold are discarded as alignment gaps.
@@ -317,7 +304,6 @@ fn process_pair(
     mut records: Vec<IbsRecord>,
     args: &Args,
     population: Population,
-    genetic_map: Option<&GeneticMap>,
 ) -> (Vec<IbdSegment>, Vec<(u64, u64, usize, f64)>) {
     let mut segments = Vec::new();
     let mut window_states: Vec<(u64, u64, usize, f64)> = Vec::new();
@@ -389,7 +375,7 @@ fn process_pair(
     };
 
     // Run inference: choose pipeline based on flags
-    let result = if coverage_ratios.is_some() && !args.distance_aware {
+    let result = if coverage_ratios.is_some() {
         // Multi-feature pipeline with coverage ratio
         let (res, _aux_emit) = infer_ibd_with_aux_features(
             &observations,
@@ -400,42 +386,6 @@ fn process_pair(
             coverage_ratios.as_deref(),
         );
         res
-    } else if args.distance_aware {
-        let window_positions: Vec<(u64, u64)> = records.iter()
-            .map(|r| (r.start, r.end))
-            .collect();
-
-        if let Some(gmap) = genetic_map {
-            // Recombination-aware pipeline
-            if args.baum_welch_iters > 0 && observations.len() >= 10 {
-                params.baum_welch_with_genetic_map(
-                    &observations, &window_positions, gmap, args.baum_welch_iters,
-                    1e-6, Some(population), args.window_size,
-                );
-            }
-            let mut states = viterbi_with_genetic_map(
-                &observations, &params, &window_positions, gmap, args.window_size,
-            );
-            let (posteriors, log_likelihood) = forward_backward_with_genetic_map(
-                &observations, &params, &window_positions, gmap, args.window_size,
-            );
-            refine_states_with_posteriors(&mut states, &posteriors, 0.5, 0.2);
-            IbdInferenceResult { states, posteriors, log_likelihood }
-        } else {
-            // Physical distance-aware pipeline
-            if args.baum_welch_iters > 0 && observations.len() >= 10 {
-                params.baum_welch_with_distances(
-                    &observations, &window_positions, args.baum_welch_iters,
-                    1e-6, Some(population), args.window_size,
-                );
-            }
-            let mut states = viterbi_with_distances(&observations, &params, &window_positions);
-            let (posteriors, log_likelihood) = forward_backward_with_distances(
-                &observations, &params, &window_positions,
-            );
-            refine_states_with_posteriors(&mut states, &posteriors, 0.5, 0.2);
-            IbdInferenceResult { states, posteriors, log_likelihood }
-        }
     } else {
         infer_ibd_with_training(
             &observations,
@@ -688,9 +638,6 @@ fn run() -> Result<()> {
     if args.logit_transform {
         eprintln!("Logit transform: enabled (observations mapped via log(x/(1-x)))");
     }
-    if args.distance_aware {
-        eprintln!("Distance-aware transitions: enabled");
-    }
     if args.background_filter {
         eprintln!("Background filter: enabled (threshold={:.3}, ratio={:.2})",
             args.bg_identity_threshold, args.bg_ratio_threshold);
@@ -747,31 +694,6 @@ fn run() -> Result<()> {
         None
     };
 
-    // Load genetic map if specified, using chromosome from the data
-    let genetic_map = if let Some(ref gmap_path) = args.genetic_map {
-        // Extract chromosome from first record
-        let chrom = pair_data.values().next()
-            .and_then(|records| records.first())
-            .map(|r| {
-                // Extract chromosome name (e.g. "chr20" from "CHM13#0#chr20")
-                r.chrom.rsplit('#').next().unwrap_or(&r.chrom).to_string()
-            })
-            .unwrap_or_else(|| "20".to_string());
-        eprintln!("Loading genetic map for chromosome '{}'", chrom);
-        match GeneticMap::from_file(gmap_path, &chrom) {
-            Ok(gmap) => {
-                eprintln!("Loaded genetic map: {} entries", gmap.len());
-                Some(gmap)
-            }
-            Err(e) => {
-                eprintln!("WARNING: Failed to load genetic map: {}. Falling back to physical distance.", e);
-                None
-            }
-        }
-    } else {
-        None
-    };
-
     let mut all_segments = Vec::new();
     #[allow(clippy::type_complexity)]
     let mut all_window_states: Vec<(String, String, Vec<(u64, u64, usize, f64)>)> = Vec::new();
@@ -791,7 +713,7 @@ fn run() -> Result<()> {
         }
         let n_windows = records.len();
         let (segments, window_states) = process_pair(
-            &hap_a, &hap_b, records, &args, population, genetic_map.as_ref(),
+            &hap_a, &hap_b, records, &args, population,
         );
 
         eprintln!(

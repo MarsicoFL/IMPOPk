@@ -3,7 +3,7 @@
 //! Tests refine_states_with_posteriors, bridge_ibd_gaps, and
 //! refine_segment_boundaries under edge cases and stress scenarios.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     refine_states_with_posteriors, bridge_ibd_gaps, refine_segment_boundaries,
     IbdSegmentWithPosterior, RefinedBoundary,
 };

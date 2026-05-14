@@ -9,7 +9,7 @@
 //! - compute_concordance_report: comprehensive report validation
 //! - format_concordance_report: output contains expected content
 
-use hprc_ancestry_cli::concordance::*;
+use impopk_ancestry_cli::concordance::*;
 
 // =============================================
 // per_window_ancestry_concordance edge cases

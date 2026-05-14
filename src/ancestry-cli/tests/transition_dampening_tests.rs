@@ -4,7 +4,7 @@
 //! with prior transitions during Baum-Welch M-step. This prevents
 //! double-correction when pairwise emissions already bias transitions.
 
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     AncestryHmmParams, AncestralPopulation, AncestryObservation,
 };
 

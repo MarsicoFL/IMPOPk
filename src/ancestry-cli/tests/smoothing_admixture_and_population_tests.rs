@@ -2,7 +2,7 @@
 //! load_population_samples, load_populations_from_dir,
 //! and filter_segments_by_min_lod.
 
-use hprc_ancestry_cli::ancestry::{
+use impopk_ancestry_cli::ancestry::{
     count_smoothing_changes, estimate_admixture_proportions, filter_segments_by_min_lod,
     load_population_samples, load_populations_from_dir, smooth_states,
     AncestrySegment,

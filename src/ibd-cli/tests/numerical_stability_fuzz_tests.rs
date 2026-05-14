@@ -10,7 +10,7 @@
 //! - Very long sequences
 //! - Mixed high/low identity patterns
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     extract_ibd_segments_with_lod, extract_ibd_segments_with_posteriors, forward, forward_backward,
     infer_ibd, infer_ibd_with_training, refine_states_with_posteriors, segment_lod_score,
     segment_posterior_std, viterbi, HmmParams, Population,

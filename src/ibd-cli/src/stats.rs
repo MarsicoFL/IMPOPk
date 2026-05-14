@@ -20,7 +20,7 @@ impl GaussianParams {
     /// # Examples
     ///
     /// ```
-    /// use hprc_ibd::stats::GaussianParams;
+    /// use impopk_ibd::stats::GaussianParams;
     ///
     /// let valid = GaussianParams::new(0.0, 1.0);
     /// assert!(valid.is_ok());
@@ -55,7 +55,7 @@ impl GaussianParams {
     /// # Examples
     ///
     /// ```
-    /// use hprc_ibd::stats::GaussianParams;
+    /// use impopk_ibd::stats::GaussianParams;
     ///
     /// // Safe: std is clearly positive
     /// let params = GaussianParams::new_unchecked(0.0, 1.0);

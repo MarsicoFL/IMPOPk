@@ -2,7 +2,7 @@
 //! AFR regression, stress tests, emission estimation robustness,
 //! distance-aware HMM edge cases, and LOD scoring edge cases.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     compute_per_window_lod, distance_dependent_log_transition,
     extract_ibd_segments_with_lod, extract_ibd_segments_with_posteriors,
     forward_backward, forward_backward_with_distances, forward_with_distances,

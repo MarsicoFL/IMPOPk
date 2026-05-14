@@ -3,8 +3,8 @@
 //! Tests the full pipeline: parse hap-ibd output → parse our output → compute concordance metrics.
 //! Uses synthetic but realistic data to verify the pipeline works end-to-end.
 
-use hprc_ibd::concordance::*;
-use hprc_ibd::hapibd::*;
+use impopk_ibd::concordance::*;
+use impopk_ibd::hapibd::*;
 
 /// Simulate a scenario where we have 3 hap-ibd segments and our tool finds 2 matching + 1 different.
 #[test]

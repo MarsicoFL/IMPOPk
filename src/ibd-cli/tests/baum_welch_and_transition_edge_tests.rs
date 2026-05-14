@@ -9,7 +9,7 @@
 //! - recombination_aware_log_transition with zero-cM fallback (constant genetic map)
 //! - distance_dependent_log_transition large scale factor and tiny scale factor
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     distance_dependent_log_transition, recombination_aware_log_transition, GeneticMap, HmmParams,
 };
 
@@ -262,8 +262,8 @@ fn bw_with_genetic_map_nonfinite_ll_breaks_early() {
         transition: [[0.99, 0.01], [0.02, 0.98]],
         emission: [
             // Both states have mean=0.0, std=1e-20 → log-pdf at any realistic obs → -inf
-            hprc_ibd::stats::GaussianParams::new_unchecked(0.0, 1e-20),
-            hprc_ibd::stats::GaussianParams::new_unchecked(0.0, 1e-20),
+            impopk_ibd::stats::GaussianParams::new_unchecked(0.0, 1e-20),
+            impopk_ibd::stats::GaussianParams::new_unchecked(0.0, 1e-20),
         ],
     };
     let obs: Vec<f64> = (0..20).map(|i| (i as f64) * 0.01 + 0.95).collect();
@@ -325,7 +325,7 @@ fn recomb_transition_flat_map_zero_cm_per_window_fallback() {
 
 #[test]
 fn bw_with_distances_population_prior_runs() {
-    use hprc_ibd::hmm::Population;
+    use impopk_ibd::hmm::Population;
     let mut params = HmmParams::from_expected_length(50.0, 0.001, 10_000);
     let mut obs = vec![0.998; 30];
     for item in obs.iter_mut().take(20).skip(10) {
@@ -344,7 +344,7 @@ fn bw_with_distances_population_prior_runs() {
 
 #[test]
 fn bw_with_genetic_map_population_prior_runs() {
-    use hprc_ibd::hmm::Population;
+    use impopk_ibd::hmm::Population;
     let mut params = HmmParams::from_expected_length(50.0, 0.001, 10_000);
     let mut obs = vec![0.998; 30];
     for item in obs.iter_mut().take(20).skip(10) {

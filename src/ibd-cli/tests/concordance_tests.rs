@@ -9,7 +9,7 @@
 //! - length_correlation: constant lengths, zero variance, single match
 //! - f1_score: edge values
 
-use hprc_ibd::concordance::*;
+use impopk_ibd::concordance::*;
 
 // =============================================
 // segment_overlap_bp edge cases

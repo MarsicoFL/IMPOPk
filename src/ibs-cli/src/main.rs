@@ -6,7 +6,7 @@ use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
-use hprc_common::{ColumnIndices, Region};
+use impopk_common::{ColumnIndices, Region};
 use rayon::prelude::*;
 
 fn validate_cutoff(val: &str) -> Result<f64, String> {

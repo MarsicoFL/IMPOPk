@@ -6,7 +6,7 @@
 //!
 //! Cycle 62 — testing agent.
 
-use hprc_ancestry_cli::{parse_similarity_for_egrm, write_gcta_grm};
+use impopk_ancestry_cli::{parse_similarity_for_egrm, write_gcta_grm};
 use std::io::Write;
 use tempfile::NamedTempFile;
 

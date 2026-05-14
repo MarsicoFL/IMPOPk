@@ -4,11 +4,11 @@
 //! from_population_logit parameter bounds, estimate_emissions_logit edge cases,
 //! and baum_welch_logit stress/boundary scenarios.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     infer_ibd, HmmParams, Population,
 };
-use hprc_ibd::stats::GaussianParams;
-use hprc_ibd::stats::{gaussian_to_logit_space, inv_logit, logit, logit_transform_observations, LOGIT_CAP};
+use impopk_ibd::stats::GaussianParams;
+use impopk_ibd::stats::{gaussian_to_logit_space, inv_logit, logit, logit_transform_observations, LOGIT_CAP};
 
 // =====================================================================
 // logit() edge cases

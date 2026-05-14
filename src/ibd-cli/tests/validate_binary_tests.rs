@@ -1057,20 +1057,6 @@ fn ibd_validate_with_identity_floor() {
 }
 
 #[test]
-fn ibd_validate_with_distance_aware() {
-    let input = create_minimal_ibs_file();
-    let output = NamedTempFile::new().unwrap();
-
-    let mut cmd = Command::cargo_bin("ibd-validate").unwrap();
-    cmd.arg("-i")
-        .arg(input.path())
-        .arg("-o")
-        .arg(output.path())
-        .arg("--distance-aware");
-    cmd.assert().success();
-}
-
-#[test]
 fn ibd_validate_with_background_filter() {
     let input = create_minimal_ibs_file();
     let output = NamedTempFile::new().unwrap();
@@ -1329,7 +1315,7 @@ fn ibd_validate_invalid_p_enter() {
 }
 
 #[test]
-fn ibd_validate_combined_logit_adaptive_distance() {
+fn ibd_validate_combined_logit_adaptive() {
     let input = create_minimal_ibs_file();
     let output = NamedTempFile::new().unwrap();
 
@@ -1339,8 +1325,7 @@ fn ibd_validate_combined_logit_adaptive_distance() {
         .arg("-o")
         .arg(output.path())
         .arg("--logit-transform")
-        .arg("--adaptive-transitions")
-        .arg("--distance-aware");
+        .arg("--adaptive-transitions");
     cmd.assert().success();
 }
 

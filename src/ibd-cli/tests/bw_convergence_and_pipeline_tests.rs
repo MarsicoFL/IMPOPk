@@ -5,8 +5,8 @@
 //! verify convergence properties and ensure the multi-feature emission pipeline
 //! (precompute → combine → forward/backward/viterbi) produces consistent results.
 
-use hprc_ibd::hmm::*;
-use hprc_ibd::stats::GaussianParams;
+use impopk_ibd::hmm::*;
+use impopk_ibd::stats::GaussianParams;
 
 // ============================================================================
 // Helpers

@@ -5,7 +5,7 @@
 //! These complement the unit tests in segment.rs by covering additional
 //! edge cases and boundary conditions.
 
-use hprc_ibd::segment::{segment_length_distribution, segment_length_histogram, Segment};
+use impopk_ibd::segment::{segment_length_distribution, segment_length_histogram, Segment};
 
 // ===========================================================================
 // Helper
@@ -265,7 +265,7 @@ fn test_histogram_sorted_output() {
 // 3. format_segment_bed edge cases
 // ===========================================================================
 
-use hprc_ibd::segment::format_segment_bed;
+use impopk_ibd::segment::format_segment_bed;
 
 /// BED line with LOD exactly 0: score should be 0.
 #[test]
@@ -322,7 +322,7 @@ fn test_format_bed_start_zero_no_underflow() {
 // 4. IdentityTrack edge cases
 // ===========================================================================
 
-use hprc_ibd::segment::IdentityTrack;
+use impopk_ibd::segment::IdentityTrack;
 
 /// IdentityTrack::to_map with duplicate window indices: last value wins.
 #[test]

@@ -1,4 +1,4 @@
-//! # HPRC-IBD: Identity-By-State and Identity-By-Descent Detection
+//! # impopk-ibd: Identity-By-State and Identity-By-Descent Detection
 //!
 //! This library provides tools for detecting IBS (Identity-By-State) and IBD
 //! (Identity-By-Descent) segments in pangenome data from the Human Pangenome
@@ -27,8 +27,8 @@
 //! ## Quick Start
 //!
 //! ```rust,ignore
-//! use hprc_ibd::{Region, WindowIterator};
-//! use hprc_ibd::hmm::{HmmParams, viterbi, extract_ibd_segments};
+//! use impopk_ibd::{Region, WindowIterator};
+//! use impopk_ibd::hmm::{HmmParams, viterbi, extract_ibd_segments};
 //!
 //! // Parse a genomic region
 //! let region = Region::parse("chr20:1-1000000", None).unwrap();
@@ -71,5 +71,5 @@ pub mod hmm;
 pub mod segment;
 pub mod stats;
 
-// Re-export common types from hprc-common for backwards compatibility
-pub use hprc_common::{HprcError as IbdError, Region, Result, Window, WindowIterator};
+// Re-export common types from impopk-common for backwards compatibility
+pub use impopk_common::{ImpopkError as IbdError, Region, Result, Window, WindowIterator};

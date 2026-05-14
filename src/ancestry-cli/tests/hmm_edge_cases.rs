@@ -9,7 +9,7 @@
 //! - baum_welch with single-state edge case
 //! - EmissionModel::Display round-trip consistency
 
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation, EmissionModel,
     forward_backward, viterbi,
 };

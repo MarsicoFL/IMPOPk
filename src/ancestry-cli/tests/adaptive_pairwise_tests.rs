@@ -6,7 +6,7 @@
 //! base_weight extremes, kappa clamping bounds, mismatched lengths, and
 //! NEG_INFINITY emissions.
 
-use hprc_ancestry_cli::{blend_log_emissions, blend_log_emissions_adaptive};
+use impopk_ancestry_cli::{blend_log_emissions, blend_log_emissions_adaptive};
 
 // ============================================================================
 // NaN / Inf safety

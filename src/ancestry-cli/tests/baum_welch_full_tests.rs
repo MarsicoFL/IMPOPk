@@ -1,7 +1,7 @@
 //! Tests for enhanced Baum-Welch with initial prob re-estimation and temperature grid search.
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
 };
 

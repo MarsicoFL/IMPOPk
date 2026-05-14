@@ -3,12 +3,12 @@
 //! These tests complement the unit tests in ancestry.rs by covering
 //! additional edge cases and integration scenarios.
 
-use hprc_ancestry_cli::ancestry::{
+use impopk_ancestry_cli::ancestry::{
     compute_per_window_ancestry_lod, count_smoothing_changes, estimate_admixture_proportions,
     extract_ancestry_segments, filter_segments_by_min_lod, segment_ancestry_lod, smooth_states,
     AncestrySegment,
 };
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
 };
 use std::collections::HashMap;
@@ -767,7 +767,7 @@ fn test_smooth_states_different_neighbors_no_smoothing() {
 // 10. CrossValidationResult methods
 // ---------------------------------------------------------------------------
 
-use hprc_ancestry_cli::CrossValidationResult;
+use impopk_ancestry_cli::CrossValidationResult;
 
 #[test]
 fn test_cross_validation_result_confusion_matrix_tsv_basic() {

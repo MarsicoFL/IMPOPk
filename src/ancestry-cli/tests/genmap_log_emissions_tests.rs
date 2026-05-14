@@ -7,7 +7,7 @@
 //! and decoding is repeated with different transition parameters.
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
     AncestryGeneticMap,
     viterbi_from_log_emissions_with_genetic_map,

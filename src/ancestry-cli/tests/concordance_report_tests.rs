@@ -1,7 +1,7 @@
 //! Tests for compute_concordance_report and Population/non_ibd_emission in
 //! ancestry-cli context. Also tests for parse_similarity_data edge cases.
 
-use hprc_ancestry_cli::concordance::{
+use impopk_ancestry_cli::concordance::{
     compute_concordance_report, format_concordance_report,
 };
 

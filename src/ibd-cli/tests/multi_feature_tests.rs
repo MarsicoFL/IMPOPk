@@ -6,13 +6,13 @@
 /// - estimate_auxiliary_emissions
 /// - infer_ibd_with_aux_features
 /// - coverage_ratio
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     backward_from_log_emit, compute_combined_log_emissions, coverage_ratio,
     estimate_auxiliary_emissions, forward_backward, forward_backward_from_log_emit,
     forward_from_log_emit, infer_ibd_with_aux_features, precompute_log_emissions,
     viterbi_from_log_emit, HmmParams, Population,
 };
-use hprc_ibd::stats::{
+use impopk_ibd::stats::{
     bic_model_selection, em_two_component, em_two_component_map, trimmed_mean, GaussianParams,
 };
 
@@ -890,7 +890,7 @@ fn test_bic_extreme_weight() {
 // OnlineStats edge cases
 // ============================================================================
 
-use hprc_ibd::stats::OnlineStats;
+use impopk_ibd::stats::OnlineStats;
 
 #[test]
 fn test_online_stats_nan_propagation() {

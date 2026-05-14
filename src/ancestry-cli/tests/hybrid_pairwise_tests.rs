@@ -4,7 +4,7 @@
 //! - Agreement windows: weight = base × agree_scale × margin_ratio
 //! - Disagreement windows: weight = base × disagree_scale (flat, no margin)
 
-use hprc_ancestry_cli::blend_log_emissions_hybrid;
+use impopk_ancestry_cli::blend_log_emissions_hybrid;
 
 // ============================================================================
 // Basic behavior
@@ -261,7 +261,7 @@ fn hybrid_uniform_margins_equal_agreement() {
     let hybrid = blend_log_emissions_hybrid(
         &standard, &pairwise, 0.3, 1.5, 0.2, 0.2, 3.0);
 
-    use hprc_ancestry_cli::blend_log_emissions_agreement;
+    use impopk_ancestry_cli::blend_log_emissions_agreement;
     let agreement = blend_log_emissions_agreement(
         &standard, &pairwise, 0.3, 1.5, 0.2);
 

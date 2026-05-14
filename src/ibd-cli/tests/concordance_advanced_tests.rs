@@ -9,7 +9,7 @@
 //! - haplotype_level_concordance: empty data, one-sided data
 //! - extract_haplotype_index / extract_sample_id: edge cases
 
-use hprc_ibd::concordance::*;
+use impopk_ibd::concordance::*;
 
 // =============================================
 // length_correlation edge cases

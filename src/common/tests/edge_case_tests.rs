@@ -1,8 +1,8 @@
-//! Edge case tests for hprc-common: ColumnIndices missing column variants,
-//! Region::parse edge cases, HprcError variant Display, and WindowIterator
+//! Edge case tests for impopk-common: ColumnIndices missing column variants,
+//! Region::parse edge cases, ImpopkError variant Display, and WindowIterator
 //! with non-unit start offsets.
 
-use hprc_common::{ColumnIndices, HprcError, Region, Window, WindowIterator};
+use impopk_common::{ColumnIndices, ImpopkError, Region, Window, WindowIterator};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ColumnIndices — missing column error variants
@@ -13,7 +13,7 @@ fn column_indices_missing_start_column() {
     let header = "chrom\tend\tgroup.a\tgroup.b\testimated.identity";
     let result = ColumnIndices::from_header(header);
     match result {
-        Err(HprcError::MissingColumn(col)) => assert_eq!(col, "start"),
+        Err(ImpopkError::MissingColumn(col)) => assert_eq!(col, "start"),
         other => panic!("Expected MissingColumn('start'), got {:?}", other),
     }
 }
@@ -23,7 +23,7 @@ fn column_indices_missing_end_column() {
     let header = "chrom\tstart\tgroup.a\tgroup.b\testimated.identity";
     let result = ColumnIndices::from_header(header);
     match result {
-        Err(HprcError::MissingColumn(col)) => assert_eq!(col, "end"),
+        Err(ImpopkError::MissingColumn(col)) => assert_eq!(col, "end"),
         other => panic!("Expected MissingColumn('end'), got {:?}", other),
     }
 }
@@ -33,7 +33,7 @@ fn column_indices_missing_group_a_column() {
     let header = "chrom\tstart\tend\tgroup.b\testimated.identity";
     let result = ColumnIndices::from_header(header);
     match result {
-        Err(HprcError::MissingColumn(col)) => assert_eq!(col, "group.a"),
+        Err(ImpopkError::MissingColumn(col)) => assert_eq!(col, "group.a"),
         other => panic!("Expected MissingColumn('group.a'), got {:?}", other),
     }
 }
@@ -43,7 +43,7 @@ fn column_indices_missing_group_b_column() {
     let header = "chrom\tstart\tend\tgroup.a\testimated.identity";
     let result = ColumnIndices::from_header(header);
     match result {
-        Err(HprcError::MissingColumn(col)) => assert_eq!(col, "group.b"),
+        Err(ImpopkError::MissingColumn(col)) => assert_eq!(col, "group.b"),
         other => panic!("Expected MissingColumn('group.b'), got {:?}", other),
     }
 }
@@ -55,7 +55,7 @@ fn column_indices_missing_multiple_returns_first_missing() {
     let result = ColumnIndices::from_header(header);
     // from_header tries estimated.identity first, so that's the first error
     match result {
-        Err(HprcError::MissingColumn(col)) => assert_eq!(col, "estimated.identity"),
+        Err(ImpopkError::MissingColumn(col)) => assert_eq!(col, "estimated.identity"),
         other => panic!("Expected MissingColumn('estimated.identity'), got {:?}", other),
     }
 }
@@ -77,7 +77,7 @@ fn region_parse_empty_string_no_length() {
     // Empty string with no colon → chrom-only path → requires region_length
     let result = Region::parse("", None);
     match result {
-        Err(HprcError::InvalidParameter(msg)) => {
+        Err(ImpopkError::InvalidParameter(msg)) => {
             assert!(msg.contains("requires --region-length"), "msg: {}", msg);
         }
         other => panic!("Expected InvalidParameter, got {:?}", other),
@@ -98,7 +98,7 @@ fn region_parse_empty_end_after_dash() {
     // "chr1:100-" — empty end string fails u64 parse
     let result = Region::parse("chr1:100-", None);
     match result {
-        Err(HprcError::InvalidRegion(s)) => assert_eq!(s, "chr1:100-"),
+        Err(ImpopkError::InvalidRegion(s)) => assert_eq!(s, "chr1:100-"),
         other => panic!("Expected InvalidRegion, got {:?}", other),
     }
 }
@@ -108,7 +108,7 @@ fn region_parse_empty_start_before_dash() {
     // "chr1:-100" — empty start string fails u64 parse
     let result = Region::parse("chr1:-100", None);
     match result {
-        Err(HprcError::InvalidRegion(s)) => assert_eq!(s, "chr1:-100"),
+        Err(ImpopkError::InvalidRegion(s)) => assert_eq!(s, "chr1:-100"),
         other => panic!("Expected InvalidRegion, got {:?}", other),
     }
 }
@@ -118,7 +118,7 @@ fn region_parse_colon_only() {
     // ":" — chrom is empty, rest is empty, no dash → InvalidRegion
     let result = Region::parse(":", None);
     match result {
-        Err(HprcError::InvalidRegion(s)) => assert_eq!(s, ":"),
+        Err(ImpopkError::InvalidRegion(s)) => assert_eq!(s, ":"),
         other => panic!("Expected InvalidRegion, got {:?}", other),
     }
 }
@@ -128,7 +128,7 @@ fn region_parse_colon_dash_only() {
     // ":-" — chrom is empty, start is empty, end is empty → InvalidRegion
     let result = Region::parse(":-", None);
     match result {
-        Err(HprcError::InvalidRegion(s)) => assert_eq!(s, ":-"),
+        Err(ImpopkError::InvalidRegion(s)) => assert_eq!(s, ":-"),
         other => panic!("Expected InvalidRegion, got {:?}", other),
     }
 }
@@ -138,7 +138,7 @@ fn region_parse_overflow_start() {
     // Start exceeds u64::MAX
     let result = Region::parse("chr1:99999999999999999999-200", None);
     match result {
-        Err(HprcError::InvalidRegion(s)) => {
+        Err(ImpopkError::InvalidRegion(s)) => {
             assert!(s.contains("99999999999999999999"));
         }
         other => panic!("Expected InvalidRegion, got {:?}", other),
@@ -149,7 +149,7 @@ fn region_parse_overflow_start() {
 fn region_parse_overflow_end() {
     let result = Region::parse("chr1:1-99999999999999999999", None);
     match result {
-        Err(HprcError::InvalidRegion(s)) => {
+        Err(ImpopkError::InvalidRegion(s)) => {
             assert!(s.contains("99999999999999999999"));
         }
         other => panic!("Expected InvalidRegion, got {:?}", other),
@@ -213,60 +213,60 @@ fn region_to_impg_ref_with_hash_in_ref_name() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// HprcError — Display trait for all variants
+// ImpopkError — Display trait for all variants
 // ═══════════════════════════════════════════════════════════════════════════
 
 #[test]
-fn hprc_error_display_parse() {
-    let err = HprcError::Parse("bad data".to_string());
+fn impopk_error_display_parse() {
+    let err = ImpopkError::Parse("bad data".to_string());
     let msg = format!("{}", err);
     assert_eq!(msg, "Parse error: bad data");
 }
 
 #[test]
-fn hprc_error_display_external_tool() {
-    let err = HprcError::ExternalTool("impg crashed".to_string());
+fn impopk_error_display_external_tool() {
+    let err = ImpopkError::ExternalTool("impg crashed".to_string());
     let msg = format!("{}", err);
     assert_eq!(msg, "External tool error: impg crashed");
 }
 
 #[test]
-fn hprc_error_display_invalid_region() {
-    let err = HprcError::InvalidRegion("chr1:abc".to_string());
+fn impopk_error_display_invalid_region() {
+    let err = ImpopkError::InvalidRegion("chr1:abc".to_string());
     let msg = format!("{}", err);
     assert_eq!(msg, "Invalid region format: chr1:abc");
 }
 
 #[test]
-fn hprc_error_display_missing_column() {
-    let err = HprcError::MissingColumn("chrom".to_string());
+fn impopk_error_display_missing_column() {
+    let err = ImpopkError::MissingColumn("chrom".to_string());
     let msg = format!("{}", err);
     assert_eq!(msg, "Missing column: chrom");
 }
 
 #[test]
-fn hprc_error_display_invalid_parameter() {
-    let err = HprcError::InvalidParameter("bad param".to_string());
+fn impopk_error_display_invalid_parameter() {
+    let err = ImpopkError::InvalidParameter("bad param".to_string());
     let msg = format!("{}", err);
     assert_eq!(msg, "Invalid parameter: bad param");
 }
 
 #[test]
-fn hprc_error_display_io() {
+fn impopk_error_display_io() {
     let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
-    let err = HprcError::Io(io_err);
+    let err = ImpopkError::Io(io_err);
     let msg = format!("{}", err);
     assert!(msg.contains("IO error"), "msg: {}", msg);
     assert!(msg.contains("file not found"), "msg: {}", msg);
 }
 
 #[test]
-fn hprc_error_from_io_error() {
+fn impopk_error_from_io_error() {
     let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "no access");
-    let err: HprcError = io_err.into();
+    let err: ImpopkError = io_err.into();
     match err {
-        HprcError::Io(e) => assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied),
-        other => panic!("Expected HprcError::Io, got {:?}", other),
+        ImpopkError::Io(e) => assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied),
+        other => panic!("Expected ImpopkError::Io, got {:?}", other),
     }
 }
 

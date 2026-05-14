@@ -1,7 +1,7 @@
-//! # HPRC-Common: Shared Types for HPRC IBD/IBS Analysis
+//! # impopk-common: Shared Types for impopk IBD/IBS Analysis
 //!
 //! This library provides common types and utilities shared between
-//! `hprc-ibd` and `hprc-ibs` crates.
+//! `impopk-ibd` and `impopk-ibs` crates.
 //!
 //! ## Overview
 //!
@@ -12,7 +12,7 @@
 //! ## Quick Start
 //!
 //! ```rust,ignore
-//! use hprc_common::{Region, WindowIterator};
+//! use impopk_common::{Region, WindowIterator};
 //!
 //! // Parse a genomic region
 //! let region = Region::parse("chr20:1-1000000", None).unwrap();
@@ -25,7 +25,7 @@
 
 use thiserror::Error;
 
-/// Custom error types for the HPRC IBD/IBS libraries.
+/// Custom error types for the impopk IBD/IBS libraries.
 ///
 /// This enum covers all error conditions that can occur during IBS/IBD analysis,
 /// including IO errors, parsing failures, invalid parameters, and external tool errors.
@@ -33,18 +33,18 @@ use thiserror::Error;
 /// # Example
 ///
 /// ```rust
-/// use hprc_common::{HprcError, Region};
+/// use impopk_common::{ImpopkError, Region};
 ///
 /// let result = Region::parse("invalid", None);
 /// match result {
-///     Err(HprcError::InvalidParameter(msg)) => {
+///     Err(ImpopkError::InvalidParameter(msg)) => {
 ///         println!("Parameter error: {}", msg);
 ///     }
 ///     _ => {}
 /// }
 /// ```
 #[derive(Error, Debug)]
-pub enum HprcError {
+pub enum ImpopkError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
@@ -64,8 +64,8 @@ pub enum HprcError {
     InvalidParameter(String),
 }
 
-/// Convenience type alias for Results with [`HprcError`].
-pub type Result<T> = std::result::Result<T, HprcError>;
+/// Convenience type alias for Results with [`ImpopkError`].
+pub type Result<T> = std::result::Result<T, ImpopkError>;
 
 /// Genomic region specification for IBS/IBD analysis.
 ///
@@ -81,7 +81,7 @@ pub type Result<T> = std::result::Result<T, HprcError>;
 /// # Example
 ///
 /// ```rust
-/// use hprc_common::Region;
+/// use impopk_common::Region;
 ///
 /// // Parse from string format
 /// let region = Region::parse("chr20:1000000-2000000", None).unwrap();
@@ -127,7 +127,7 @@ impl Region {
     /// # Examples
     ///
     /// ```rust
-    /// use hprc_common::Region;
+    /// use impopk_common::Region;
     ///
     /// // With explicit coordinates
     /// let region = Region::parse("chr1:1000-2000", None).unwrap();
@@ -140,8 +140,8 @@ impl Region {
     ///
     /// # Errors
     ///
-    /// Returns [`HprcError::InvalidRegion`] if the format is malformed.
-    /// Returns [`HprcError::InvalidParameter`] if chromosome-only format is used without length.
+    /// Returns [`ImpopkError::InvalidRegion`] if the format is malformed.
+    /// Returns [`ImpopkError::InvalidParameter`] if chromosome-only format is used without length.
     pub fn parse(region_str: &str, region_length: Option<u64>) -> Result<Self> {
         if let Some(colon_pos) = region_str.find(':') {
             let chrom = region_str[..colon_pos].to_string();
@@ -149,19 +149,32 @@ impl Region {
 
             let dash_pos = rest
                 .find('-')
-                .ok_or_else(|| HprcError::InvalidRegion(region_str.to_string()))?;
+                .ok_or_else(|| ImpopkError::InvalidRegion(region_str.to_string()))?;
 
             let start: u64 = rest[..dash_pos]
                 .parse()
-                .map_err(|_| HprcError::InvalidRegion(region_str.to_string()))?;
+                .map_err(|_| ImpopkError::InvalidRegion(region_str.to_string()))?;
             let end: u64 = rest[dash_pos + 1..]
                 .parse()
-                .map_err(|_| HprcError::InvalidRegion(region_str.to_string()))?;
+                .map_err(|_| ImpopkError::InvalidRegion(region_str.to_string()))?;
+
+            if start == 0 {
+                return Err(ImpopkError::InvalidRegion(format!(
+                    "{} (coordinates are 1-based; start must be >= 1)",
+                    region_str
+                )));
+            }
+            if start > end {
+                return Err(ImpopkError::InvalidRegion(format!(
+                    "{} (start {} > end {})",
+                    region_str, start, end
+                )));
+            }
 
             Ok(Region { chrom, start, end })
         } else {
             let end = region_length.ok_or_else(|| {
-                HprcError::InvalidParameter(format!(
+                ImpopkError::InvalidParameter(format!(
                     "Region '{}' requires --region-length",
                     region_str
                 ))
@@ -187,7 +200,7 @@ impl Region {
     /// # Example
     ///
     /// ```rust
-    /// use hprc_common::Region;
+    /// use impopk_common::Region;
     ///
     /// let region = Region::parse("chr20:1-1000000", None).unwrap();
     /// let impg_ref = region.to_impg_ref("CHM13");
@@ -206,7 +219,7 @@ impl Region {
 /// # Example
 ///
 /// ```rust,ignore
-/// use hprc_common::ColumnIndices;
+/// use impopk_common::ColumnIndices;
 ///
 /// let header = "chrom\tstart\tend\tgroup.a\tgroup.b\testimated.identity";
 /// let cols = ColumnIndices::from_header(header).unwrap();
@@ -241,7 +254,7 @@ impl ColumnIndices {
     ///
     /// # Errors
     ///
-    /// Returns [`HprcError::MissingColumn`] if a required column is not found.
+    /// Returns [`ImpopkError::MissingColumn`] if a required column is not found.
     pub fn from_header(header: &str) -> Result<Self> {
         let columns: Vec<&str> = header.split('\t').collect();
 
@@ -249,7 +262,7 @@ impl ColumnIndices {
             columns
                 .iter()
                 .position(|&c| c == name)
-                .ok_or_else(|| HprcError::MissingColumn(name.to_string()))
+                .ok_or_else(|| ImpopkError::MissingColumn(name.to_string()))
         };
 
         Ok(ColumnIndices {
@@ -289,7 +302,7 @@ impl ColumnIndices {
 /// # Example
 ///
 /// ```rust
-/// use hprc_common::Window;
+/// use impopk_common::Window;
 ///
 /// let window = Window::new(1000, 5999);
 /// assert_eq!(window.length(), 5000);
@@ -320,7 +333,7 @@ impl Window {
     /// # Example
     ///
     /// ```rust
-    /// use hprc_common::Window;
+    /// use impopk_common::Window;
     ///
     /// let window = Window::new(1, 100);
     /// assert_eq!(window.length(), 100);
@@ -339,7 +352,7 @@ impl Window {
 /// # Example
 ///
 /// ```rust
-/// use hprc_common::{Region, WindowIterator};
+/// use impopk_common::{Region, WindowIterator};
 ///
 /// let region = Region {
 ///     chrom: "chr1".to_string(),
@@ -379,7 +392,7 @@ impl WindowIterator {
     /// # Example
     ///
     /// ```rust
-    /// use hprc_common::{Region, WindowIterator};
+    /// use impopk_common::{Region, WindowIterator};
     ///
     /// let region = Region::parse("chr1:1-100000", None).unwrap();
     /// let mut iter = WindowIterator::new(&region, 5000);
@@ -467,7 +480,7 @@ mod tests {
         let result = Region::parse("chr1:1000", None);
         assert!(result.is_err());
         match result {
-            Err(HprcError::InvalidRegion(s)) => assert_eq!(s, "chr1:1000"),
+            Err(ImpopkError::InvalidRegion(s)) => assert_eq!(s, "chr1:1000"),
             _ => panic!("Expected InvalidRegion error"),
         }
     }
@@ -477,7 +490,7 @@ mod tests {
         let result = Region::parse("chr1:abc-2000", None);
         assert!(result.is_err());
         match result {
-            Err(HprcError::InvalidRegion(s)) => assert_eq!(s, "chr1:abc-2000"),
+            Err(ImpopkError::InvalidRegion(s)) => assert_eq!(s, "chr1:abc-2000"),
             _ => panic!("Expected InvalidRegion error"),
         }
     }
@@ -487,7 +500,7 @@ mod tests {
         let result = Region::parse("chr1:1000-xyz", None);
         assert!(result.is_err());
         match result {
-            Err(HprcError::InvalidRegion(s)) => assert_eq!(s, "chr1:1000-xyz"),
+            Err(ImpopkError::InvalidRegion(s)) => assert_eq!(s, "chr1:1000-xyz"),
             _ => panic!("Expected InvalidRegion error"),
         }
     }
@@ -497,7 +510,7 @@ mod tests {
         let result = Region::parse("chr1", None);
         assert!(result.is_err());
         match result {
-            Err(HprcError::InvalidParameter(s)) => {
+            Err(ImpopkError::InvalidParameter(s)) => {
                 assert!(s.contains("requires --region-length"));
             }
             _ => panic!("Expected InvalidParameter error"),
@@ -515,21 +528,28 @@ mod tests {
     }
 
     #[test]
-    fn test_region_parse_zero_coordinates() {
-        let result = Region::parse("chr1:0-0", None);
-        assert!(result.is_ok());
-        let region = result.unwrap();
-        assert_eq!(region.start, 0);
-        assert_eq!(region.end, 0);
+    fn test_region_parse_zero_start_rejected() {
+        let result = Region::parse("chr1:0-100", None);
+        assert!(matches!(result, Err(ImpopkError::InvalidRegion(_))));
     }
 
     #[test]
-    fn test_region_parse_start_greater_than_end() {
+    fn test_region_parse_zero_zero_rejected() {
+        let result = Region::parse("chr1:0-0", None);
+        assert!(matches!(result, Err(ImpopkError::InvalidRegion(_))));
+    }
+
+    #[test]
+    fn test_region_parse_start_greater_than_end_rejected() {
         let result = Region::parse("chr1:2000-1000", None);
-        assert!(result.is_ok());
-        let region = result.unwrap();
-        assert_eq!(region.start, 2000);
-        assert_eq!(region.end, 1000);
+        assert!(matches!(result, Err(ImpopkError::InvalidRegion(_))));
+    }
+
+    #[test]
+    fn test_region_parse_start_equals_end_ok() {
+        let region = Region::parse("chr1:100-100", None).unwrap();
+        assert_eq!(region.start, 100);
+        assert_eq!(region.end, 100);
     }
 
     #[test]
@@ -692,7 +712,7 @@ mod tests {
         let result = ColumnIndices::from_header(header);
         assert!(result.is_err());
         match result {
-            Err(HprcError::MissingColumn(col)) => assert_eq!(col, "chrom"),
+            Err(ImpopkError::MissingColumn(col)) => assert_eq!(col, "chrom"),
             _ => panic!("Expected MissingColumn error for 'chrom'"),
         }
     }
@@ -703,7 +723,7 @@ mod tests {
         let result = ColumnIndices::from_header(header);
         assert!(result.is_err());
         match result {
-            Err(HprcError::MissingColumn(col)) => assert_eq!(col, "estimated.identity"),
+            Err(ImpopkError::MissingColumn(col)) => assert_eq!(col, "estimated.identity"),
             _ => panic!("Expected MissingColumn error for 'estimated.identity'"),
         }
     }

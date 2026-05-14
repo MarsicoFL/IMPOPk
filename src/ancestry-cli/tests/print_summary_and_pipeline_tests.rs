@@ -9,12 +9,12 @@
 //! - estimate_admixture_proportions edge cases
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation, AncestrySegment,
     CrossValidationResult, cross_validate,
     estimate_admixture_proportions,
 };
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     forward_backward, posterior_decode, viterbi,
 };
 

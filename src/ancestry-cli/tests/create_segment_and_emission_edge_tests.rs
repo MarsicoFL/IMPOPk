@@ -6,10 +6,10 @@
 
 use std::collections::HashMap;
 
-use hprc_ancestry_cli::ancestry::{
+use impopk_ancestry_cli::ancestry::{
     extract_ancestry_segments, parse_similarity_data, AncestrySegment,
 };
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation, EmissionModel,
 };
 
@@ -624,7 +624,7 @@ fn test_viterbi_assigns_most_similar_population() {
             "chr1", (i * 1000) as u64, ((i + 1) * 1000) as u64, "s1",
         )
     }).collect();
-    let states = hprc_ancestry_cli::hmm::viterbi(&obs, &params);
+    let states = impopk_ancestry_cli::hmm::viterbi(&obs, &params);
     assert!(states.iter().all(|&s| s == 0), "All states should be EUR (0)");
 }
 
@@ -638,7 +638,7 @@ fn test_fb_posteriors_sum_to_one() {
             "chr1", (i * 1000) as u64, ((i + 1) * 1000) as u64, "s1",
         )
     }).collect();
-    let posteriors = hprc_ancestry_cli::hmm::forward_backward(&obs, &params);
+    let posteriors = impopk_ancestry_cli::hmm::forward_backward(&obs, &params);
     for (t, probs) in posteriors.iter().enumerate() {
         let sum: f64 = probs.iter().sum();
         assert!((sum - 1.0).abs() < 1e-6, "Posteriors at t={t} sum to {sum}, not 1.0");
@@ -664,7 +664,7 @@ fn test_viterbi_detects_ancestry_switch() {
             "chr1", (i * 1000) as u64, ((i + 1) * 1000) as u64, "s1",
         ));
     }
-    let states = hprc_ancestry_cli::hmm::viterbi(&obs, &params);
+    let states = impopk_ancestry_cli::hmm::viterbi(&obs, &params);
     // Should have at least one switch
     let switches: usize = states.windows(2).filter(|w| w[0] != w[1]).count();
     assert!(switches >= 1, "Should detect at least one ancestry switch");

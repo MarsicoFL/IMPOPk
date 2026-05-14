@@ -6,7 +6,7 @@
 //! ratio boost when the widest pairwise median is much larger than the closest.
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryObservation,
     estimate_temperature, estimate_temperature_with_spread,
 };

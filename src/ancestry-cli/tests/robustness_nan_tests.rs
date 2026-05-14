@@ -2,7 +2,7 @@
 //! empty-input edge cases, and HashMap access safety in the ancestry HMM.
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestryObservation, AncestryHmmParams, AncestralPopulation,
     EmissionModel, PopulationNormalization,
     viterbi, forward_backward, posterior_decode,

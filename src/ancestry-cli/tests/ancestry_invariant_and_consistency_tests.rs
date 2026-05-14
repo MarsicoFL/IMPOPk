@@ -9,7 +9,7 @@
 //! - BW convergence properties
 //! - AncestryGeneticMap modulated_switch_prob range
 
-use hprc_ancestry_cli::hmm::*;
+use impopk_ancestry_cli::hmm::*;
 use std::collections::HashMap;
 
 // ============================================================================

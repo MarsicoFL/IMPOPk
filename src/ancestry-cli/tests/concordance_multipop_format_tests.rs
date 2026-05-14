@@ -2,7 +2,7 @@
 //! format validation for report outputs, segment conversion edge cases,
 //! and comprehensive integration tests.
 
-use hprc_ancestry_cli::concordance::{
+use impopk_ancestry_cli::concordance::{
     ancestries_to_segments, ancestry_confusion_matrix, compute_concordance_report,
     compute_segment_concordance, extract_switch_points, format_concordance_report,
     format_segment_concordance, per_population_concordance,

@@ -101,7 +101,7 @@ fn test_validate_positive_u64_whitespace() {
 /// BED start=0 → 1-based start=1 (explicit zero-origin conversion)
 #[test]
 fn test_parse_bed_zero_start_conversion() {
-    use hprc_common::Region;
+    use impopk_common::Region;
     use anyhow::{bail, Context, Result};
     use std::io::{BufRead, BufReader};
     use std::fs::File;
@@ -139,7 +139,7 @@ fn test_parse_bed_zero_start_conversion() {
 /// All-comments-only BED file returns empty vec (not an error)
 #[test]
 fn test_parse_bed_all_comments_returns_empty() {
-    use hprc_common::Region;
+    use impopk_common::Region;
     use anyhow::{bail, Context, Result};
     use std::io::{BufRead, BufReader};
     use std::fs::File;
@@ -175,7 +175,7 @@ fn test_parse_bed_all_comments_returns_empty() {
 /// Inline # in data (not at position 0) is NOT treated as a comment
 #[test]
 fn test_parse_bed_inline_hash_not_comment() {
-    use hprc_common::Region;
+    use impopk_common::Region;
     use anyhow::{bail, Context, Result};
     use std::io::{BufRead, BufReader};
     use std::fs::File;
@@ -212,7 +212,7 @@ fn test_parse_bed_inline_hash_not_comment() {
 /// Multiple regions parsed in order
 #[test]
 fn test_parse_bed_multiple_regions_order() {
-    use hprc_common::Region;
+    use impopk_common::Region;
     use anyhow::{bail, Context, Result};
     use std::io::{BufRead, BufReader};
     use std::fs::File;

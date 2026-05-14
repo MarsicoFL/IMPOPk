@@ -6,8 +6,8 @@
 //! - recombination_aware_log_transition
 //! - GeneticMap interpolation edge cases
 
-use hprc_ibd::hmm::*;
-use hprc_ibd::stats::GaussianParams;
+use impopk_ibd::hmm::*;
+use impopk_ibd::stats::GaussianParams;
 
 /// Helper: create typical IBD HMM parameters
 fn typical_ibd_params() -> HmmParams {

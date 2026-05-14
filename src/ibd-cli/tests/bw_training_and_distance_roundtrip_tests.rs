@@ -7,8 +7,8 @@
 //! 4. viterbi_with_distances fallback and non-uniform spacing
 //! 5. Pipeline: estimate → train → infer → extract round-trip coherence
 
-use hprc_ibd::hmm::*;
-use hprc_ibd::stats::GaussianParams;
+use impopk_ibd::hmm::*;
+use impopk_ibd::stats::GaussianParams;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helpers

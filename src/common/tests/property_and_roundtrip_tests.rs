@@ -1,4 +1,4 @@
-//! Property-based and round-trip tests for hprc-common types.
+//! Property-based and round-trip tests for impopk-common types.
 //!
 //! Tests invariants that must hold for ALL inputs, not just specific examples:
 //! - WindowIterator: contiguous coverage, monotonic, no gaps, total length
@@ -6,7 +6,7 @@
 //! - ColumnIndices: duplicate columns, max_index properties
 //! - Window: arithmetic edge cases
 
-use hprc_common::{ColumnIndices, HprcError, Region, Window, WindowIterator};
+use impopk_common::{ColumnIndices, ImpopkError, Region, Window, WindowIterator};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // WindowIterator — property-based invariants
@@ -262,7 +262,7 @@ fn region_parse_chrom_only_without_length_is_error() {
     let result = Region::parse("chrM", None);
     assert!(result.is_err());
     match result {
-        Err(HprcError::InvalidParameter(msg)) => {
+        Err(ImpopkError::InvalidParameter(msg)) => {
             assert!(msg.contains("requires --region-length"));
         }
         _ => panic!("Expected InvalidParameter"),
@@ -314,7 +314,7 @@ fn column_indices_all_required_columns_must_be_present() {
     let result = ColumnIndices::from_header(header);
     assert!(result.is_err());
     match result {
-        Err(HprcError::MissingColumn(col)) => assert_eq!(col, "group.a"),
+        Err(ImpopkError::MissingColumn(col)) => assert_eq!(col, "group.a"),
         _ => panic!("Expected MissingColumn('group.a')"),
     }
 }
@@ -325,7 +325,7 @@ fn column_indices_missing_group_b() {
     let result = ColumnIndices::from_header(header);
     assert!(result.is_err());
     match result {
-        Err(HprcError::MissingColumn(col)) => assert_eq!(col, "group.b"),
+        Err(ImpopkError::MissingColumn(col)) => assert_eq!(col, "group.b"),
         _ => panic!("Expected MissingColumn('group.b')"),
     }
 }
@@ -379,17 +379,17 @@ fn window_start_zero() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// HprcError — Display implementations
+// ImpopkError — Display implementations
 // ═══════════════════════════════════════════════════════════════════════════
 
 #[test]
-fn hprc_error_display_all_variants() {
+fn impopk_error_display_all_variants() {
     let errors = vec![
-        (HprcError::Parse("bad input".into()), "Parse error: bad input"),
-        (HprcError::InvalidRegion("chr1:abc".into()), "Invalid region format: chr1:abc"),
-        (HprcError::MissingColumn("chrom".into()), "Missing column: chrom"),
-        (HprcError::ExternalTool("impg failed".into()), "External tool error: impg failed"),
-        (HprcError::InvalidParameter("negative size".into()), "Invalid parameter: negative size"),
+        (ImpopkError::Parse("bad input".into()), "Parse error: bad input"),
+        (ImpopkError::InvalidRegion("chr1:abc".into()), "Invalid region format: chr1:abc"),
+        (ImpopkError::MissingColumn("chrom".into()), "Missing column: chrom"),
+        (ImpopkError::ExternalTool("impg failed".into()), "External tool error: impg failed"),
+        (ImpopkError::InvalidParameter("negative size".into()), "Invalid parameter: negative size"),
     ];
 
     for (error, expected) in errors {
@@ -398,10 +398,10 @@ fn hprc_error_display_all_variants() {
 }
 
 #[test]
-fn hprc_error_io_variant_from_io_error() {
+fn impopk_error_io_variant_from_io_error() {
     let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file missing");
-    let hprc_err = HprcError::from(io_err);
-    let display = format!("{}", hprc_err);
+    let impopk_err = ImpopkError::from(io_err);
+    let display = format!("{}", impopk_err);
     assert!(display.starts_with("IO error:"));
     assert!(display.contains("file missing"));
 }

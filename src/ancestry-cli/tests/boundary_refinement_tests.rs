@@ -1,7 +1,7 @@
 //! Tests for posterior-based ancestry boundary refinement
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestryObservation, AncestryHmmParams, AncestralPopulation,
     extract_ancestry_segments, refine_ancestry_boundaries,
 };

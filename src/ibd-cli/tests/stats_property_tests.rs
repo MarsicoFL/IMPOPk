@@ -5,7 +5,7 @@
 //! - bic_model_selection properties
 //! - inv_logit / logit_transform_observations properties
 
-use hprc_ibd::stats::*;
+use impopk_ibd::stats::*;
 
 // ============================================================
 // em_two_component: convergence and invariant properties

@@ -5,18 +5,18 @@
 //! GeneticMap, merge_segments proportional identity, and concordance interval
 //! helpers.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     backward_with_distances, distance_dependent_log_transition, forward_backward_with_distances,
     forward_with_distances, GeneticMap, HmmParams,
     recombination_aware_log_transition,
 };
 
-use hprc_ibd::segment::{
+use impopk_ibd::segment::{
     detect_segments_rle, merge_segments, segment_length_distribution, segment_length_histogram,
     IdentityTrack, RleParams, Segment,
 };
 
-use hprc_ibd::concordance::{
+use impopk_ibd::concordance::{
     boundary_accuracy, f1_score, haplotype_level_concordance, length_correlation,
     matched_segments, per_window_concordance, segment_overlap_bp, segments_jaccard,
     segments_precision_recall,

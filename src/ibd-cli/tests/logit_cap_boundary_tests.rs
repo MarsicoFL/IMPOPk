@@ -4,8 +4,8 @@
 //! where logit output falls between the old cap (10.0) and new cap (12.0).
 //! This range corresponds to identity values ~0.999960 to ~0.999994.
 
-use hprc_ibd::hmm::{infer_ibd, HmmParams, Population};
-use hprc_ibd::stats::{
+use impopk_ibd::hmm::{infer_ibd, HmmParams, Population};
+use impopk_ibd::stats::{
     gaussian_to_logit_space, inv_logit, logit, logit_transform_observations, LOGIT_CAP,
 };
 

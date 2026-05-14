@@ -10,7 +10,7 @@
 //! - Malformed data lines
 //! - Window conversion edge cases
 
-use hprc_ancestry_cli::rfmix::*;
+use impopk_ancestry_cli::rfmix::*;
 
 // =============================================
 // Empty and minimal inputs

@@ -4,7 +4,7 @@
 //! boundary conditions. Tests merge_segments overlap calculations.
 //! Tests format_segment_bed, segment_length_distribution, and segment_length_histogram.
 
-use hprc_ibd::segment::{
+use impopk_ibd::segment::{
     detect_segments_rle, merge_segments, format_segment_bed,
     segment_length_distribution, segment_length_histogram,
     IdentityTrack, RleParams, Segment,

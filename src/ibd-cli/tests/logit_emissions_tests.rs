@@ -3,10 +3,10 @@
 //! Validates that the logit-space emission model correctly transforms
 //! observations, uses appropriate parameters, and produces valid results.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     infer_ibd, HmmParams, Population,
 };
-use hprc_ibd::stats::{logit_transform_observations, gaussian_to_logit_space, logit, inv_logit};
+use impopk_ibd::stats::{logit_transform_observations, gaussian_to_logit_space, logit, inv_logit};
 
 // -----------------------------------------------------------------------
 // Logit transform properties
@@ -239,7 +239,7 @@ fn test_logit_estimate_emissions_updates_params() {
 #[test]
 fn test_logit_emission_context_compatible() {
     // Emission context smoothing should work on logit-transformed data
-    use hprc_ibd::hmm::{precompute_log_emissions, smooth_log_emissions, viterbi_from_log_emit};
+    use impopk_ibd::hmm::{precompute_log_emissions, smooth_log_emissions, viterbi_from_log_emit};
 
     let raw_obs = vec![0.9990; 30];
     let logit_obs = logit_transform_observations(&raw_obs);

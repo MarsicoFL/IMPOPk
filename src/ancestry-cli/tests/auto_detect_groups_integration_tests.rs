@@ -3,7 +3,7 @@
 //! Validates single-linkage clustering, group sensitivity, and the full
 //! pipeline from group detection through hierarchical emission computation.
 
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     AncestralPopulation, AncestryObservation, EmissionModel,
     auto_detect_groups, compute_hierarchical_emissions,
 };

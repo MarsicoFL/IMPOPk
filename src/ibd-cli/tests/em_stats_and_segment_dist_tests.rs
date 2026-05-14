@@ -11,8 +11,8 @@
 //! - GaussianParams: pdf/log_pdf with extreme z-scores
 //! - OnlineStats: extremely large values for numerical stability
 
-use hprc_ibd::stats::*;
-use hprc_ibd::segment::*;
+use impopk_ibd::stats::*;
+use impopk_ibd::segment::*;
 
 // ============================================================================
 // EM two-component: swap path when mu0 > mu1

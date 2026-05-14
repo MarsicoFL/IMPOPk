@@ -5,7 +5,7 @@ This directory contains the core Rust CLI tools for IBD detection and local ance
 ## Crates
 
 ### common
-Shared types and utilities: `Region`, `Window`, `WindowIterator`, `ColumnIndices`, `HprcError`.
+Shared types and utilities: `Region`, `Window`, `WindowIterator`, `ColumnIndices`, `ImpopkError`.
 
 ### ibs-cli
 Identity-by-State window detection from pangenome alignments.

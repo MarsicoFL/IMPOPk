@@ -8,7 +8,7 @@
 //! - forward_backward_with_genetic_map: posterior properties with non-uniform recomb
 
 use std::collections::HashMap;
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestralPopulation, AncestryHmmParams, AncestryObservation,
     AncestryGeneticMap, EmissionModel,
     cross_validate_kfold,

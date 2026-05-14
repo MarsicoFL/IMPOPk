@@ -4,11 +4,11 @@
 //! filtering behavior, quality score formula components, and LOD-parameter
 //! sensitivity.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     compute_per_window_lod, extract_ibd_segments_with_lod, segment_lod_score,
     segment_quality_score, HmmParams, IbdSegmentWithPosterior, Population,
 };
-use hprc_ibd::stats::GaussianParams;
+use impopk_ibd::stats::GaussianParams;
 
 // ============================================================================
 // LOD mathematical properties

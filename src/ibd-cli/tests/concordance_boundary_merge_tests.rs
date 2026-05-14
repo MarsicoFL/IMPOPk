@@ -2,7 +2,7 @@
 //! merge_intervals robustness, haplotype concordance advanced scenarios,
 //! and matched_segments many-to-one patterns.
 
-use hprc_ibd::concordance::{
+use impopk_ibd::concordance::{
     boundary_accuracy, f1_score, haplotype_level_concordance, length_correlation,
     matched_segments, per_window_concordance, segment_overlap_bp, segments_jaccard,
     segments_precision_recall, MatchedInterval,

@@ -1,8 +1,8 @@
 //! Tests for EmissionModel::TopK edge cases, AncestryGeneticMap::from_file error paths,
 //! ancestry_confusion_matrix edge cases, and switch_point_accuracy_bp additional coverage.
 
-use hprc_ancestry_cli::concordance::{ancestry_confusion_matrix, switch_point_accuracy_bp};
-use hprc_ancestry_cli::hmm::{AncestralPopulation, AncestryGeneticMap, AncestryHmmParams, EmissionModel};
+use impopk_ancestry_cli::concordance::{ancestry_confusion_matrix, switch_point_accuracy_bp};
+use impopk_ancestry_cli::hmm::{AncestralPopulation, AncestryGeneticMap, AncestryHmmParams, EmissionModel};
 
 // ============================================================================
 // EmissionModel::aggregate edge cases

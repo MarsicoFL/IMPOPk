@@ -7,9 +7,9 @@
 //! - hmm: estimate_temperature with empty/constant/single obs, estimate_switch_prob fallback
 //! - smooth_states: property tests, idempotency, exact min_run boundary
 
-use hprc_ancestry_cli::rfmix::*;
-use hprc_ancestry_cli::ancestry::*;
-use hprc_ancestry_cli::hmm::{AncestralPopulation, AncestryObservation,
+use impopk_ancestry_cli::rfmix::*;
+use impopk_ancestry_cli::ancestry::*;
+use impopk_ancestry_cli::hmm::{AncestralPopulation, AncestryObservation,
     estimate_temperature, estimate_switch_prob};
 
 // =============================================

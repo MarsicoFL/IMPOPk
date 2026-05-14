@@ -3,7 +3,7 @@
 //! Complements the 14 tests in `agreement_pairwise_tests.rs` by covering
 //! boundary conditions, numerical edge cases, and unusual parameter combos.
 
-use hprc_ancestry_cli::blend_log_emissions_agreement;
+use impopk_ancestry_cli::blend_log_emissions_agreement;
 
 // ============================================================================
 // Negative parameter edge cases

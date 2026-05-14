@@ -3,7 +3,7 @@
 //! Covers: empty/degenerate inputs, numerical edge cases, boundary conditions,
 //! NaN/Infinity robustness, BIC/KS edge cases, infer_all_demography, format edge cases.
 
-use hprc_ancestry_cli::{
+use impopk_ancestry_cli::{
     AncestrySegment, DemographyParams, DemographicResult, PulseEstimate,
     extract_tract_lengths, infer_demography, infer_all_demography,
     ks_test_exponential, format_demography_report,

@@ -4,7 +4,7 @@
 //! posterior_decode, baum_welch, estimate_emissions, learn_normalization)
 //! produce valid, finite outputs for adversarial and edge-case inputs.
 
-use hprc_ancestry_cli::hmm::{
+use impopk_ancestry_cli::hmm::{
     forward_backward, posterior_decode, viterbi, AncestralPopulation, AncestryHmmParams,
     AncestryObservation, EmissionModel,
 };

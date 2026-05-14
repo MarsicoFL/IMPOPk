@@ -5,7 +5,7 @@
 //!
 //! Cycle 62 — testing agent.
 
-use hprc_ancestry_cli::LearnedParams;
+use impopk_ancestry_cli::LearnedParams;
 use std::fs;
 
 // ── Construction & defaults ──

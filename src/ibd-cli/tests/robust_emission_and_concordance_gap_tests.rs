@@ -2,15 +2,15 @@
 //! concordance edge cases, viterbi_with_distances single obs, em_two_component degenerate paths,
 //! covered_bp merging, and parse_bed_regions BED edge cases.
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     extract_ibd_segments, forward_backward, viterbi, viterbi_with_distances, HmmParams,
     Population,
 };
-use hprc_ibd::concordance::{
+use impopk_ibd::concordance::{
     boundary_accuracy, f1_score, length_correlation, per_window_concordance,
     segment_overlap_bp, segments_jaccard, segments_precision_recall,
 };
-use hprc_ibd::stats::{
+use impopk_ibd::stats::{
     bic_model_selection, em_two_component, em_two_component_map, gaussian_to_logit_space,
     kmeans_1d, trimmed_mean, GaussianParams, LOGIT_CAP,
 };

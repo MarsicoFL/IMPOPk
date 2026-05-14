@@ -3,8 +3,8 @@
 //!
 //! These functions require file I/O, so we use tempfile/tempdir for isolation.
 
-use hprc_ancestry_cli::ancestry::{load_population_samples, load_populations_from_dir, segment_ancestry_lod};
-use hprc_ancestry_cli::hmm::{AncestralPopulation, AncestryHmmParams, AncestryObservation};
+use impopk_ancestry_cli::ancestry::{load_population_samples, load_populations_from_dir, segment_ancestry_lod};
+use impopk_ancestry_cli::hmm::{AncestralPopulation, AncestryHmmParams, AncestryObservation};
 use std::collections::HashMap;
 
 // =============================================================================

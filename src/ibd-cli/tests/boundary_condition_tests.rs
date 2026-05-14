@@ -14,7 +14,7 @@
 //! - refine_states_with_posteriors cascading extension across gap
 //! - HmmParams::summary content verification
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     compute_combined_log_emissions, compute_per_window_lod, coverage_ratio,
     estimate_auxiliary_emissions, extract_ibd_segments_with_lod,
     extract_ibd_segments_with_posteriors, forward_backward, forward_backward_from_log_emit,
@@ -23,8 +23,8 @@ use hprc_ibd::hmm::{
     segment_quality_score, viterbi, viterbi_from_log_emit, HmmParams, IbdSegmentWithPosterior,
     Population,
 };
-use hprc_ibd::stats::{bic_model_selection, gaussian_to_logit_space, trimmed_mean, GaussianParams, LOGIT_CAP};
-use hprc_ibd::Region;
+use impopk_ibd::stats::{bic_model_selection, gaussian_to_logit_space, trimmed_mean, GaussianParams, LOGIT_CAP};
+use impopk_ibd::Region;
 
 // ══════════════════════════════════════════════════════════════════════
 // gaussian_to_logit_space: mean=0.0 and mean=1.0 (denominator ≤ 1e-15)
@@ -576,7 +576,7 @@ fn segment_lod_score_single_window_matches_per_window() {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// Region::parse boundary conditions (via re-export from hprc-common)
+// Region::parse boundary conditions (via re-export from impopk-common)
 // ══════════════════════════════════════════════════════════════════════
 
 #[test]

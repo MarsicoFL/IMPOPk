@@ -6,7 +6,7 @@
 //! - segment_ancestry_lod (via integration)
 //! - load_population_samples / load_populations_from_dir (file I/O with temp dirs)
 
-use hprc_ibd::concordance::*;
+use impopk_ibd::concordance::*;
 
 // =============================================================================
 // haplotype_level_concordance tests

@@ -4,8 +4,8 @@
 //! These test edge cases and numerical properties of multi-feature IBD inference,
 //! which is critical for algo_dev's A3 improvements.
 
-use hprc_ibd::hmm::*;
-use hprc_ibd::stats::GaussianParams;
+use impopk_ibd::hmm::*;
+use impopk_ibd::stats::GaussianParams;
 
 // ============================================================================
 // Helpers

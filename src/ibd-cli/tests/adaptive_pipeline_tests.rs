@@ -4,7 +4,7 @@
 //! - Adaptive state refinement (per-segment thresholds)
 //! - Adaptive gap bridging (flanking-segment-aware)
 
-use hprc_ibd::hmm::{
+use impopk_ibd::hmm::{
     extract_ibd_segments_composite, extract_ibd_segments_with_lod,
     estimate_ibd_emission_std,
     refine_states_adaptive, refine_states_with_posteriors,
