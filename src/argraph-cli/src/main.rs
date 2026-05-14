@@ -71,21 +71,39 @@ fn classify_cmd(gfa: &std::path::Path, output: &str, max_depth: usize) -> Result
         Box::new(BufWriter::new(File::create(output).context("creating output")?))
     };
     let mut w = writer;
-    writeln!(w, "bubble_id\tsource\tsink\tn_branches\ttype\tmu\tbranch_lens")?;
+    writeln!(w, "bubble_id\tsource\tsink\tn_branches\ttype\tmu\tbranch_lens\tbfs_closed")?;
     for (i, b) in bubbles.iter().enumerate() {
         let t = classify(b, &graph);
-        let lens: Vec<String> =
-            b.branches.iter().map(|br| br.len().to_string()).collect();
+        // True branch count from the graph (number of successors of source).
+        // bubble.branches may be empty if BFS didn't converge; the real count
+        // is always graph.successors(source).len() for multi-out sources.
+        let n_branches = graph.successors(b.source).len();
+        let bfs_closed = !b.branches.is_empty() || b.source != b.sink;
+        let sink_str = if bfs_closed {
+            b.sink.to_string()
+        } else {
+            "NA".to_string()
+        };
+        let lens_str = if b.branches.is_empty() {
+            "NA".to_string()
+        } else {
+            b.branches
+                .iter()
+                .map(|br| br.len().to_string())
+                .collect::<Vec<_>>()
+                .join(",")
+        };
         writeln!(
             w,
-            "{}\t{}\t{}\t{}\t{}\t{:.2e}\t{}",
+            "{}\t{}\t{}\t{}\t{}\t{:.2e}\t{}\t{}",
             i,
             b.source,
-            b.sink,
-            b.n_branches(),
+            sink_str,
+            n_branches,
             t.as_str(),
             t.mu_event(),
-            lens.join(",")
+            lens_str,
+            bfs_closed
         )?;
     }
     Ok(())

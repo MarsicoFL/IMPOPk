@@ -131,12 +131,11 @@ fn reconstruct_branches(
     branches
 }
 
-/// Enumerate all top-level bubbles in the graph.
-///
-/// A node is a candidate source iff it has ≥2 outgoing edges. Each candidate
-/// is processed independently; bubbles nested inside another bubble's branch
-/// are not deduplicated in v0.1.
-pub fn enumerate_bubbles(graph: &Graph, max_depth: usize) -> Vec<Bubble> {
+/// All nodes with ≥2 outgoing edges, sorted by node id for determinism.
+/// These are the candidate sources for classification — every such node
+/// represents a bubble in the broad sense (a branching point in the graph),
+/// whether or not its BFS sink converges.
+pub fn enumerate_sources(graph: &Graph) -> Vec<NodeId> {
     let mut sources: Vec<NodeId> = graph
         .forward
         .iter()
@@ -145,7 +144,22 @@ pub fn enumerate_bubbles(graph: &Graph, max_depth: usize) -> Vec<Bubble> {
         .collect();
     sources.sort_unstable();
     sources
+}
+
+/// Enumerate sources, returning a Bubble per source. When BFS converges,
+/// the bubble has a real sink and reconstructed branches. When it doesn't
+/// (e.g. interior structure that doesn't close within `max_depth`), we still
+/// emit a bubble with `sink = source` and empty `branches` so the classifier
+/// can still walk from the source and decide a type (typically Complex).
+pub fn enumerate_bubbles(graph: &Graph, max_depth: usize) -> Vec<Bubble> {
+    enumerate_sources(graph)
         .into_iter()
-        .filter_map(|s| find_bubble(graph, s, max_depth))
+        .map(|s| {
+            find_bubble(graph, s, max_depth).unwrap_or(Bubble {
+                source: s,
+                sink: s,
+                branches: Vec::new(),
+            })
+        })
         .collect()
 }

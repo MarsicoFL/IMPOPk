@@ -1,22 +1,28 @@
 //! Classify a bubble into one of the mechanism types.
 //!
-//! Typology (see panarg/notes/bubble_typology.md):
-//!   Snp                  : 2 branches, both single-base, distinct nucleotides
-//!   MultiAllelicSnp      : 3-4 branches, all single-base, distinct nucleotides
-//!   SmallIndel           : 2 branches; one empty, the other 1-50 single-base
-//!                          nodes (sequence of any one nucleotide or mixed —
-//!                          mixed insertion); or two non-empty branches whose
-//!                          symmetric structure looks like indel polymorphism
-//!   Microsatellite       : >=3 branches forming a chain where all internal
-//!                          nodes carry the same single base
-//!   Complex              : anything else (branches >50 bp, structural)
+//! The classifier follows the panarg Python reference (`classify_bubbles.py`)
+//! and uses type-specific walks from the source's immediate successors. Each
+//! walk requires single-out interior nodes (no internal branch points); a
+//! bubble whose BFS sink is reachable but whose interior contains nested
+//! structure falls through to `Complex`.
+//!
+//! Typology:
+//!   Snp                  : 2 single-base branches, each with exactly one
+//!                          outgoing edge leading to the same downstream node,
+//!                          distinct nucleotides
+//!   MultiAllelicSnp      : same as Snp but with 3-4 branches
+//!   SmallIndel           : 2 branches; one is the "skip" (one step lands on
+//!                          the other branch's start), the other is a chain
+//!                          of 1-50 nodes with no internal branch points
+//!   Microsatellite       : ≥3 branches, all 1-bp same letter, each walks
+//!                          along a same-letter simple chain to a common exit
+//!   Complex              : anything else
+
+use std::collections::HashSet;
 
 use crate::bubble::Bubble;
 use crate::gfa::{Graph, NodeId};
 
-/// Bubble mechanism type. The associated rate (per generation, locus-level
-/// where applicable) is what tsdate would need to date the corresponding
-/// branch correctly. Order of magnitude only.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BubbleType {
     Snp,
@@ -38,8 +44,6 @@ impl BubbleType {
     }
 
     /// Order-of-magnitude per-event mutation rate to assign as metadata.
-    /// Used by downstream (tsdate, post-hoc reweighting) only; not by the
-    /// matcher itself.
     pub fn mu_event(&self) -> f64 {
         match self {
             BubbleType::Snp | BubbleType::MultiAllelicSnp => 1.2e-8,
@@ -50,84 +54,180 @@ impl BubbleType {
     }
 }
 
-fn branch_seq(graph: &Graph, branch: &[NodeId]) -> Vec<u8> {
-    let mut out = Vec::new();
-    for n in branch {
-        if let Some(s) = graph.seq.get(n) {
-            out.extend_from_slice(s);
-        }
-    }
-    out
+const MAX_INDEL_LEN: usize = 50;
+const MAX_MICROSAT_STEPS: usize = 200;
+
+/// Single-base sequence of a node, or empty if missing.
+fn node_base(graph: &Graph, n: NodeId) -> &[u8] {
+    graph.seq.get(&n).map(|v| v.as_slice()).unwrap_or(&[])
 }
 
-/// Classify a bubble.
+fn is_single_base(graph: &Graph, n: NodeId) -> bool {
+    node_base(graph, n).len() == 1
+}
+
+/// Classify the bubble rooted at `bubble.source` using its successors.
 pub fn classify(bubble: &Bubble, graph: &Graph) -> BubbleType {
-    let k = bubble.n_branches();
-    if k < 2 {
+    let succs = graph.successors(bubble.source);
+    if succs.len() < 2 {
         return BubbleType::Complex;
     }
+    if let Some(t) = try_snp(graph, succs) {
+        return t;
+    }
+    if let Some(t) = try_microsatellite(graph, succs) {
+        return t;
+    }
+    if let Some(t) = try_small_indel(graph, succs) {
+        return t;
+    }
+    BubbleType::Complex
+}
 
-    let branch_seqs: Vec<Vec<u8>> = bubble.branches.iter().map(|b| branch_seq(graph, b)).collect();
-
-    // All branches single-base (length 1)?
-    let all_single = branch_seqs.iter().all(|s| s.len() == 1);
-    if all_single {
-        // distinct nucleotides among branches → SNP / multi-allelic SNP
-        let mut letters: Vec<u8> = branch_seqs.iter().map(|s| s[0]).collect();
-        letters.sort_unstable();
-        letters.dedup();
-        if letters.len() >= 2 {
-            return if k == 2 { BubbleType::Snp } else { BubbleType::MultiAllelicSnp };
+/// SNP / multi-allelic SNP: each immediate successor is a single-base node with
+/// exactly one outgoing edge; all those outgoing edges land on the same node;
+/// nucleotides are pairwise distinct.
+fn try_snp(graph: &Graph, succs: &[NodeId]) -> Option<BubbleType> {
+    let k = succs.len();
+    if !(2..=4).contains(&k) {
+        return None;
+    }
+    if !succs.iter().all(|&s| is_single_base(graph, s)) {
+        return None;
+    }
+    let mut shared_next: Option<NodeId> = None;
+    for &s in succs {
+        let nxt = graph.successors(s);
+        if nxt.len() != 1 {
+            return None;
         }
-        // All branches same single base — falls through to microsat check
+        match shared_next {
+            None => shared_next = Some(nxt[0]),
+            Some(n) if n == nxt[0] => {}
+            _ => return None,
+        }
+    }
+    let mut letters: Vec<u8> = succs.iter().map(|&s| node_base(graph, s)[0]).collect();
+    letters.sort_unstable();
+    letters.dedup();
+    if letters.len() != k {
+        return None;
+    }
+    if k == 2 {
+        Some(BubbleType::Snp)
+    } else {
+        Some(BubbleType::MultiAllelicSnp)
+    }
+}
+
+/// Microsatellite: ≥3 branches, all immediate successors are 1-bp same letter,
+/// each walks along a same-letter chain (with single-out interior nodes) to a
+/// common exit node.
+fn try_microsatellite(graph: &Graph, succs: &[NodeId]) -> Option<BubbleType> {
+    if succs.len() < 3 {
+        return None;
+    }
+    if !succs.iter().all(|&s| is_single_base(graph, s)) {
+        return None;
+    }
+    let target = node_base(graph, succs[0])[0];
+    if !succs.iter().all(|&s| node_base(graph, s)[0] == target) {
+        return None;
+    }
+    let mut exits: HashSet<NodeId> = HashSet::new();
+    for &s in succs {
+        let mut cur = s;
+        for _ in 0..MAX_MICROSAT_STEPS {
+            let nxt = graph.successors(cur);
+            if nxt.len() != 1 {
+                return None;
+            }
+            let nn = nxt[0];
+            let nn_seq = node_base(graph, nn);
+            let nn_single_out = graph.successors(nn).len() == 1;
+            if nn_seq.len() == 1 && nn_seq[0] == target && nn_single_out {
+                cur = nn;
+                continue;
+            }
+            exits.insert(nn);
+            break;
+        }
+    }
+    if exits.len() == 1 {
+        Some(BubbleType::Microsatellite)
+    } else {
+        None
+    }
+}
+
+/// Small indel: 2 branches; one is the "skip" (one step lands on the other
+/// branch's start), the other walks 1-50 nodes (single-out interior) before
+/// converging.
+///
+/// Mirrors the two checks in classify_bubbles.py:
+///   (a) walk one branch (`b`) up to 50 steps; if a successor equals the other
+///       branch's start `a`, accept.
+///   (b) walk both branches as simple chains; if they share a node within 51
+///       steps and one of them reaches it within ≤ 1 step (so one branch is
+///       effectively the "skip"), accept.
+fn try_small_indel(graph: &Graph, succs: &[NodeId]) -> Option<BubbleType> {
+    if succs.len() != 2 {
+        return None;
     }
 
-    // Microsatellite: all internal nodes (across all non-empty branches) carry
-    // the same single base, and there is at least one empty branch (the
-    // "skip" path). The chain structure is implicit in how branches differ in
-    // length.
-    let has_empty = branch_seqs.iter().any(|s| s.is_empty());
-    let non_empty: Vec<&Vec<u8>> = branch_seqs.iter().filter(|s| !s.is_empty()).collect();
-    if has_empty && !non_empty.is_empty() {
-        // All non-empty branches must be made of the same single base repeated.
-        let mut base: Option<u8> = None;
-        let mut uniform = true;
-        for seq in &non_empty {
-            for &b in seq.iter() {
-                match base {
-                    None => base = Some(b),
-                    Some(b0) if b0 == b => {}
-                    _ => {
-                        uniform = false;
-                        break;
-                    }
-                }
-            }
-            if !uniform {
+    // Check (a): walk b looking for a.
+    for (i, j) in [(0usize, 1usize), (1, 0)] {
+        let a = succs[i];
+        let b = succs[j];
+        let mut cur = b;
+        for _ in 0..(MAX_INDEL_LEN + 1) {
+            let nxt = graph.successors(cur);
+            if nxt.len() != 1 {
                 break;
             }
-        }
-        if uniform && base.is_some() && k >= 3 {
-            return BubbleType::Microsatellite;
-        }
-    }
-
-    // Small indel: exactly 2 branches, one empty, the other 1-50 bp.
-    if k == 2 {
-        let lens: Vec<usize> = branch_seqs.iter().map(|s| s.len()).collect();
-        let min_len = *lens.iter().min().unwrap();
-        let max_len = *lens.iter().max().unwrap();
-        if min_len == 0 && max_len > 0 && max_len <= 50 {
-            return BubbleType::SmallIndel;
+            if nxt[0] == a {
+                return Some(BubbleType::SmallIndel);
+            }
+            cur = nxt[0];
         }
     }
 
-    BubbleType::Complex
+    // Check (b): walk both chains; meet within 51 steps with one reaching in ≤ 1.
+    let chain_a = walk_simple_chain(graph, succs[0], MAX_INDEL_LEN + 1);
+    let chain_b = walk_simple_chain(graph, succs[1], MAX_INDEL_LEN + 1);
+    let set_a: HashSet<NodeId> = chain_a.iter().copied().collect();
+    if let Some(&meet) = chain_b.iter().find(|n| set_a.contains(n)) {
+        let ia = chain_a.iter().position(|&x| x == meet).unwrap();
+        let ib = chain_b.iter().position(|&x| x == meet).unwrap();
+        let diff = ia.abs_diff(ib);
+        let shorter = ia.min(ib);
+        if (1..=MAX_INDEL_LEN).contains(&diff) && shorter <= 1 {
+            return Some(BubbleType::SmallIndel);
+        }
+    }
+    None
+}
+
+/// Walk forward as long as each node has exactly one outgoing edge, up to
+/// `max_steps`. Returns the sequence of visited nodes starting from `start`.
+fn walk_simple_chain(graph: &Graph, start: NodeId, max_steps: usize) -> Vec<NodeId> {
+    let mut out = vec![start];
+    let mut cur = start;
+    for _ in 0..max_steps {
+        let nxt = graph.successors(cur);
+        if nxt.len() != 1 {
+            break;
+        }
+        cur = nxt[0];
+        out.push(cur);
+    }
+    out
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bubble::find_bubble;
     use crate::gfa::Graph;
     use std::collections::HashMap;
 
@@ -145,57 +245,78 @@ mod tests {
         Graph { seq, forward, backward, paths: Vec::new() }
     }
 
+    fn classify_from_source(graph: &Graph, source: NodeId) -> BubbleType {
+        let bubble = find_bubble(graph, source, 200).expect("bubble must close");
+        classify(&bubble, graph)
+    }
+
     #[test]
     fn snp_two_branches_distinct_nucleotides() {
         let g = mk_graph(
             &[(1, b"L"), (2, b"A"), (3, b"T"), (4, b"R")],
             &[(1, 2), (1, 3), (2, 4), (3, 4)],
         );
-        let bubble = crate::bubble::find_bubble(&g, 1, 10).unwrap();
-        assert_eq!(classify(&bubble, &g), BubbleType::Snp);
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Snp);
     }
 
     #[test]
-    fn small_indel_two_branches_one_empty() {
-        // 1 → 2 (skip) → 4; or 1 → 3 (A) → 2 → 4 — but that's a microsat shape.
-        // Cleaner: 1 → 4 directly OR 1 → 2 → 3 → 4 with 2 and 3 carrying ACG.
+    fn snp_with_branching_interior_is_complex() {
+        // Like a "SNP" but one branch has an internal fork: 1 → 2 → 4, 1 → 3 → 4 OR 3 → 5 → 4.
+        // Node 3 has 2 outgoing edges; Python (and now Rust) reject this as a simple SNP.
+        let g = mk_graph(
+            &[(1, b"L"), (2, b"A"), (3, b"T"), (4, b"R"), (5, b"X")],
+            &[(1, 2), (1, 3), (2, 4), (3, 4), (3, 5), (5, 4)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Complex);
+    }
+
+    #[test]
+    fn small_indel_two_branches_one_skip() {
+        // 1 → 4 (skip) OR 1 → 2 → 3 → 4 (2-bp insertion)
         let g = mk_graph(
             &[(1, b"L"), (2, b"A"), (3, b"C"), (4, b"R")],
             &[(1, 4), (1, 2), (2, 3), (3, 4)],
         );
-        let bubble = crate::bubble::find_bubble(&g, 1, 10).unwrap();
-        assert_eq!(classify(&bubble, &g), BubbleType::SmallIndel);
+        assert_eq!(classify_from_source(&g, 1), BubbleType::SmallIndel);
+    }
+
+    #[test]
+    fn indel_with_branching_chain_is_complex() {
+        // 1 → 4 (skip), 1 → 2 → 3 → 4, but 3 also branches to 5 → 4.
+        // Python (and Rust now) reject: the chain is not simple.
+        let g = mk_graph(
+            &[(1, b"L"), (2, b"A"), (3, b"C"), (4, b"R"), (5, b"X")],
+            &[(1, 4), (1, 2), (2, 3), (3, 4), (3, 5), (5, 4)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Complex);
     }
 
     #[test]
     fn microsatellite_chain_same_letter() {
-        // 1 → {2,3,4,5} → 5 → R, where 2,3,4,5 are all 'A' and form a chain.
-        // Paths take 1,2,3 or 4 A's.
+        // 1 → {2, 3, 4, 5} where 2/3/4/5 are all 'A' forming a chain to 6.
         let g = mk_graph(
             &[(1, b"L"), (2, b"A"), (3, b"A"), (4, b"A"), (5, b"A"), (6, b"R")],
             &[(1, 2), (1, 3), (1, 4), (1, 5), (2, 3), (3, 4), (4, 5), (5, 6)],
         );
-        let bubble = crate::bubble::find_bubble(&g, 1, 10).unwrap();
-        assert_eq!(classify(&bubble, &g), BubbleType::Microsatellite);
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Microsatellite);
     }
 
     #[test]
     fn complex_branches_longer_than_50_bp() {
-        // 2-branch bubble where one branch is 60 bp long (not a microsat).
         let mut nodes: Vec<(NodeId, Vec<u8>)> = Vec::new();
         nodes.push((1, b"L".to_vec()));
         for i in 0..60 {
             nodes.push((100 + i as NodeId, vec![b"ACGT"[(i % 4) as usize]]));
         }
         nodes.push((2, b"R".to_vec()));
-        let node_refs: Vec<(NodeId, &[u8])> = nodes.iter().map(|(n, s)| (*n, s.as_slice())).collect();
+        let node_refs: Vec<(NodeId, &[u8])> =
+            nodes.iter().map(|(n, s)| (*n, s.as_slice())).collect();
         let mut links: Vec<(NodeId, NodeId)> = vec![(1, 2), (1, 100)];
         for i in 0..59 {
             links.push((100 + i, 101 + i));
         }
         links.push((100 + 59, 2));
         let g = mk_graph(&node_refs, &links);
-        let bubble = crate::bubble::find_bubble(&g, 1, 100).unwrap();
-        assert_eq!(classify(&bubble, &g), BubbleType::Complex);
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Complex);
     }
 }
