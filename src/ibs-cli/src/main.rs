@@ -410,12 +410,10 @@ fn run() -> Result<()> {
         );
     }
 
-    // Check that impg is available
-    if Command::new("impg").arg("--version").output().is_err() {
-        bail!("'impg' is not in PATH");
-    }
-
-    // Collect regions: either from --region or --bed
+    // Collect regions: either from --region or --bed.
+    // Validate paths before spawning impg so users (and CI) get the right
+    // error message when a path is wrong rather than a generic
+    // "'impg' is not in PATH".
     let regions = if let Some(ref bed_path) = args.bed {
         if !Path::new(bed_path).exists() {
             bail!("BED file does not exist: {}", bed_path);
@@ -428,6 +426,11 @@ fn run() -> Result<()> {
     };
 
     eprintln!("Processing {} region(s)...", regions.len());
+
+    // Check that impg is available now that all inputs validated.
+    if Command::new("impg").arg("--version").output().is_err() {
+        bail!("'impg' is not in PATH");
+    }
 
     // Open output file and write header
     let output_file = File::create(&args.output)
