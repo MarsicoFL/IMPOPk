@@ -425,6 +425,182 @@ mod tests {
         assert_eq!(classify_from_source(&g, 1), BubbleType::Complex);
     }
 
+    // --- boundary cases ----------------------------------------------------
+
+    #[test]
+    fn microsat_motif_len_6_is_detected() {
+        // ATGCAT-repeat (6 bp motif, at the upper bound). 3 branches with
+        // 0, 1 and 2 motif copies, sharing the trailing motif.
+        //   1 → 99                              (0 copies)
+        //   1 → 16 → 17 → 18 → 19 → 20 → 21 → 99 (1 copy: ATGCAT)
+        //   1 → 10 → 11 → ... → 15 → 16 → ... → 21 → 99 (2 copies)
+        let g = mk_graph(
+            &[(1, b"L"),
+              (10, b"A"), (11, b"T"), (12, b"G"), (13, b"C"), (14, b"A"), (15, b"T"),
+              (16, b"A"), (17, b"T"), (18, b"G"), (19, b"C"), (20, b"A"), (21, b"T"),
+              (99, b"R")],
+            &[(1, 99), (1, 16), (1, 10),
+              (10, 11), (11, 12), (12, 13), (13, 14), (14, 15), (15, 16),
+              (16, 17), (17, 18), (18, 19), (19, 20), (20, 21), (21, 99)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Microsatellite);
+    }
+
+    #[test]
+    fn microsat_motif_len_7_is_not_detected() {
+        // 7-bp repeat ATGCAAT — outside our MAX_MOTIF_LEN = 6 cap → Complex.
+        let g = mk_graph(
+            &[(1, b"L"),
+              (10, b"A"), (11, b"T"), (12, b"G"), (13, b"C"), (14, b"A"), (15, b"A"), (16, b"T"),
+              (17, b"A"), (18, b"T"), (19, b"G"), (20, b"C"), (21, b"A"), (22, b"A"), (23, b"T"),
+              (99, b"R")],
+            &[(1, 99), (1, 17), (1, 10),
+              (10, 11), (11, 12), (12, 13), (13, 14), (14, 15), (15, 16), (16, 17),
+              (17, 18), (18, 19), (19, 20), (20, 21), (21, 22), (22, 23), (23, 99)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Complex);
+    }
+
+    #[test]
+    fn small_indel_at_50_bp() {
+        // 50-node insertion — well below the 51-bp internal walk limit.
+        let mut nodes: Vec<(NodeId, Vec<u8>)> =
+            vec![(1, b"L".to_vec()), (99, b"R".to_vec())];
+        for i in 0..50 {
+            nodes.push((100 + i as NodeId, vec![b"A"[0]]));
+        }
+        let node_refs: Vec<(NodeId, &[u8])> =
+            nodes.iter().map(|(n, s)| (*n, s.as_slice())).collect();
+        let mut links: Vec<(NodeId, NodeId)> = vec![(1, 99), (1, 100)];
+        for i in 0..49 {
+            links.push((100 + i, 101 + i));
+        }
+        links.push((100 + 49, 99));
+        let g = mk_graph(&node_refs, &links);
+        assert_eq!(classify_from_source(&g, 1), BubbleType::SmallIndel);
+    }
+
+    #[test]
+    fn indel_at_52_bp_is_complex() {
+        // The classifier's check (a) walks up to MAX_INDEL_LEN+1 = 51 steps.
+        // A 52-node chain exhausts the loop without finding the other branch,
+        // and check (b)'s `shorter <= 1` keeps the empty branch as the
+        // "skip" — but the chain length 52 exceeds the diff cap of 50, so
+        // the structural check fails. Falls to Complex.
+        let mut nodes: Vec<(NodeId, Vec<u8>)> =
+            vec![(1, b"L".to_vec()), (99, b"R".to_vec())];
+        for i in 0..52 {
+            nodes.push((100 + i as NodeId, vec![b"A"[0]]));
+        }
+        let node_refs: Vec<(NodeId, &[u8])> =
+            nodes.iter().map(|(n, s)| (*n, s.as_slice())).collect();
+        let mut links: Vec<(NodeId, NodeId)> = vec![(1, 99), (1, 100)];
+        for i in 0..51 {
+            links.push((100 + i, 101 + i));
+        }
+        links.push((100 + 51, 99));
+        let g = mk_graph(&node_refs, &links);
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Complex);
+    }
+
+    #[test]
+    fn msnp_3_alleles_detected() {
+        let g = mk_graph(
+            &[(1, b"L"), (2, b"A"), (3, b"T"), (4, b"G"), (5, b"R")],
+            &[(1, 2), (1, 3), (1, 4), (2, 5), (3, 5), (4, 5)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::MultiAllelicSnp);
+    }
+
+    #[test]
+    fn msnp_4_alleles_detected() {
+        let g = mk_graph(
+            &[(1, b"L"), (2, b"A"), (3, b"T"), (4, b"G"), (5, b"C"), (6, b"R")],
+            &[(1, 2), (1, 3), (1, 4), (1, 5), (2, 6), (3, 6), (4, 6), (5, 6)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::MultiAllelicSnp);
+    }
+
+    #[test]
+    fn snp_two_same_nucleotides_is_not_snp() {
+        // Two branches with same base A,A → not a SNP (requires distinct).
+        // Falls through to Microsatellite check, then SmallIndel. With 2
+        // single-base same-letter branches that both go to sink, the
+        // microsat check needs ≥3 branches → fails. Indel needs one empty
+        // branch → fails (both are 1-bp). So Complex.
+        let g = mk_graph(
+            &[(1, b"L"), (2, b"A"), (3, b"A"), (4, b"R")],
+            &[(1, 2), (1, 3), (2, 4), (3, 4)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Complex);
+    }
+
+    #[test]
+    fn snp_with_multibase_alt_is_classified_as_indel() {
+        // 2 branches: one 1-bp (A), one 2-bp (TG). The shorter chain
+        // reaches the sink in 1 step and the longer one within +1 step, so
+        // check (b) of the small-indel logic catches it. This mirrors how
+        // the panarg Python reference behaves on the same shape — biology-
+        // wise it's a 1-bp insertion with simultaneous base-change, but
+        // the classifier prefers SmallIndel over Complex on length-1 diffs.
+        let g = mk_graph(
+            &[(1, b"L"), (2, b"A"), (3, b"T"), (4, b"G"), (5, b"R")],
+            &[(1, 2), (1, 3), (2, 5), (3, 4), (4, 5)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::SmallIndel);
+    }
+
+    #[test]
+    fn microsat_inconsistent_motif_via_different_shortest_paths_is_complex() {
+        // Two branches "AT" and "AC" — same length 2, different content → no
+        // shared motif M of length 1 or 2 works. With a third empty branch
+        // we'd still fail (M=1: "AT" needs A or T uniformly; "AC" breaks).
+        let g = mk_graph(
+            &[(1, b"L"),
+              (10, b"A"), (11, b"T"),  // "AT"
+              (20, b"A"), (21, b"C"),  // "AC"
+              (99, b"R")],
+            &[(1, 99), (1, 10), (1, 20),
+              (10, 11), (11, 99),
+              (20, 21), (21, 99)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Complex);
+    }
+
+    #[test]
+    fn microsat_motif_must_divide_all_branches() {
+        // Branches "TA" (len 2) and "TAT" (len 3). Motif "TA" divides "TA"
+        // but not "TAT" (3 isn't a multiple of 2). Motif "TAT" divides
+        // "TAT" but not "TA". No common motif → Complex.
+        let g = mk_graph(
+            &[(1, b"L"),
+              (10, b"T"), (11, b"A"),       // "TA"
+              (20, b"T"), (21, b"A"), (22, b"T"),  // "TAT"
+              (99, b"R")],
+            &[(1, 99), (1, 10), (1, 20),
+              (10, 11), (11, 99),
+              (20, 21), (21, 22), (22, 99)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Complex);
+    }
+
+    #[test]
+    fn microsat_when_one_branch_is_empty_skip() {
+        // 4 branches: 0, A, AA, AAA — same pattern as the chr12:60 Mb gold std.
+        let g = mk_graph(
+            &[(1, b"L"),
+              (10, b"A"),
+              (20, b"A"), (21, b"A"),
+              (30, b"A"), (31, b"A"), (32, b"A"),
+              (99, b"R")],
+            &[(1, 99), (1, 10), (1, 20), (1, 30),
+              (10, 99),
+              (20, 21), (21, 99),
+              (30, 31), (31, 32), (32, 99)],
+        );
+        assert_eq!(classify_from_source(&g, 1), BubbleType::Microsatellite);
+    }
+
     #[test]
     fn complex_branches_longer_than_50_bp() {
         let mut nodes: Vec<(NodeId, Vec<u8>)> = Vec::new();
