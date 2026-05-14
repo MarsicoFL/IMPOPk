@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  test:
+    name: Test (${{ matrix.rust }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [stable, "1.70"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust ${{ matrix.rust }}
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: clippy, rustfmt
+
+      - name: Cache cargo registry + target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build (release)
+        run: cargo build --release --workspace
+
+      - name: Test
+        run: cargo test --workspace
+
+      # Library-only clippy. --all-targets would also lint tests, which
+      # still carry pre-existing unused-variable/import warnings from the
+      # generated test sweeps that haven't been triaged yet.
+      - name: Clippy (deny warnings)
+        run: cargo clippy --workspace -- -D warnings
+
+      - name: Mini integration tests
+        run: bash test/run_mini_tests.sh
+
+  ancestry-determinism:
+    name: Ancestry determinism (sample-order)
+    runs-on: ubuntu-22.04
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry + target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-stable-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build (release)
+        run: cargo build --release --workspace
+
+      - name: Run ancestry example twice and diff
+        run: |
+          set -euo pipefail
+          bash data/examples/ancestry/run.sh
+          cp data/examples/ancestry/output/ancestry.tsv /tmp/run1.tsv
+          rm -rf data/examples/ancestry/output
+          bash data/examples/ancestry/run.sh
+          cp data/examples/ancestry/output/ancestry.tsv /tmp/run2.tsv
+          # Sample-order non-determinism is fixed; sorted bit-equality is the
+          # contract. Sub-1e-6 float drift in parallel BW reduction is
+          # tolerated for now (TODO: collapse the function zoo and stabilize
+          # reductions).
+          diff <(sort /tmp/run1.tsv) <(sort /tmp/run2.tsv)
