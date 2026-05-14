@@ -1,0 +1,25 @@
+[package]
+name = "impopk-argraph"
+version = "0.1.0"
+edition = "2021"
+authors = ["Franco Marsico"]
+description = "Experimental: ancestral recombination graph inference from pangenome subgraphs"
+license = "MIT"
+keywords = ["bioinformatics", "pangenome", "ARG", "tsinfer"]
+categories = ["science", "command-line-utilities"]
+
+[lib]
+name = "impopk_argraph"
+path = "src/lib.rs"
+
+[[bin]]
+name = "argraph"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.4", features = ["derive"] }
+
+[dev-dependencies]
+assert_cmd = "2.0"
+tempfile = "3.8"

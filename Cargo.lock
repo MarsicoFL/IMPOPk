@@ -228,6 +228,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "impopk-argraph"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "tempfile",
+]
+
+[[package]]
 name = "impopk-common"
 version = "0.1.0"
 dependencies = [

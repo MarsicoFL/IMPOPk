@@ -6,6 +6,7 @@ members = [
     "src/ibs-cli",
     "src/jacquard-cli",
     "src/ancestry-cli",
+    "src/argraph-cli",
 ]
 
 [workspace.package]
